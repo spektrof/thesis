@@ -9,9 +9,9 @@ Használati útmutató:
   Ezt megismételhetjük restart segítségével.  
   FONTOS: MÉG ne vágjunk 2x egymás után (error).
                                 
-  TODO:
-      - shader átlátszóság
-      - legördülő menü & vágási eredmény összekapcsolása
+TODO:
+  -  shader átlátszóság
+  -  legördülő menü & vágási eredmény összekapcsolása
       
 -------------------------------------------------------------------------------------
 
