@@ -132,10 +132,12 @@ void CMyApp::Render()
 
 void CMyApp::AcceptCutting()
 {
+	cutting_mode = false;
 
 	switch (request.ta)
 	{ 
 		case BOTH:
+			NumberOfAtoms++;
 			app.container().last_cut_result().choose_both();
 			
 			data = app.atom_drawinfo();
@@ -158,7 +160,7 @@ void CMyApp::AcceptCutting()
 
 void CMyApp::GetResult()
 {
-	NumberOfAtoms++;
+	cutting_mode = true;
 	app.container().cut(0, p);
 
 	data = app.cut_drawinfo();
@@ -292,7 +294,7 @@ void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdro
 	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
 	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 	
-	glUniform1f(Opacity, ActiveAtom == which ? 1.0f : _opacity);
+	glUniform1f(Opacity, IsItActive(which) ? 1.0f : _opacity);
 
 	int start = data.index_ranges[ which];
 	int end = data.index_ranges[ which +1];
@@ -473,10 +475,10 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		FenyIrany += ld;
 		break;
 	case SDLK_KP_PLUS:	//atomváltás
-		ActiveAtom = (ActiveAtom + 1) % NumberOfAtoms;
+		if (!cutting_mode) ActiveAtom = (ActiveAtom + 1) % NumberOfAtoms;
 		break;
 	case SDLK_KP_MINUS:
-		ActiveAtom = (ActiveAtom - 1) % NumberOfAtoms;	
+		if (!cutting_mode) ActiveAtom = (ActiveAtom - 1) % NumberOfAtoms;
 		break;
 	}
 }
@@ -562,7 +564,14 @@ glm::mat4 CMyApp::GetRotateFromNorm(glm::vec3 vec)
 	return glm::rotate<float>(angle * 180.0f / (float)M_PI, axis.x, axis.y, axis.z);
 }
 
-void CMyApp::GetInfo() {
+bool CMyApp::IsItActive(const int& which)
+{
+	return	(request.ta == NEGATIVE && ActiveAtom == which)
+		|| (request.ta == POSITIVE && ActiveAtom + 1 == which)
+		|| (request.ta == BOTH && (ActiveAtom + 1 == which || ActiveAtom == which));
+}
+void CMyApp::GetInfo()
+{
 	std::cout << "A celtest terfogata: " << app.target().body().volume() << "\n";
 	std::cout << "negativ oldali keletkezett atom terfogata: " << app.container().last_cut_result().negative()->volume() << "\n";
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
@@ -604,7 +613,7 @@ void CMyApp::Ideiglenes3DKocka()
 
 // glPolygonMode - mode : GL_POINT,GL_FILL,GL_LINE
 /*
-//_-----------------------
+//------------------------
 //Draw3D(CountsOfIndexes, glm::scale<float>(5.0f, 5.0f, 5.0f), glm::translate<float>(10.0f * NumberOfAtoms, 0.0f, 0.0f));
 //Draw3D(CountsOfIndexes, glm::scale<float>(5.0f, 5.0f, 5.0f), glm::translate<float>(10.0f * NumberOfAtoms+12.0f, 0.0f, 0.0f));
 

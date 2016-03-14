@@ -56,6 +56,8 @@ protected:
 	void AcceptCutting();
 	void GetRestart();
 
+	bool IsItActive(const int&);
+
 	UserInterface ui;
 	Request request;
 
@@ -114,6 +116,7 @@ protected:
 
 	bool is_left_pressed = false;	// camera moving
 	bool transparency = true;
+	bool cutting_mode = false;
 
 	GLuint NumberOfAtoms = 1;
 

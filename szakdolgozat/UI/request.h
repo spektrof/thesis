@@ -5,7 +5,7 @@ enum ToDo{
 	ACCEPT,
 	CUTTING,
 	UNDO,
-	RESTART
+	RESTART,
 };
 
 enum UserControl {
@@ -18,9 +18,9 @@ enum UserControl {
 
 enum TypeAccept
 {
-	BOTH,
+	NEGATIVE,
 	POSITIVE,
-	NEGATIVE
+	BOTH,
 };
 
 struct Coord {

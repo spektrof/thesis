@@ -82,6 +82,7 @@ void UserInterface::Init()
 	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
 	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
+	connect(_accepttypes, SIGNAL(currentIndexChanged(int)), this, SLOT(typeaccept_handler()));
 
 	//-------------------------------------------
 
@@ -98,7 +99,7 @@ void UserInterface::radio_handler()
 void UserInterface::cuttingEvent()
 {
 	request.happen = CUTTING;
-
+	request.ta = TypeAccept(_accepttypes->currentData().toInt());
 	request.uc = _user->isChecked() ? UserControl(_dropDownMenu->currentData().toInt()) : UserControl::AUTOMATIC;
 
 	_cutting->setEnabled(false);
@@ -130,6 +131,8 @@ void UserInterface::acceptEvent()
 void UserInterface::restartEvent()
 {
 	request.happen = RESTART;
+	request.ta = TypeAccept(0);
+
 	_accept->setEnabled(false);
 	_accepttypes->setEnabled(false);
 	_undo->setEnabled(false);
@@ -174,12 +177,23 @@ void UserInterface::backToMenu()
 	_moreInfo->setVisible(true);
 }
 
+void UserInterface::typeaccept_handler()
+{
+	request.ta = TypeAccept(_accepttypes->currentData().toInt());
+}
+
 Request UserInterface::GetRequest() 
 {
 	if (request.happen == NONE) return request;
 
 	Request result(request); 
+
 	ResetRequest();
+	if (result.happen == ACCEPT)
+	{
+		request.ta = NEGATIVE;
+		_accepttypes->setCurrentIndex(0);
+	}
 	return result;
 }
 
@@ -289,7 +303,7 @@ void UserInterface::AddItemsToDropMenu()
 	_dropDownMenu->addItem("Plane that least coplanar to any face of the atom", 3);
 	_dropDownMenu->addItem("Plane the best fitting to a part of the surface", 4);
 
-	_accepttypes->addItem("BOTH", 0);
+	_accepttypes->addItem("NEGATIVE", 0);
 	_accepttypes->addItem("POSITIVE", 1);
-	_accepttypes->addItem("NEGATIVE", 2);
+	_accepttypes->addItem("BOTH", 2);
 }

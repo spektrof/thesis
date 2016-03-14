@@ -41,6 +41,7 @@ private slots:
 	void restartEvent();
 	void infoEvent();
 	void backToMenu();
+	void typeaccept_handler();
 
 private:
 	QWidget *window;

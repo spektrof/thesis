@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_UserInterface_t {
-	QByteArrayData data[9];
-	char stringdata0[98];
+	QByteArrayData data[10];
+	char stringdata0[117];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -37,9 +37,10 @@ static const qt_meta_stringdata_UserInterface_t qt_meta_stringdata_UserInterface
 		QT_MOC_LITERAL(5, 63, 12), // "restartEvent"
 		QT_MOC_LITERAL(6, 76, 9), // "infoEvent"
 		QT_MOC_LITERAL(7, 86, 10), // "backToMenu"
-		QT_MOC_LITERAL(8, 97, 0) // ""
+		QT_MOC_LITERAL(8, 97, 18), // "typeaccept_handler"
+		QT_MOC_LITERAL(9, 116, 0) // ""
 	},
-	"UserInterface\0radio_handler\0cuttingEvent\0undoEvent\0acceptEvent\0restartEvent\0infoEvent\0backToMenu\0"
+	"UserInterface\0radio_handler\0cuttingEvent\0undoEvent\0acceptEvent\0restartEvent\0infoEvent\0backToMenu\0typeaccept_handler\0"
 };
 #undef QT_MOC_LITERAL
 
@@ -49,7 +50,7 @@ static const uint qt_meta_data_UserInterface[] = {
 	7,       // revision
 	0,       // classname
 	0,    0, // classinfo
-	7,   14, // methods
+	8,   14, // methods
 	0,    0, // properties
 	0,    0, // enums/sets
 	0,    0, // constructors
@@ -64,6 +65,7 @@ static const uint qt_meta_data_UserInterface[] = {
 	5,    0,   19,    2, 0x08 /* Private */,
 	6,    0,   19,    2, 0x08 /* Private */,
 	7,    0,   19,    2, 0x08 /* Private */,
+	8,    0,   19,    2, 0x08 /* Private */,
 
 	// slots: parameters
 	QMetaType::Void,
@@ -84,6 +86,7 @@ void UserInterface::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
 			case 4: _t->restartEvent(); break;
 			case 5: _t->infoEvent(); break;
 			case 6: _t->backToMenu(); break;
+			case 7: _t->typeaccept_handler(); break;
 			default:;						   
 			}								  
 	}
