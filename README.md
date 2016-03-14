@@ -16,7 +16,7 @@ TODO:
 -------------------------------------------------------------------------------------
 
 Funkcióbillentyűk:
-  - + és - (numpad) : atomok közötti váltás, az aktív atlam nem átlátszó
+  - + és - (numpad) : atomok közötti váltás, az aktív atom nem átlátszó
   - t : átlátszóság ki-be kapcsolása
   - p : 3D és 2D nézeti kapcsoló
   - i : egyéb információk lekérése konzolra
