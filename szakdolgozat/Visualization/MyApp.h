@@ -43,7 +43,7 @@ public:
 protected:
 	/*	TODO list
 		SHADER - opacity, egymásban lévõ testeket lássunk
-		Klikkel atom??
+		Klikkel atom vagy jó így??
 	*/
 	approx::Approximator<float> app;
 	approx::BodyList data;
@@ -59,6 +59,9 @@ protected:
 	UserInterface ui;
 	Request request;
 
+	//TODO: Mikor rajzolom a vágósíkot a testhez a scale skálázza a koordinátákat mind3 tengely mentén így az eltolást ennek megfelelõen
+	//		x-1 el el kell tolni, ahol x a test skálája az egység kockához képest    - ez nem okoz gondot ha én mondok síkot az enginek
+	//		DE ott is figyelni kell erre !!!!!!!! (fordított eset)
 	glm::mat4 GetTranslateFromCoord(glm::vec3 vec);
 	glm::mat4 GetRotateFromNorm(glm::vec3 vec);
 	

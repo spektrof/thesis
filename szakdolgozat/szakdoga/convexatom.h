@@ -107,8 +107,8 @@ namespace approx{
 					_faces->push_back(cut.negative); //a kapott lapokat szortirozom az uj sokszogekbe
 					_faces->push_back(cut.positive); 
 					faces_added += 2; //2 uj lap kerult a taroloba
-					pos_faces.push_back(_faces->size() - 1);
-					neg_faces.push_back(_faces->size() - 2);
+					pos_faces.push_back((int)_faces->size() - 1);
+					neg_faces.push_back((int)_faces->size() - 2);
 					pt_ids.push_back(cut.pt_inds.front());
 					pt_ids.push_back(cut.pt_inds.back());
 					avg_pt += vc[pt_ids[pt_ids.size() - 1]];
@@ -165,8 +165,8 @@ namespace approx{
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
-				neg_faces.push_back(_faces->size() - 2);
-				pos_faces.push_back(_faces->size() - 1);
+				neg_faces.push_back((int)_faces->size() - 2);
+				pos_faces.push_back((int)_faces->size() - 1);
 				//a vetuleteket is clippelni kell
 				pos_poly.push_back(std::make_shared<SurfacePoly>(p));
 				neg_poly.push_back(pos_poly.back());

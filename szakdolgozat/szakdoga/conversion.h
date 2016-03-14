@@ -53,7 +53,7 @@ namespace approx{
 				//minden pontnak azonos normal indexet adok
 			}
 		}
-		res.index_ranges.push_back(res.indicies.size());
+		res.index_ranges.push_back((int)res.indicies.size());
 		return res;
 	}
 
@@ -75,7 +75,6 @@ namespace approx{
 					res.indicies.push_back(f.indicies(0));
 					res.indicies.push_back(f.indicies(i - 1));
 					res.indicies.push_back(f.indicies(i));
-					//minden pontnak azonos normal indexet adok
 					res.index_ranges.back() += 3;
 				}
 			}
@@ -89,7 +88,7 @@ namespace approx{
 		for (const Face<T>& f : body){
 			for (int i : f.indicies()){
 				if (!verts.count(i)){
-					verts[i] = res.points.size();
+					verts[i] = (int)res.points.size();
 					res.points.push_back(convert(f.vertex_container()->operator[](i)));
 				}
 			}
@@ -99,7 +98,7 @@ namespace approx{
 				res.indicies.push_back(verts[f.indicies(i)]);
 			}
 		}
-		res.index_ranges = { 0, (unsigned short)res.indicies.size() };
+		res.index_ranges = { 0, (Index)res.indicies.size() };
 		return res;
 	}
 }

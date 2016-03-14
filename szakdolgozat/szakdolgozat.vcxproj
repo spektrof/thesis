@@ -106,6 +106,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>T:\OGLPack\include;$(IncludePath)</IncludePath>
     <LibraryPath>T:\OGLPack\lib\x64;$(LibraryPath)</LibraryPath>
+    <IgnoreImportLibrary>false</IgnoreImportLibrary>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_copied|x64'">
     <LinkIncremental>true</LinkIncremental>

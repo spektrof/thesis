@@ -217,12 +217,12 @@ namespace approx{
 			}
 		};
 
-
+		 
 		//az adott indexu atom elvagasa megadott sikkal
 		//az eredmenykent keletkezett atomok, lapok es pontok bekerulnek a taroloba
 		CutResult cut(size_t ind, const Plane<T>& p){
-			if (pending()) undo();
-			last_cut = ind;
+			if (pending()) undo(); 
+			last_cut = (int)ind;
 			cut_res = _atoms[ind].cut_by(p);
 			return CutResult(this);
 		}

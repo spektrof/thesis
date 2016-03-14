@@ -58,7 +58,7 @@ bool CMyApp::Init()
 	input.push_back(glm::vec2(1.0f, 3.0f));
 
 	Create2DObject(input);
-
+	//Ideiglenes3DKocka();
 	AddShaders();
 
 	return true;
@@ -117,12 +117,12 @@ void CMyApp::Render()
 			default:
 				break;
 		}
+		
+		DrawCuttingPlane(GetTranslateFromCoord(approx::convert(p.example_point())), GetRotateFromNorm(approx::convert(p.normal())), glm::scale<float>(50.0f, 50.0f, 50.0f));
 	
-		DrawCuttingPlane(GetTranslateFromCoord(approx::convert(p.example_point())), GetRotateFromNorm(approx::convert(p.normal())), glm::scale<float>(30.0f, 30.0f, 30.0f));
-
 		for (int i = 0; i < data.index_ranges.size() - 1; ++i)
 		{
-			Draw3D(i, 0.4f);
+			Draw3D(i, 0.4f,1, glm::scale<float>(1.0f, 1.0f, 1.0f));
 		}
 	}
 
@@ -132,10 +132,9 @@ void CMyApp::Render()
 
 void CMyApp::AcceptCutting()
 {
-	NumberOfAtoms++;
 
 	switch (request.ta)
-	{
+	{ 
 		case BOTH:
 			app.container().last_cut_result().choose_both();
 			
@@ -159,7 +158,7 @@ void CMyApp::AcceptCutting()
 
 void CMyApp::GetResult()
 {
-	
+	NumberOfAtoms++;
 	app.container().cut(0, p);
 
 	data = app.cut_drawinfo();
@@ -168,6 +167,7 @@ void CMyApp::GetResult()
 
 void CMyApp::GetUndo()
 {
+	NumberOfAtoms--;
 	app.container().last_cut_result().undo();
 	data = app.atom_drawinfo();
 	Create3DObject(data.points, data.indicies);
@@ -176,6 +176,7 @@ void CMyApp::GetUndo()
 void CMyApp::GetRestart()
 {
 	NumberOfAtoms = 1;
+	ActiveAtom = 0;
 	app.restart();
 	data = app.atom_drawinfo();
 	Create3DObject(data.points, data.indicies);
@@ -255,7 +256,7 @@ void CMyApp::Create3DObject(const std::vector<glm::vec3>& points, const std::vec
 	for (size_t i = 0; i < points.size(); ++i)
 	{
 							// TODO : X , Y , Z Matematikai koord vs. opengl koord + TODO: normálisok
-		_3DObject.push_back({ glm::vec3(points[i].x, points[i].y, points[i].z)/*, glm::vec3(points[i].x, points[i].y, points[i].z)*//*, glm::vec3(0.0f, 1.0f, 0.0f)*/ });
+		_3DObject.push_back({ glm::vec3(points[i].x, points[i].z, points[i].y)/*, glm::vec3(points[i].x, points[i].y, points[i].z)*//*, glm::vec3(0.0f, 1.0f, 0.0f)*/ });
 	}
 
 	BindingBufferData(&_3DvaoID, &_3DvboID, _3DObject);
@@ -280,7 +281,7 @@ void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdro
 
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
-	glm::mat4 matWorld = trans * scal * rot;
+	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
@@ -297,9 +298,9 @@ void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdro
 	int end = data.index_ranges[ which +1];
 
 	glDrawElements(GL_TRIANGLES,		// primitív típus
-		end - start + 1,		// hany csucspontot hasznalunk a kirajzolashoz
+		end - start,		// hany csucspontot hasznalunk a kirajzolashoz
 		GL_UNSIGNED_SHORT,	// indexek tipusa
-		(void*)data.indicies[start]);					// indexek cime
+		(void*)(start * sizeof(unsigned short)));					// indexek cime
 }
 
 void CMyApp::Create2DObject(const std::vector<glm::vec2>& points )	//be: 2d-s pontok vektorban
@@ -338,7 +339,7 @@ void CMyApp::Draw2D(const int& NumbersOfVertices, glm::mat4& scal, glm::mat4& tr
 	//glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, GL_FILL);
 	
-	glm::mat4 matWorld = trans * scal * rot;
+	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
@@ -386,7 +387,7 @@ void CMyApp::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
 	glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, CuttingPlaneWireType ? GL_LINE : GL_FILL);	
 
-	glm::mat4 matWorld = trans * scal * rot;
+	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
@@ -545,7 +546,7 @@ glm::vec3 CMyApp::ToDescartes(float u, float v)
 }
 glm::mat4 CMyApp::GetTranslateFromCoord(glm::vec3 vec)
 {
-	return glm::translate<float>(vec.x, vec.y, vec.z);
+	return glm::translate<float>(vec.x+1.0f, -vec.z, -vec.y);
 }
 glm::mat4 CMyApp::GetRotateFromNorm(glm::vec3 vec)
 {
@@ -565,7 +566,7 @@ void CMyApp::GetInfo() {
 	std::cout << "A celtest terfogata: " << app.target().body().volume() << "\n";
 	std::cout << "negativ oldali keletkezett atom terfogata: " << app.container().last_cut_result().negative()->volume() << "\n";
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
-
+	 
 
 }
 

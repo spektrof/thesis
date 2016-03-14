@@ -30,7 +30,7 @@ namespace approx {
 				vecs.push_back(v);
 			}
 			int transform_index(int ind) const{ return ind; }
-			int size()const { return vecs.size(); }
+			int size()const { return (int)vecs.size(); }
 			Vector3<T> operator[](int ind) const {
 				return vecs[ind];
 			}

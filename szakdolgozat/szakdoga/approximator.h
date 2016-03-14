@@ -31,7 +31,7 @@ namespace approx {
 
 		//a megadott celtest felhasznalasa, adott tavolsagu hatarolo kockaval indulva
 		Approximator(std::unique_ptr<TargetBody<T>>&& target,T _border) {
-			set_target(target,_border);
+			set_target(std::move(target),_border);
 		}
 
 		//pontosan akkor igaz, ha az approximacios munkafolyamat megkezdheto
@@ -127,12 +127,12 @@ namespace approx {
 		BodyList cut_drawinfo() const {
 			BodyList b1 = compact_drawinfo(*app->last_cut_result().negative());
 			BodyList b2 = compact_drawinfo(*app->last_cut_result().positive());
+			int n = (int)b1.points.size();
 			b1.points.insert(b1.points.end(), b2.points.begin(), b2.points.end());
-			int n = b1.indicies.size();
 			for (int x : b2.indicies) {
 				b1.indicies.push_back(x+n);
 			}
-			b1.index_ranges.push_back(n + b2.indicies.size());
+			b1.index_ranges.push_back((int)b1.indicies.size());
 			return b1;
 		}
 

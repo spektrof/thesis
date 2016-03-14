@@ -58,7 +58,7 @@ namespace approx{
 
 		//elemszam
 		int size() const {
-			return ind_map.size();
+			return (int)ind_map.size();
 		}
 
 		ConstIterator begin() const { return ConstIterator(&vecs,&ind_map,0); }

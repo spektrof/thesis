@@ -12,8 +12,6 @@
 #include "indexiterator.h"
 #include "polygraph.h"
 
-#include "geoios.h" //TODO: debug
-
 namespace approx{
 
 	//Parametere a skalar tipus ami felett ertelmezzuk a vektorteret
@@ -21,9 +19,6 @@ namespace approx{
 	protected:
 		std::vector<Face<T>>* _faces;
 		std::vector<int> inds;
-
-		typedef IndexIterator<Face<T>> FaceIterator;
-		typedef ConstIndexIterator<Face<T>> ConstFaceIterator;
 
 
 	public:
@@ -34,12 +29,17 @@ namespace approx{
 
 		typedef T ScalarType;
 
+		typedef IndexIterator<Face<T>> FaceIterator;
+		typedef ConstIndexIterator<Face<T>> ConstFaceIterator;
+
+
 		Body& operator = (const Body& b) = default;
 		Body& operator =(Body&& b){
 			inds = std::move(b.inds);
 			_faces = b._faces;
 			return *this;
 		}
+
 
 		bool valid() const { return _faces; }
 
@@ -54,7 +54,7 @@ namespace approx{
 		}
 
 		//a test lapszama
-		int size() const { return inds.size(); }
+		int size() const { return (int)inds.size(); }
 	    //az i. lap indexe a taroloban
 		int indicies(size_t i) const { return inds[i]; }
 		//indexlista lekerdezese konstans hozzaferesre
