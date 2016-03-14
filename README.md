@@ -11,7 +11,6 @@ Használati útmutató:
                                 
 TODO:
   -  shader átlátszóság
-  -  legördülő menü & vágási eredmény összekapcsolása
       
 -------------------------------------------------------------------------------------
 
@@ -22,3 +21,7 @@ Funkcióbillentyűk:
   - i : egyéb információk lekérése konzolra
   - wasd + mouse left press : kamera mozgatása
   - nyilak : fény mozgatása
+
+Megj.:
+  A +/- funkc. billentyű nem működik ha vágó módban vagyunk, 
+  ekkor a legördülő menükkel tudjuk váltani a vágandó atom részeit(pozitív, negatív, mind2)
