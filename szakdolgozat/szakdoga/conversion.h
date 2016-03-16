@@ -46,14 +46,17 @@ namespace approx{
 		}
 		res.index_ranges.push_back(0);
 		for (const Face<T>& f : body){
-			for (int i = 2; i < f.size(); ++i){
-				res.indicies.push_back(f.indicies(0));
-				res.indicies.push_back(f.indicies(i-1));
-				res.indicies.push_back(f.indicies(i));
-				//minden pontnak azonos normal indexet adok
+			if (f.size()) {
+				Vector3<T> n = cross(f.points(2) - f.points(1), f.points(0) - f.points(1));
+				int prev = dot(n, f.normal()) > 0 ? 1 : 0;
+				for (int i = 2; i < f.size(); ++i) { //ccw-be sorolom es ugy veszem hogy kinn tudjak majd a normalist szamolni
+					res.indicies.push_back(f.indicies(0));
+					res.indicies.push_back(f.indicies(i - prev));
+					res.indicies.push_back(f.indicies(i - 1 + prev));
+				}
 			}
 		}
-		res.index_ranges.push_back((int)res.indicies.size());
+		res.index_ranges.push_back(res.indicies.size());
 		return res;
 	}
 
@@ -71,11 +74,15 @@ namespace approx{
 		for (; first != last; ++first){
 			res.index_ranges.push_back(res.index_ranges.back());
 			for (const Face<T>& f : *first){
-				for (int i = 2; i < f.size(); ++i){
-					res.indicies.push_back(f.indicies(0));
-					res.indicies.push_back(f.indicies(i - 1));
-					res.indicies.push_back(f.indicies(i));
-					res.index_ranges.back() += 3;
+				if (f.size()) {
+					Vector3<T> n = cross(f.points(2) - f.points(1), f.points(0) - f.points(1));
+					int prev = dot(n, f.normal()) > 0 ? 1 : 0;
+					for (int i = 2; i < f.size(); ++i) {
+						res.indicies.push_back(f.indicies(0));
+						res.indicies.push_back(f.indicies(i - prev));
+						res.indicies.push_back(f.indicies(i - 1 + prev));
+						res.index_ranges.back() += 3;
+					}
 				}
 			}
 		}
@@ -88,14 +95,18 @@ namespace approx{
 		for (const Face<T>& f : body){
 			for (int i : f.indicies()){
 				if (!verts.count(i)){
-					verts[i] = (int)res.points.size();
+					verts[i] = res.points.size();
 					res.points.push_back(convert(f.vertex_container()->operator[](i)));
 				}
 			}
-			for (int i = 2; i < f.indicies().size(); ++i) {
-				res.indicies.push_back(verts[f.indicies(0)]);
-				res.indicies.push_back(verts[f.indicies(i-1)]);
-				res.indicies.push_back(verts[f.indicies(i)]);
+			if (f.size()) {
+				Vector3<T> n = cross(f.points(2) - f.points(1), f.points(0) - f.points(1));
+				int prev = dot(n, f.normal()) > 0 ? 1 : 0;
+				for (int i = 2; i < f.indicies().size(); ++i) {
+					res.indicies.push_back(verts[f.indicies(0)]);
+					res.indicies.push_back(verts[f.indicies(i - prev)]);
+					res.indicies.push_back(verts[f.indicies(i - 1 + prev)]);
+				}
 			}
 		}
 		res.index_ranges = { 0, (Index)res.indicies.size() };

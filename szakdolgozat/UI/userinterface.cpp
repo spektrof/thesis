@@ -7,7 +7,16 @@ UserInterface::UserInterface(QWidget *parent)
 	window = new QWidget();
 	_mainLayout = new QVBoxLayout();
 	_label = new QLabel("Welcome", this);
-	_info = new QLabel("Hey, Im imformation about this ui",this);
+	_info = new QLabel("Hey, Im imformation about this ui", this);
+	_x = new QLabel("X", this);
+	_y = new QLabel("Y", this);
+	_z = new QLabel("Z", this);
+	_xf = new QLineEdit("15",this);
+	_yf = new QLineEdit("30", this);
+	_zf = new QLineEdit("30", this);
+	_xn = new QLineEdit("1", this);
+	_yn = new QLineEdit("1", this);
+	_zn = new QLineEdit("1", this);
 	_user = new QRadioButton("User", this);
 	_autom = new QRadioButton("Automatic", this);
 	_cutting = new QPushButton("Cutting",this);
@@ -49,6 +58,7 @@ void UserInterface::Init()
 	//---------------------------------------
 	SetLabelProperties();
 	SetButtonsProperties();
+	SetInputLineProperties();
 	//---------------------------------------
 	QVBoxLayout *mainLayout = new QVBoxLayout;
 
@@ -57,6 +67,7 @@ void UserInterface::Init()
 	QHBoxLayout *middle_buttons = new QHBoxLayout;
 	QHBoxLayout *middle_accept = new QHBoxLayout;
 	QVBoxLayout *middle = new QVBoxLayout;
+	QVBoxLayout *plane_details = new QVBoxLayout;
 	QHBoxLayout *bottom = new QHBoxLayout;
 	//------------------------------------------
 
@@ -64,12 +75,14 @@ void UserInterface::Init()
 	CreateRadios(radios);
 	CreateMiddleButtons(middle_buttons);
 	CreateMiddle(middle,middle_buttons, middle_accept);
+	CreatePlaneDetails(plane_details);
 	CreateBottom(bottom);
 
 	//-----------------------------------------	
 	mainLayout->addLayout(head);
 	mainLayout->addLayout(radios);
 	mainLayout->addLayout(middle);
+	mainLayout->addLayout(plane_details);
 	mainLayout->addLayout(bottom);
 
 	//_----------------------------------------- connects
@@ -83,7 +96,12 @@ void UserInterface::Init()
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
 	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
 	connect(_accepttypes, SIGNAL(currentIndexChanged(int)), this, SLOT(typeaccept_handler()));
-
+	connect(_xf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_yf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_zf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_xn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
+	connect(_yn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
+	connect(_zn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
 	//-------------------------------------------
 
 	window->setLayout(mainLayout);
@@ -182,6 +200,17 @@ void UserInterface::typeaccept_handler()
 	request.ta = TypeAccept(_accepttypes->currentData().toInt());
 }
 
+void UserInterface::newplane_event()
+{
+	request.happen = NEWPLANE;
+	QString asd = _xn->text();
+	float a = asd.toFloat();
+	double b = asd.toDouble();
+//	double c = asd.to;
+	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
+	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
+}
+
 Request UserInterface::GetRequest() 
 {
 	if (request.happen == NONE) return request;
@@ -208,8 +237,8 @@ void UserInterface::SetLabelProperties()
 	//	label->setAlignment(Qt::AlignHCenter);
 	_label->setMaximumHeight(25);
 }
-void UserInterface::SetButtonsProperties() {
-	
+void UserInterface::SetButtonsProperties() 
+{
 	_cutting->setFixedSize(80, 30);
 	_undo->setFixedSize(80, 30);
 
@@ -228,6 +257,40 @@ void UserInterface::SetButtonsProperties() {
 	_back->setStyleSheet("background-color: #bcee68;");
 	_dropDownMenu->setStyleSheet("background-color: #bcee68;");
 	_accepttypes->setStyleSheet("background-color: #bcee68;");
+}
+void UserInterface::SetInputLineProperties()
+{
+	_xf->setFixedWidth(25);
+	_x->setFixedWidth(15);
+	_yf->setFixedWidth(25);
+	_y->setFixedWidth(15);
+	_zf->setFixedWidth(25);
+	_z->setFixedWidth(15);
+	_xn->setFixedWidth(25);
+	_yn->setFixedWidth(25);
+	_zn->setFixedWidth(25);
+
+	_xf->setStyleSheet("background-color: #bcee68;");
+	_yf->setStyleSheet("background-color: #bcee68;");
+	_zf->setStyleSheet("background-color: #bcee68;");
+	_xn->setStyleSheet("background-color: #bcee68;");
+	_yn->setStyleSheet("background-color: #bcee68;");
+	_zn->setStyleSheet("background-color: #bcee68;");
+
+	_xn->setAlignment(Qt::AlignCenter);
+	_yn->setAlignment(Qt::AlignCenter);
+	_zn->setAlignment(Qt::AlignCenter);
+	_xf->setAlignment(Qt::AlignCenter);
+	_yf->setAlignment(Qt::AlignCenter);
+	_zf->setAlignment(Qt::AlignCenter);
+
+//	_xn->setInputMask("0.00");
+	//_xn->setMaxLength(4);
+
+	//_xn->setValidator(new QDoubleValidator(0.0, 100.0, 1));
+	//QFloatValidator *v = new QIntValidator(0, 100);
+//	e.setValidator(v);
+
 }
 void UserInterface::CreateHead(QVBoxLayout* head)
 {
@@ -288,6 +351,29 @@ void UserInterface::CreateMiddle(QVBoxLayout* middle, QHBoxLayout* middle_button
 	middle->addLayout(middle_buttons);
 	middle->addLayout(middle_accept);
 
+}
+void UserInterface::CreatePlaneDetails(QVBoxLayout* plane_details)
+{
+
+	QHBoxLayout * _xline = new QHBoxLayout();
+	QHBoxLayout * _yline = new QHBoxLayout();
+	QHBoxLayout * _zline = new QHBoxLayout();
+
+	_xline->addWidget(_x);
+	_yline->addWidget(_y);
+	_zline->addWidget(_z);
+
+	_xline->addWidget(_xf, 0, Qt::AlignLeft);
+	_yline->addWidget(_yf, 0, Qt::AlignLeft);
+	_zline->addWidget(_zf, 0, Qt::AlignLeft);
+
+	_xline->addWidget(_xn, 0, Qt::AlignLeft);
+	_yline->addWidget(_yn, 0, Qt::AlignLeft);
+	_zline->addWidget(_zn, 0, Qt::AlignLeft);
+
+	plane_details->addLayout(_xline);
+	plane_details->addLayout(_yline);
+	plane_details->addLayout(_zline);
 }
 void UserInterface::CreateBottom(QHBoxLayout* bottom)
 {

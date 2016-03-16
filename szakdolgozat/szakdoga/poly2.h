@@ -43,7 +43,7 @@ namespace approx{
 		Iterator end() { return pts.end(); }
 
 		//pontok szama
-		int size() const { return (int)pts.size(); }
+		int size() const { return pts.size(); }
 		//pontokat tartalmazo vektor konstans elerese
 		const std::vector<Vector2<T>>& points() const { return pts; }
 		//i. pont elerese
@@ -52,7 +52,7 @@ namespace approx{
 		
 		//elojeles terulet, elojele seggithet annak eldonteseben hogy cw vagy ccw felsorolasban van megadva
 		T signed_area() const {
-			int n = (int)pts.size();
+			int n = pts.size();
 			T result = 0;
 			for (int i = 0; i < n; ++i){
 				result += pts[(i + 1) % n].x*pts[i].y - pts[i].x*pts[(i + 1) % n].y;
@@ -160,7 +160,7 @@ namespace approx{
 		Polygon2<T> convex_clip(const Polygon2<T>& p) const {
 			Polygon2<T>  output = p;
 			bool cc = ccw(pts[0], pts[1], pts[2]);
-			for (int i = 0; i < size(); ++i) {
+			for (int i = 0; i < size() && output.size(); ++i) {
 				Vector2<T> tmp = pts[(i + 1) % size()] - pts[i];
 				Line<T> edge({ -tmp.y,tmp.x }, pts[i]);
 				if (cc) {

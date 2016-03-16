@@ -6,6 +6,7 @@ enum ToDo{
 	CUTTING,
 	UNDO,
 	RESTART,
+	NEWPLANE,
 };
 
 enum UserControl {
@@ -24,18 +25,18 @@ enum TypeAccept
 };
 
 struct Coord {
-	int x, y, z;
-	Coord(int a,int b, int c) : x(a),y(b),z(c) {}
+	float x, y, z;
+	Coord(float a, float b, float c) : x(a),y(b),z(c) {}
 };
-
 
 
 struct Request {
 	ToDo happen;
 	UserControl uc;
 	TypeAccept ta;
-	Coord _3Dcoord;
-	//vezérlo stratégiákhoz még ami kell - minden 1 structban - a 2 enum alapján el lehet dönteni mi lesz értelmes benne s mi nem
+	Coord plane_coord;
+	Coord plane_norm;
 
-	Request(ToDo t = ToDo::NONE, UserControl u = UserControl::AUTOMATIC, Coord c = Coord(0,0,0) ) : happen(t), uc(u), _3Dcoord(c) { }
+	Request(ToDo t = ToDo::NONE, UserControl u = UserControl::AUTOMATIC, Coord c = Coord(0,0,0), Coord n = Coord(1,0,0) ) 
+		: happen(t), uc(u), plane_coord(c),plane_norm(n) { }
 };

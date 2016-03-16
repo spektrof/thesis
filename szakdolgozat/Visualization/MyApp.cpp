@@ -10,32 +10,35 @@
 #define _3DWireType 0
 #define TRANSPARENCY 1
 
-CMyApp::CMyApp(void)
+Visualization::Visualization(void)
 {
 	_2DvaoID = 0;
-	_3DvaoID = 0;
-	plane_vaoid = 0;
 	_2DvboID = 0;
+
+	_3DvaoID = 0;
 	_3DvboID = 0;
-	plane_vboid = 0;
-	ibID = 0;
-	plane_index = 0;
 	_3Dindex = 0;
 
-	programID = 0;
+	plane_vaoid = 0;
+	plane_vboid = 0;
+	plane_index = 0;
 
-	ViewPoint = _3D;
+	_target_vaoID = 0;
+	_target_vboID = 0;
+	_target_indexID = 0;
+	
+	programID = 0;
 
 	ActiveAtom = 0;
 }
 
-CMyApp::~CMyApp(void)
+Visualization::~Visualization(void)
 {
 
 }
 
 //Inicializálás
-bool CMyApp::Init()
+bool Visualization::Init()
 {
 	if (!EngineInit()) { std::cout << "ERROR during engine init!\n"; return false;  }
 
@@ -43,13 +46,16 @@ bool CMyApp::Init()
 
 	glEnable(GL_DEPTH_TEST);
 	//glCullFace(GL_BACK);
-
-	// Enable blending
+	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glBlendEquation(GL_FUNC_ADD);
+	// Enable blending
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// geometry creating
-	CreateCuttingPlane();	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
+	ObjectCreator::CreateCuttingPlane(plane_vaoid,plane_vboid,plane_index);	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
 	 
 	std::vector<glm::vec2> input /* = GetProj2D_Points() */;
 
@@ -57,14 +63,14 @@ bool CMyApp::Init()
 	input.push_back(glm::vec2(0.0f, -3.0f));
 	input.push_back(glm::vec2(1.0f, 3.0f));
 
-	Create2DObject(input);
+	ObjectCreator::Create2DObject(input,_2DvaoID,_2DvboID);
 	//Ideiglenes3DKocka();
 	AddShaders();
 
 	return true;
 }
 
-bool CMyApp::EngineInit() 
+bool Visualization::EngineInit() 
 {
 	if (!app.set_target("test.obj", 0.5f)) {
 		std::cout << "HIBA A FAJL BETOLTESENEL!\n";
@@ -72,13 +78,14 @@ bool CMyApp::EngineInit()
 	}
 	data = app.atom_drawinfo();
 	targetdata = app.target_drawinfo();
-	Create3DObject(data.points, data.indicies);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,_target_vaoID,_target_vboID, _target_indexID);
 
 	return true;
 }
 
 //Rajzolás + Objektumok
-void CMyApp::Render()
+void Visualization::Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(programID);
@@ -88,49 +95,74 @@ void CMyApp::Render()
 	else	glDisable(GL_BLEND);
 	//--------------------------------------------------------
 
-	glUniform3f(eyePos, eye.x, eye.y, eye.z);
-	glUniform3f(Light, FenyIrany.x, FenyIrany.y, FenyIrany.z);
-	glUniform1i(View, ViewPoint == _2D ? 1 : 0);
+	glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye())); //jó ez? :DD
+	glUniform3fv(Lights,1, glm::value_ptr(l.GetLightDir()));
+	glUniform1i(View, c.GetView() );
 
 	//--------------------------------------------------------
 
-	if (ViewPoint)	// true when _2D
+	if (c.Is2DView())	// true when _2D
 	{
 		Draw2D(3, glm::scale<float>(3.0f, 3.0f, 3.0f));
 	}
 	else // _3D
 	{
-		switch(request.happen) 
+		switch (request.happen)
 		{
-			case ACCEPT:
-				AcceptCutting();
-				break;
-			case CUTTING:
-				GetResult();
-				break;
-			case UNDO:
-				GetUndo();
-				break;
-			case RESTART:
-				GetRestart();
-				break;
-			default:
-				break;
+		case ACCEPT:
+			AcceptCutting();
+			break;
+		case CUTTING:
+			GetResult();
+			break;
+		case UNDO:
+			GetUndo();
+			break;
+		case NEWPLANE:
+			SetNewPlane();
+			break;
+		case RESTART:
+			GetRestart();
+			break;
+		default:
+			break;
 		}
+
+		DrawCuttingPlane(Utility::GetTranslateFromCoord(approx::convert(p.example_point()), approx::convert(p.normal())), Utility::GetRotateFromNorm(approx::convert(p.normal())), glm::scale<float>(50.0f, 50.0f, 50.0f));
+		//DrawTargetBody();
+
+		/*	DRAWING METHOD:
+				1.Draw all opaque objects first. -> amik nem átlátszók
+				2.Sort all the transparent objects.	-> z buffer szerinti sorbarendezés , legbelsőt először
+				3.Draw all the transparent objects in sorted order.	-> a sorrend szerinti rajz
+		*/
+		SortAlphaBlendedObjects(data);
+		for (std::deque<Utility::data_t>::iterator it = SortedObjects.begin() ; it < SortedObjects.end() ; ++it)
+		{
+
+		Draw3D(it->first, 0.6f, 1, glm::scale<float>(1.0f, 1.0f, 1.0f));
 		
-		DrawCuttingPlane(GetTranslateFromCoord(approx::convert(p.example_point())), GetRotateFromNorm(approx::convert(p.normal())), glm::scale<float>(50.0f, 50.0f, 50.0f));
-	
-		for (int i = 0; i < data.index_ranges.size() - 1; ++i)
-		{
-			Draw3D(i, 0.4f,1, glm::scale<float>(1.0f, 1.0f, 1.0f));
 		}
+		/*glClear(GL_ACCUM_BUFFER_BIT);
+		for (int i = 0; i < data.index_ranges.size() - 1;++i)
+		{
+			Draw3D(i, 0.6f, 1, glm::scale<float>(1.0f, 1.0f, 1.0f));
+			//glAccum(i ? GL_ACCUM : GL_LOAD, 0.5);
+		}
+		//Draw3D(it->first, 0.4f, 1, glm::scale<float>(0.5f, 0.5f, 0.5f), glm::translate<float>(15.0f, 15.0f, 15.0f));
+
+		//glAccum(i ? GL_ACCUM : GL_LOAD, 0.25);
+		//glAccum(GL_RETURN, 1);
+		//SwapBuffers(hdc);*/
+
+		
 	}
 
 	glUseProgram(0);
 
 }
 
-void CMyApp::AcceptCutting()
+void Visualization::AcceptCutting()
 {
 	cutting_mode = false;
 
@@ -141,76 +173,62 @@ void CMyApp::AcceptCutting()
 			app.container().last_cut_result().choose_both();
 			
 			data = app.atom_drawinfo();
-			Create3DObject(data.points, data.indicies);
+			ObjectCreator::Create3DObject(data.points, data.indicies,_3DvaoID,_3DvboID, _3Dindex);
 			break;
 		case POSITIVE:
 			app.container().last_cut_result().choose_positive();
 
 			data = app.atom_drawinfo();
-			Create3DObject(data.points, data.indicies);
+			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 			break;
 		case NEGATIVE:
 			app.container().last_cut_result().choose_negative();
 
 			data = app.atom_drawinfo();
-			Create3DObject(data.points, data.indicies);
+			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 			break;
 	}
+
+	//TODO szar mikor vágás történik -> deque iterator nem talál semmit
+	request.ta = NEGATIVE;
+
 }
 
-void CMyApp::GetResult()
+void Visualization::GetResult()
 {
 	cutting_mode = true;
+	
 	app.container().cut(0, p);
 
 	data = app.cut_drawinfo();
-	Create3DObject(data.points, data.indicies);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 }
 
-void CMyApp::GetUndo()
+void Visualization::GetUndo()
 {
 	NumberOfAtoms--;
 	app.container().last_cut_result().undo();
 	data = app.atom_drawinfo();
-	Create3DObject(data.points, data.indicies);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 }
 
-void CMyApp::GetRestart()
+void Visualization::GetRestart()
 {
 	NumberOfAtoms = 1;
 	ActiveAtom = 0;
 	app.restart();
 	data = app.atom_drawinfo();
-	Create3DObject(data.points, data.indicies);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 }
 
-void CMyApp::BindingBufferData(GLuint* vao_buffer, GLuint* vbo_buffer, const std::vector<Vertex> vertexes)
+void Visualization::SetNewPlane()
 {
-	//Set activet our 2 buffers
-	glBindVertexArray(*vao_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, *vbo_buffer);
-
-	//Upload our datas				- ezután nem írjuk felül és minden rajzolásnál felhasználjuk
-	glBufferData(GL_ARRAY_BUFFER, vertexes.size()*sizeof(Vertex), &vertexes[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);	//pos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-
-	/*glEnableVertexAttribArray(1);	//normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3)));*/
-
-	/*glEnableVertexAttribArray(2);	//cols
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(glm::vec3) * 2));*/
-
-}
-void CMyApp::BindingBufferIndicies(GLuint* ind_buffer, const std::vector<GLushort> indicies)
-{
-	glGenBuffers(1, &plane_index);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, plane_index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicies.size()*sizeof(GLushort), &indicies[0], GL_STATIC_DRAW);
+	p = approx::Plane<float>(
+							 { request.plane_norm.x, request.plane_norm.y, request.plane_norm.z },
+		approx::Vector3<float>(request.plane_coord.x, request.plane_coord.y, request.plane_coord.z));
 }
 
-void CMyApp::AddShaders()
+void Visualization::AddShaders()
 {
 	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/myVert.vert");
 	GLuint gs_ID = loadShader(GL_GEOMETRY_SHADER, "Shaders/geometry_shader.geom");
@@ -223,9 +241,7 @@ void CMyApp::AddShaders()
 	glAttachShader(programID, fs_ID);
 
 	glBindAttribLocation(programID, 0, "vs_in_pos");
-	//glBindAttribLocation(programID, 1, "vs_in_normal");
-	//glBindAttribLocation(programID, 2, "vs_in_col");
-
+	
 	glLinkProgram(programID);
 
 	glDeleteShader(vs_ID);
@@ -237,38 +253,16 @@ void CMyApp::AddShaders()
 	AddShaderUniformLocations();
 
 }
-void CMyApp::AddShaderUniformLocations()
+void Visualization::AddShaderUniformLocations()
 {
 	m_loc_mvp = glGetUniformLocation(programID, "MVP");
-	m_loc_world = glGetUniformLocation(programID, "world");
-	m_loc_worldIT = glGetUniformLocation(programID, "worldIT");
 	eyePos = glGetUniformLocation(programID, "EyePosition");
-	Light = glGetUniformLocation(programID, "LightDirection");
+	Lights = glGetUniformLocation(programID, "LightDirection");
 	View = glGetUniformLocation(programID, "View");
 	Opacity = glGetUniformLocation(programID, "opacity");
 }
 
-void CMyApp::Create3DObject(const std::vector<glm::vec3>& points, const std::vector<unsigned short>& indexes)
-{
-	glGenVertexArrays(1, &_3DvaoID); // vao create
-	glGenBuffers(1, &_3DvboID);	//vbo create
-
-	std::vector<Vertex> _3DObject;
-
-	for (size_t i = 0; i < points.size(); ++i)
-	{
-							// TODO : X , Y , Z Matematikai koord vs. opengl koord + TODO: normálisok
-		_3DObject.push_back({ glm::vec3(points[i].x, points[i].z, points[i].y)/*, glm::vec3(points[i].x, points[i].y, points[i].z)*//*, glm::vec3(0.0f, 1.0f, 0.0f)*/ });
-	}
-
-	BindingBufferData(&_3DvaoID, &_3DvboID, _3DObject);
-	BindingBufferIndicies(&plane_index, indexes);
-
-	glBindVertexArray(0);	//vao leszedése
-	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);	//index leszedése
-}
-void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdropping, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
+void Visualization::Draw3D(const int& which, const float& _opacity, const bool& backdropping, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
 	if (backdropping)	
 	{	
@@ -284,15 +278,13 @@ void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdro
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
+	//glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 	
 	glBindVertexArray(_3DvaoID);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 	
 	glUniform1f(Opacity, IsItActive(which) ? 1.0f : _opacity);
 
@@ -305,100 +297,54 @@ void CMyApp::Draw3D(const int& which, const float& _opacity, const bool& backdro
 		(void*)(start * sizeof(unsigned short)));					// indexek cime
 }
 
-void CMyApp::Create2DObject(const std::vector<glm::vec2>& points )	//be: 2d-s pontok vektorban
+void Visualization::DrawTargetBody()
 {
-	// Kör - teszt
-	/*Vertex _2DObject[22];
+	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
-	_2DObject[0] = { glm::vec3(0, 0, 0), glm::vec3(1.0f, 1.0f, 0.0f) };
-	for (int i = 0; i <= 20; ++i)
-	{
-		float a = i * 2.0f * 3.14152f / 20; //radian
-		float x = 3 * cosf(a);
-		float y = 3 * sinf(a);
-		_2DObject[i + 1] = { glm::vec3(y, 0, x), glm::vec3(1.0f, 1.0f, 0.0f) };
-	}*/
+	glBindVertexArray(_target_vaoID);
 
-	// Result
-	std::vector<Vertex> _2DObject;
+	glm::mat4 mvp = m_matProj * m_matView * glm::mat4(1);
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 
-	for (size_t i = 0; i < points.size(); ++i)
-	{
-		_2DObject.push_back({ glm::vec3(points[i].y, 0, points[i].x)/*, glm::vec3(0.0f,1.0f,0.0f)*//*, glm::vec3(1.0f, 1.0f, 0.0f)*/ });
-	}
+	glUniform1f(Opacity,  1.0f );
 
-	glGenVertexArrays(1, &_2DvaoID); // vao create , ha null akkor vmilyen adat nem jo ?? :/
-	glGenBuffers(1, &_2DvboID);	//vbo create
-
-	//BindingBufferData(&_2DvaoID, &_2DvboID, std::vector<Vertex>(_2DObject, _2DObject + 22)); //kor
-	BindingBufferData(&_2DvaoID, &_2DvboID, _2DObject);
-
-	glBindVertexArray(0);	//vao leszedése
-	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
+	glDrawElements(GL_TRIANGLES,		// primitív típus
+		(GLsizei)targetdata.indicies.size(),		// hany csucspontot hasznalunk a kirajzolashoz
+		GL_UNSIGNED_SHORT,	// indexek tipusa
+		0);					// indexek cime
 }
-void CMyApp::Draw2D(const int& NumbersOfVertices, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
+
+void Visualization::Draw2D(const int& NumbersOfVertices, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
 	//glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, GL_FILL);
 	
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 
 	glBindVertexArray(_2DvaoID);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 
 	glDrawArrays(GL_TRIANGLE_FAN,
 		0,
 		NumbersOfVertices);
 }
 
-void CMyApp::CreateCuttingPlane(){
-	// normálisa (0,0,1)
-	Vertex CuttingPlane[] = { { glm::vec3(-1, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ },
-	{ glm::vec3(-1, 0, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */},
-	{ glm::vec3(-1, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */},
-	{ glm::vec3(0, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */},
-	{ glm::vec3(1, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */},
-	{ glm::vec3(1, 0, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */},
-	{ glm::vec3(1, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ },
-	{ glm::vec3(0, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ } };
-
-	GLushort Planeindices[] = {
-		0, 2, 4,
-		4, 6, 0,
-		1, 3, 5,
-		5, 7, 1 };
-
-	glGenVertexArrays(1, &plane_vaoid); // vao create
-	glGenBuffers(1, &plane_vboid);	//vbo create
-
-	BindingBufferData(&plane_vaoid, &plane_vboid, std::vector<Vertex>(CuttingPlane, CuttingPlane + 8));
-	BindingBufferIndicies(&plane_index, std::vector<GLushort>(Planeindices, Planeindices + 12));
-
-	glBindVertexArray(0);	//vao leszedése
-	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);	//index leszedése
-}
-void CMyApp::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
+void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
 {
+	glDisable(GL_CULL_FACE);
 	glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, CuttingPlaneWireType ? GL_LINE : GL_FILL);	
 
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 
 	glBindVertexArray(plane_vaoid);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 
 
 	glDrawElements(GL_TRIANGLES,		
@@ -407,72 +353,49 @@ void CMyApp::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
 		0);					// indexek cime
 }
 
-void CMyApp::Update()
+void Visualization::Update()
 {
-	m_matView = glm::lookAt(eye, at, up);
+	m_matView = glm::lookAt(c.GetEye(), c.GetAt(), c.GetUp());
 	// honnan,  melyik pont, melyik irány (most felfelé)
 	request = ui.GetRequest();
 }
 
 //Mouse/Keyboard eventek
-void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
+void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
-	glm::vec3 sd = ViewPoint == _2D ? glm::vec3(0,0,-1) : glm::normalize(glm::cross(up, fw));
-	glm::vec3 ld = glm::normalize(glm::cross(up, lw));
-
 	switch (key.keysym.sym){
 	case SDLK_t:	//opacity
 		transparency = !transparency;
 		break;
 	case SDLK_p:	// change projections
-		ViewPoint = ViewPoint ? _3D : _2D;
-		if (ViewPoint) // _2D
-		{
-			fw = glm::vec3(1, 0, 0);
-			eye = glm::vec3(0, 50, 0);
-			up = glm::vec3(1, 0, 0);
-			at = glm::vec3(0, 0, 0);
-			//Getter
-			//Create2DObject();
-		}
-		else
-		{ //3D
-			u = 4.0f; v = 2.0f; fw = ToDescartes(u, v);
-			eye = glm::vec3(50, 35, 50);
-			up = glm::vec3(0, 1, 0);
-			at = eye + fw;
-		}
+		c.SwitchCameraView();
 		break;
 	case SDLK_i: // info
 		GetInfo();
 		break;
 	case SDLK_w:	//camera
-		eye +=  fw;
-		at +=  fw;
+		c.Add(c.GetVertUnit());
 		break;
 	case SDLK_s:
-		eye -= fw;
-		at -= fw;
+		c.Sub(c.GetVertUnit());
 		break;
 	case SDLK_a:
-		eye += sd;
-		at += sd;
+		c.Add(c.GetCameraUnit());
 		break;
 	case SDLK_d:
-		eye -= sd;
-		at -= sd;
+		c.Sub(c.GetCameraUnit());
 		break;
 	case SDLK_DOWN:	//feny
-		FenyIrany -= lw;
+		l.Sub(c.GetVertUnit());
 		break;
 	case SDLK_UP:
-		FenyIrany += lw;
+		l.Add(c.GetVertUnit());
 		break;
 	case SDLK_LEFT:
-		FenyIrany -= ld;
+		l.Sub(l.GetLightUnit(c.GetUp()));
 		break;
 	case SDLK_RIGHT:
-		FenyIrany += ld;
+		l.Add(l.GetLightUnit(c.GetUp()));
 		break;
 	case SDLK_KP_PLUS:	//atomváltás
 		if (!cutting_mode) ActiveAtom = (ActiveAtom + 1) % NumberOfAtoms;
@@ -482,44 +405,34 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 	}
 }
-void CMyApp::KeyboardUp(SDL_KeyboardEvent&)
+void Visualization::KeyboardUp(SDL_KeyboardEvent&)
 {
 
 }
-void CMyApp::MouseMove(SDL_MouseMotionEvent& mouse)
+void Visualization::MouseMove(SDL_MouseMotionEvent& mouse)
 {
-	if (ViewPoint == _2D) return;
-
-	if (is_left_pressed){
-		u += mouse.xrel / 100.0f;
-		v += mouse.yrel / 100.0f;
-
-		v = glm::clamp(v, 0.1f, 3.0f);
-
-		fw = ToDescartes(u, v);
-		at = eye + fw;
-	}
+	c.MouseMove(mouse);
 }
-void CMyApp::MouseDown(SDL_MouseButtonEvent& mouse)
+void Visualization::MouseDown(SDL_MouseButtonEvent& mouse)
 {
 	if (mouse.button == SDL_BUTTON_LEFT){
-		is_left_pressed = true;
+		c.SetIsLeftPressed(true);
 	}
 }
-void CMyApp::MouseUp(SDL_MouseButtonEvent& mouse)
+void Visualization::MouseUp(SDL_MouseButtonEvent& mouse)
 {
 	if (mouse.button == SDL_BUTTON_LEFT)
 	{
-		is_left_pressed = false;
+		c.SetIsLeftPressed(false);
 	}
 }
-void CMyApp::MouseWheel(SDL_MouseWheelEvent& wheel)
+void Visualization::MouseWheel(SDL_MouseWheelEvent& wheel)
 {
-	wheel.y > 0 ? (eye += fw, at += fw) : (eye -= fw, at -= fw);
+	wheel.y > 0 ? (c.Add(c.GetVertUnit())) : (c.Sub(c.GetVertUnit()));
 }
 
 //Egyéb
-void CMyApp::Clean()
+void Visualization::Clean()
 {
 	glDeleteBuffers(1, &plane_vaoid);
 	glDeleteBuffers(1, &plane_index);
@@ -534,87 +447,80 @@ void CMyApp::Clean()
 
 	glDeleteProgram(programID);
 }
-void CMyApp::Resize(int _w, int _h)
+void Visualization::Resize(int _w, int _h)
 {
 	glViewport(0, 0, _w, _h);
 	// nyilasszog, ablakmeret nezeti arany, kozeli és tavoli vagosik
 	m_matProj = glm::perspective(45.0f, _w / (float)_h, 0.01f, 1000.0f);
 }
 
-//segédfvek
-glm::vec3 CMyApp::ToDescartes(float u, float v)
-{
-	return glm::vec3(cosf(u)*sinf(v), cosf(v), sinf(u)*sinf(v));
-}
-glm::mat4 CMyApp::GetTranslateFromCoord(glm::vec3 vec)
-{
-	return glm::translate<float>(vec.x+1.0f, -vec.z, -vec.y);
-}
-glm::mat4 CMyApp::GetRotateFromNorm(glm::vec3 vec)
-{
-	glm::vec3 axis = glm::cross( glm::vec3(0.0f,0.0f,1.0f), vec);
-
-	float angle = glm::acos( glm::dot( glm::vec3(0.0f,0.0f,1.0f), vec) );
-	if (angle == 0.0f) 
-		return glm::rotate<float>(angle, 1.0f, 0.0f, 0.0f); // ekkor a keresztszorzat 0 -> nem lehet normalizálni - helybenhagyás
-	if (angle == (float)M_PI) 
-		return glm::rotate<float>(angle * 180.0f / (float)M_PI, 0.0f, 1.0f, 0.0f); // ekkor a keresztszorzat 0 -> nem lehet normalizálni - fordulás
-
-	axis = glm::normalize(axis);
-	return glm::rotate<float>(angle * 180.0f / (float)M_PI, axis.x, axis.y, axis.z);
-}
-
-bool CMyApp::IsItActive(const int& which)
+bool Visualization::IsItActive(const int& which)
 {
 	return	(request.ta == NEGATIVE && ActiveAtom == which)
 		|| (request.ta == POSITIVE && ActiveAtom + 1 == which)
 		|| (request.ta == BOTH && (ActiveAtom + 1 == which || ActiveAtom == which));
 }
-void CMyApp::GetInfo()
+void Visualization::GetInfo()
 {
 	std::cout << "A celtest terfogata: " << app.target().body().volume() << "\n";
 	std::cout << "negativ oldali keletkezett atom terfogata: " << app.container().last_cut_result().negative()->volume() << "\n";
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
-	 
-
 }
 
-void CMyApp::Ideiglenes3DKocka()
+//objektumonkénti rendezés, pontok alapján
+/* TODO HACK : mikor vágunk positive vagy bothba akkor is lefut viszont értelmetlenné váli ka vége (Both, positive vizsgálat)*/
+void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 {
-	std::vector<glm::vec3> input2;
-	std::vector<unsigned short> indexes = {
-		0, 2, 1,	//baloldal
-		2, 3, 1,
-		0, 4, 6,	//teteje
-		6, 2, 0,
-		0, 1, 5,	//szembe
-		5, 4, 0,
-		7, 5, 1,	//alja
-		1, 3, 7,
-		4, 5, 7, //jobboldal
-		7, 6, 4,
-		7, 3, 2,	//hátul
-		2, 6, 7
-	};
-	CountsOfIndexes = (GLuint)indexes.size();
+	SortedObjects.clear();
+	
+	for (int i = 0; i < data.index_ranges.size() - 1; i++)
+	{
+		int start = data.index_ranges[i];
+		int end = data.index_ranges[i+1];
+		int length = (end - start) / 3;
 
-	input2.push_back(glm::vec3(-1.0f, 1.0f, 1.0f));
-	input2.push_back(glm::vec3(-1.0f, -1.0f, 1.0f));
-	input2.push_back(glm::vec3(-1.0f, 1.0f, -1.0f));
-	input2.push_back(glm::vec3(-1.0f, -1.0f, -1.0f));
-	input2.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
-	input2.push_back(glm::vec3(1.0f, -1.0f, 1.0f));
-	input2.push_back(glm::vec3(1.0f, 1.0f, -1.0f));
-	input2.push_back(glm::vec3(1.0f, -1.0f, -1.0f));
+		std::vector<float> sps;
+		sps.clear();
+		for (int ObjectTriangles = start; ObjectTriangles < end ; ++ObjectTriangles)
+		{
+			/*glm::vec3 a = data.points[ data.indicies[start + 3 * ObjectTriangles ] ];	//súlypont
+			glm::vec3 b = data.points[ data.indicies[start + 3 * ObjectTriangles + 1] ];
+			glm::vec3 c = data.points[ data.indicies[start + 3 * ObjectTriangles + 2] ];
+			glm::vec3 sp = glm::vec3( (a.x + b.x + c.x)/ 3.0f , (a.y + b.y + c.y) / 3.0f , (a.z + b.z + c.z) / 3.0f);*/
+			glm::vec3 sp = data.points[data.indicies[ObjectTriangles]];
+			sps.push_back( glm::dot( c.GetEye() - sp , c.GetEye() -sp) );
+		}
+		auto result = *std::min_element(std::begin(sps), std::end(sps));
+		SortedObjects.push_back(Utility::data_t(i, result));
+	}
 
-	Create3DObject(input2, indexes);
+	std::sort(SortedObjects.begin(), SortedObjects.end(), Utility::greater_second<Utility::data_t>());
+	std::deque<Utility::data_t>::iterator temp;
+	Utility::data_t temp_data;
+	if (request.ta == BOTH) {
+		temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom+1 ; });
+		temp_data = Utility::data_t(temp->first, temp->second);
+		SortedObjects.erase(temp);
+		SortedObjects.push_front(temp_data);
 
+		temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom; });
+		temp_data = Utility::data_t(temp->first, temp->second);
+		SortedObjects.erase(temp);
+		SortedObjects.push_front(temp_data);
+
+	}
+	else if (request.ta == POSITIVE){
+		temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom + 1; });
+		temp_data = Utility::data_t(temp->first, temp->second);
+		SortedObjects.erase(temp);
+		SortedObjects.push_front(temp_data);
+	}
+	else {
+		temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom; });
+		temp_data = Utility::data_t(temp->first, temp->second);
+		SortedObjects.erase(temp);
+		SortedObjects.push_front(temp_data);
+	}
+	
+	
 }
-
-// glPolygonMode - mode : GL_POINT,GL_FILL,GL_LINE
-/*
-//------------------------
-//Draw3D(CountsOfIndexes, glm::scale<float>(5.0f, 5.0f, 5.0f), glm::translate<float>(10.0f * NumberOfAtoms, 0.0f, 0.0f));
-//Draw3D(CountsOfIndexes, glm::scale<float>(5.0f, 5.0f, 5.0f), glm::translate<float>(10.0f * NumberOfAtoms+12.0f, 0.0f, 0.0f));
-
-*/

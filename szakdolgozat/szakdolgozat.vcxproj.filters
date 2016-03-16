@@ -75,6 +75,15 @@
     <ClCompile Include="szakdoga\stdafx.cpp">
       <Filter>OtherIncludesEtc_Mate</Filter>
     </ClCompile>
+    <ClCompile Include="ObjectCreator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraAndLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\GeneratedFiles\ui_userinterface.h">
@@ -136,6 +145,15 @@
     </ClInclude>
     <ClInclude Include="szakdoga\indexiterator.h">
       <Filter>Group2_Mate</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectCreator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraAndLight.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

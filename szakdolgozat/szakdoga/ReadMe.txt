@@ -4,9 +4,10 @@ Hasznalati informacio:
 	A glm hasznalatahoz a T: meghajtot az OGLPack-ot hasznalo konyvtarba kell allitani
 TODO:
 	-textura koordinata kerdesek
-	-metszetterfogat bugol
-	-approximacios test kirakasat megoldani
-
+	-esetleges cw ccw megoldas
+	-approximacios test: csinal szamitas elott
+	 egy garbage collectiont, ami viszont nem funkcional ha van befejezetlen vagas
+	-jobbkezes balkezes koordinata rendszer
 ===========================================================================================
                                       EGYESITESHEZ TUTORIAL:
 ===========================================================================================
@@ -138,7 +139,8 @@ f 5/5/20 6/6/23 2/2/11 1/1/8
 	//az app.container().atoms(i) az i. atom kozvetlen konstans eleresre, pl teszteli hogy az adott sik atmegy-e rajta
 	approx::Plane<float> p2({ 1,0,0 }, 16.0f);
 	if (app.container().atoms(1).intersects_plane(p2)) {
-		cout << "az 1. indexu atomon atmegy a p2 sik \n";
+		cout << "az 1. indexu atomon atmegy a p2 sik, vagok ezzel is\n";
+		app.container().cut(1, p2).choose_negative();
 	}
 
 	//lekerem az atomok rajzolasi adatait
@@ -161,8 +163,12 @@ f 5/5/20 6/6/23 2/2/11 1/1/8
 	//hasonlo modon kerheto el a rajzolando celtest is
 	approx::BodyList targetdata = app.target_drawinfo();
 
+	//elmentem obj fajlformatumba az approximalt testet
+	ObjectWriter<float>::save_obj("approx.obj", app.container().approximated_body());
+
 	//ha az approximaciot ujra akarjuk kezdeni akkor
 	app.restart();
-	//ez utan ismet egyetlen kezdo kocka atuomunk lesz
+	//ez utan ismet egyetlen kezdo kocka atomunk lesz
+	//vigyazat, ervenytelenit minden korabbi esetleges referenciat, atom vagy body eredmenyt melyet elkertunk
 
 

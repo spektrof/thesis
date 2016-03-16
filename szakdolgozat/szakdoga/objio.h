@@ -15,35 +15,12 @@
 #include <algorithm>
 #include "objrepair.h"
 #include "targetbody.h"
+#include <map>
 
 namespace approx {
 
 	//statikus osztaly betoltesi funkciokhoz
-	template <class T> class ObjectLoader{
-		
-		//javito tipust mockolo tipus
-		//a neki adott pontokat egyszeruen sorra feljegyzi
-		//felhasznalasa abban az esetben ha nem vegzunk javitast a betoltes soran
-		struct DummyRepair{
-			std::vector<Vector3<T>> vecs;
-			void push_back(const Vector3<T>& v) {
-				vecs.push_back(v);
-			}
-			int transform_index(int ind) const{ return ind; }
-			int size()const { return (int)vecs.size(); }
-			Vector3<T> operator[](int ind) const {
-				return vecs[ind];
-			}
-			std::vector<int> transform_range(const std::vector<int>& inds) const{
-				return inds;
-			}
-			std::vector<int> transform_range(std::vector<int>&& inds) const{
-				return inds;
-			}
-			std::vector<Vector3<T>> needed_vecs() const { return vecs; }
-
-		};
-		
+	template <class T> class ObjectLoader{		
 		
 		//hiba tortent a betoltes soran ezert minden szemetet kitorlunk ami esetleg bekerult es hamissal terunk vissza
 		static bool exit_cleanup(TargetBody<T>& tb){
@@ -138,7 +115,7 @@ namespace approx {
 								inds.push_back(ind1 - 1);
 							}
 							if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
-							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[1]] - tmp_vecs[inds[0]]).normalized();
+							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
 							tmp_normals.push_back(calculated_normal);
 							tb.faces.emplace_back(&tb.vecs, std::move(tmp_vecs.transform_range(inds)), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
 						}
@@ -160,7 +137,7 @@ namespace approx {
 		// ha nincs normalvektor adat a fajlban, felteszem, hogy ccw sorrendben megadott lapjaim vannak.
 		// Szinten felteszem, hogy a fajl helyesen van megadva, nem vegzek rajta korrekciot.
 		static bool load_obj(const std::string& filename, TargetBody<T>& tb){
-			DummyRepair d1,d2;
+			NullRepair<T> d1,d2;
 			return load_obj_temp(filename, tb, d1, d2);
 		}
 
@@ -171,9 +148,9 @@ namespace approx {
 		// ha nincs normalvektor adat a fajlban, felteszem, hogy ccw sorrendben megadott lapjaim vannak.
 		// A megadott epszilonon beluli euklideszi tavolsagu pontokat egyenloknek veszem es explicit osszevonom.
 		static bool load_obj(const std::string& filename, TargetBody<T>& tb, T epsilon){
-			if (epsilon == 0) return load_obj(filename, tb);
+			if (epsilon <= 0) return load_obj(filename, tb);
 			RepairVector<T> d1(epsilon);
-			DummyRepair d2;
+			NullRepair<T> d2;
 			return load_obj_temp(filename, tb, d1, d2);
 		}
 	};
@@ -247,10 +224,10 @@ namespace approx {
 			write_obj_vector(f, "v", w_verts);
 			f << "#No. normals: " << w_normals.size() << ":" << std::endl;
 			write_obj_vector(f, "vn", w_normals);
-			for (const Face<T>& f : b){
+			for (const Face<T>& fac : b){
 				f << "f ";
-				for (int ind : f.indicies()){
-					f << verts[ind] << "//" << normals[f.normal_index()] << " ";
+				for (int ind : fac.indicies()){
+					f << verts[ind] << "//" << normals[fac.normal_index()] << " ";
 				}
 				f << std::endl;
 			}

@@ -88,7 +88,7 @@ int main(int argc, char* args[])
 	SDL_Event ev; //msg what we should use
 
 	
-	CMyApp app;
+	Visualization app;
 
 	if (!app.Init())
 		{

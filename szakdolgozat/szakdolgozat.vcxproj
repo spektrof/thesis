@@ -233,11 +233,16 @@
   <ItemGroup>
     <ClCompile Include="..\GeneratedFiles\Debug\moc_userinterface.cpp" />
     <ClCompile Include="..\GeneratedFiles\qrc_userinterface.cpp" />
+    <ClCompile Include="CameraAndLight.cpp" />
+    <ClCompile Include="ObjectCreator.cpp" />
     <ClCompile Include="szakdoga\stdafx.cpp" />
     <ClCompile Include="UI\userinterface.cpp" />
+    <ClCompile Include="Utility.cpp" />
     <ClCompile Include="Visualization\MyApp.cpp" />
     <ClInclude Include="..\GeneratedFiles\ui_userinterface.h" />
     <ClCompile Include="main.cpp" />
+    <ClInclude Include="CameraAndLight.h" />
+    <ClInclude Include="ObjectCreator.h" />
     <ClInclude Include="szakdoga\approximation.h" />
     <ClInclude Include="szakdoga\body.h" />
     <ClInclude Include="szakdoga\conversion.h" />
@@ -255,6 +260,7 @@
     <ClInclude Include="szakdoga\vectors.h" />
     <ClInclude Include="UI\request.h" />
     <ClInclude Include="UI\userinterface.hpp" />
+    <ClInclude Include="Utility.h" />
     <ClInclude Include="Utils\GLUtils.hpp" />
     <ClInclude Include="Visualization\MyApp.h" />
   </ItemGroup>

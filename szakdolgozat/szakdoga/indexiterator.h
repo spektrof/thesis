@@ -74,6 +74,10 @@ namespace approx{
 		const T& operator [] (difference_type ind) const {
 			return vecs->operator[](inds->operator[](pos + ind));
 		}
+
+		bool operator < (const ConstIndexIterator& other) const {
+			return pos < other.pos;
+		}
 	};
 
 	template <class T> class IndexIterator : std::iterator < std::random_access_iterator_tag, T, int > {
@@ -137,6 +141,11 @@ namespace approx{
 		T& operator [] (difference_type ind){
 			return vecs->operator[](inds->operator[](pos + ind));
 		}
+
+		bool operator < (const IndexIterator& other) const {
+			return pos < other.pos;
+		}
+
 	};
 
 

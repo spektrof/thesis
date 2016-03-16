@@ -45,8 +45,11 @@ namespace approx{
 			}
 		};
 
+		typedef std::shared_ptr<SurfacePoly> PolyPtr;
+
 		std::vector<std::shared_ptr<SurfacePoly>> f_poly;
 		const Body<T>* target;
+
 	public:
 
 		ConvexAtom(std::vector<Face<T>>* f, const std::vector<int>& i,const Body<T>* targ): Body<T>(f,i), target(targ){
@@ -80,10 +83,24 @@ namespace approx{
 			return ConvexAtom(fcs, std::move(inds), target, std::move(f_poly));
 		}
 
+		//Vagasi eredmeny mely minden lehetseges informaciot tartalmaz amely az esetleges visszavonashoz es utomuveletekhez
 		struct CutResult{
-			std::shared_ptr<ConvexAtom<T>> positive, negative;
-			int points_added;
-			int faces_added;
+			std::shared_ptr<ConvexAtom<T>> positive, negative; //a ket keletkezett atom
+			int points_added; //ennyi pontot adtunk hozza
+			int faces_added; //ennyi lapot adtunk hozza
+
+			int neg_cut_face, pos_cut_face; //a negativ illetve pozitiv oldalnak ezek lesznek a vagas menti lapjai
+			
+			struct FaceSplit {
+				int ind_in_neg_atom;
+				int ind_in_pos_atom;
+				int neg_face_ind;
+				int pos_face_ind;
+			};
+			
+			std::map<int, FaceSplit> cut_map; //hozzarendeli az elvagott lapokhoz a keletkezett fel lapokat
+
+
 		};
 
 		// az atom elvagasa adott sikkal
@@ -95,7 +112,10 @@ namespace approx{
 			std::vector<std::shared_ptr<SurfacePoly>> pos_poly, neg_poly; //az egyes oldalakra kerulo vetuletek
 			int faces_added=0, pts_added=0; //ennyi pont es lap kerult hozzaadasra a taroloban
 			Vector3<T> avg_pt; //kozeppont ami korul rendezzuk az oldalakat
-			std::vector<Vector3<T>>& vc = *faces(0).vertex_container();
+			int n_cut_f = -1, //negativ oldali vagas feloli lap
+				p_cut_f = -1; //pozitiv oldali vagas feloli lap
+			std::map<int, typename CutResult::FaceSplit> cut_map; //hozzarendeli az elvagott lapokhoz a keletkezett fel lapokat
+			std::vector<Vector3<T>>& vc = *faces(0).vertex_container(); //rovid hozzaveres a vertexekhez
 			std::map<Vector3<T>, int,Less> ptbuffer;
 			std::pair<Vector3<T>, Vector3<T>> base = p.ortho2d();
 			for (int i = 0; i < size();++i){ //vegegiteralok minden lapon es elvagom oket a sikkal, kezelve a hamis vagasokat
@@ -107,22 +127,26 @@ namespace approx{
 					_faces->push_back(cut.negative); //a kapott lapokat szortirozom az uj sokszogekbe
 					_faces->push_back(cut.positive); 
 					faces_added += 2; //2 uj lap kerult a taroloba
-					pos_faces.push_back((int)_faces->size() - 1);
-					neg_faces.push_back((int)_faces->size() - 2);
+					pos_faces.push_back(_faces->size() - 1);
+					neg_faces.push_back(_faces->size() - 2);
+					cut_map[indicies(i)] = {(int)neg_faces.size()-1,(int)pos_faces.size()-1,neg_faces.back(),pos_faces.back()};
 					pt_ids.push_back(cut.pt_inds.front());
 					pt_ids.push_back(cut.pt_inds.back());
 					avg_pt += vc[pt_ids[pt_ids.size() - 1]];
 					avg_pt += vc[pt_ids[pt_ids.size() - 2]];
 					//gondoskodnom kell az elvagott vetuletek elosztasarol a ket lap kozott
 					Line<T> line = f_poly[i]->plane.intersection_line(p);
-					for (const Polygon2<T>& poly : f_poly[i]->poly){ //vegigiteralom az ideeso vetuleteket
-						typename Polygon2<T>::CutResult cut = poly.cut_by(line); //elvagom a vetuletet
-						//ha a vagas adott oldali eredmenye valodi sokszog akkor felveszem az adott oldalra
-						if (cut.positive.size() >= 3){
-							pos_poly.back()->poly.push_back(cut.positive);
-						}
-						if (cut.negative.size() >= 3){
-							neg_poly.back()->poly.push_back(cut.negative);
+					for (const Polygon2<T>& poly : f_poly[i]->poly) { //vegigiteralom az ideeso vetuleteket
+						if (poly.size() > 2) {
+							typename Polygon2<T>::CutResult cut = poly.cut_by(line); //elvagom a vetuletet
+																						//ha a vagas adott oldali eredmenye valodi sokszog akkor felveszem az adott oldalra
+							if (cut.positive.size() >= 3) {
+								pos_poly.back()->poly.push_back(cut.positive);
+							}
+							if (cut.negative.size() >= 3) {
+								neg_poly.back()->poly.push_back(cut.negative);
+							}
+
 						}
 					}
 				}
@@ -165,15 +189,17 @@ namespace approx{
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
-				neg_faces.push_back((int)_faces->size() - 2);
-				pos_faces.push_back((int)_faces->size() - 1);
+				n_cut_f = _faces->size() - 2;
+				p_cut_f = _faces->size() - 1;
+				neg_faces.push_back(n_cut_f);
+				pos_faces.push_back(p_cut_f);
 				//a vetuleteket is clippelni kell
 				pos_poly.push_back(std::make_shared<SurfacePoly>(p));
 				neg_poly.push_back(pos_poly.back());
 				std::vector<Polygon2<T>> surf = target->cut_surface(p);
 				for (const Polygon2<T>& e : surf){
 					Polygon2<T> clipped = clipper.convex_clip(e);
-					if (clipped.size() > 2){
+					if (clipped.size() > 2) {
 						pos_poly.back()->poly.push_back(clipped);
 					}
 				}
@@ -182,7 +208,10 @@ namespace approx{
 			return{ std::make_shared<ConvexAtom<T>>(_faces,std::move(pos_faces),target,std::move(pos_poly)),
 					std::make_shared<ConvexAtom<T>>(_faces,std::move(neg_faces),target,std::move(neg_poly)),
 					pts_added,
-					faces_added};
+					faces_added,
+					n_cut_f,
+					p_cut_f,
+					std::move(cut_map)};
 		}
 
 		//megvizsgalja, hogy a pont bele esik-e
@@ -228,8 +257,17 @@ namespace approx{
 			return sum / static_cast<T>(3);
 		}
 
-		T surf_imprints(int i) const {
-			return f_poly[i]->area();
+		PolyPtr surf_imprints(int i) const {
+			return f_poly[i];
+		}
+
+		//a taroloban adott indexel rendelkezo lapot ebben az atomban lecserelem a taroloban adott indexszel rendelkezo lapokra
+		void replace_face_with(int real_ind, int rep_ind1, int rep_ind2, const PolyPtr& p1, const PolyPtr& p2) {
+			int ind = std::find(indicies().begin(), indicies().end(), real_ind) - indicies().begin();
+			indicies()[ind] = rep_ind1;
+			f_poly[ind] = p1;
+			indicies().push_back(rep_ind2);
+			f_poly.push_back(p2);
 		}
 
 	};
