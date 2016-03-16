@@ -10,7 +10,10 @@ Használati útmutató:
   FONTOS: MÉG ne vágjunk 2x egymás után (error).
                                 
 TODO:
-  -  shader átlátszóság
+  -  shader átlátszóság : készítettem saját sortert ->működik de nlogn es futásidejű
+  -  Kaptam 2 bugot
+      - egyiket hackel levédtem, requestet módítok acceptnél gl es részen, így nem jön a sorterből error
+      - a sík rosszul rajzolódik ki ha y,z normálisokat módosítjuk
       
 -------------------------------------------------------------------------------------
 
