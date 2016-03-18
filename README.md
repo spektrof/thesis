@@ -7,13 +7,12 @@ Használati útmutató:
   A felhasználói felület segítségével elvághatjuk a bekódolt síkkal a kockánkat, majd a
   kapott eredmény közül ki tudjuk választani a számunkra megfelelőt.
   Ezt megismételhetjük restart segítségével.  
-  FONTOS: MÉG ne vágjunk 2x egymás után (error).
                                 
 TODO:
-  -  shader átlátszóság : készítettem saját sortert ->működik de nlogn es futásidejű
-  -  Kaptam 2 bugot
-      - egyiket hackel levédtem, requestet módítok acceptnél gl es részen, így nem jön a sorterből error
-      - a sík rosszul rajzolódik ki ha y,z normálisokat módosítjuk
+  - Priority que
+  - new approx bug when ask draw_info
+  - popup when user is stupid
+  - refactoring (merger, sorter)
       
 -------------------------------------------------------------------------------------
 
