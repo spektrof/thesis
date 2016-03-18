@@ -3,7 +3,6 @@
 UserInterface::UserInterface(QWidget *parent)
 	: QWidget(parent)
 {
-	//ui.setupUi(this); // -> lehet nem kell az egyik generált cucc
 	window = new QWidget();
 	_mainLayout = new QVBoxLayout();
 	_label = new QLabel("Welcome", this);
@@ -203,10 +202,7 @@ void UserInterface::typeaccept_handler()
 void UserInterface::newplane_event()
 {
 	request.happen = NEWPLANE;
-	QString asd = _xn->text();
-	float a = asd.toFloat();
-	double b = asd.toDouble();
-//	double c = asd.to;
+
 	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
 	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
 }
@@ -392,4 +388,31 @@ void UserInterface::AddItemsToDropMenu()
 	_accepttypes->addItem("NEGATIVE", 0);
 	_accepttypes->addItem("POSITIVE", 1);
 	_accepttypes->addItem("BOTH", 2);
+	/*
+	Priority que
+	fv alapján - ezek a strategyk
+	egyet kivesz , 1-2 t vissza
+Választás:
+
+	Véletlen
+		Legnagyobb átmérőjű
+		Legnagyobb térfogatú
+		Legrégebb ideje érintetlen
+		Optimális(paraméteres)
+		Optimális + átmérő
+		Optimális + térfogat
+		Manuális
+
+		Vágó sík :
+
+	Véletlen normálisú, súlyponton átmenő
+		Legkevésbé koplanáris, súlyponton átmenő
+		Átmérőre merőleges, súlyponton átmenő
+		Véletlen lap alatt fekvő
+		Optimális lap alatt fekvő
+		Összes pontra illesztett
+		Véletlen felületre illesztett
+		Optimális felületre illesztett
+		Globális hibára optimális(? )
+		Manuális*/
 }

@@ -19,6 +19,14 @@
 
 namespace approx{
 	
+	//az esetlegesen keletkezo belso oldalak kezelesenek modja
+	enum class InsideHandling {
+		LeaveOut, //a belso oldalakat kihagyjuk 
+		FlipInside, //a belso oldalak normalisait megforgatjuk
+		AddInside, //a belso oldalak normalisait beken hagyjuk
+	};
+
+
 	//approximacios tarolo mely az osszes atomot tarolja
 	//parameterei:
 	// T: az approximacio skalar tipusa, kompatibilisnek kell lennie a Vector3 sablonnal, valamint az atan2 fuggvennyel mukodnie kell
@@ -376,7 +384,7 @@ namespace approx{
 		//az eredmenykent keletkezett atomok, lapok es pontok bekerulnek a taroloba
 		CutResult cut(size_t ind, const Plane<T>& p){
 			if (pending()) undo();
-			last_cut = ind;
+			last_cut = (int)ind;
 			cut_res = _atoms[ind].cut_by(p);
 			return CutResult(this);
 		}
@@ -403,13 +411,11 @@ namespace approx{
 			std::vector<Face<T>> new_faces;
 			std::vector<Connection> new_connections;
 			int deleted = 0;
-			std::map<int, int> face_num;
 			for (int i = 0; i < faces.size();++i){
 				if (needed[i]) { //az adott lap kell
 					needed[i] = deleted; //elotte ennyit toroltunk, annyival kell lejjebb vinni
 					new_faces.push_back(std::move(faces[i])); //elrakjuk az uj laptartoba
 					new_connections.push_back(connections[i]);
-					face_num[i] = new_faces.size() - 1;
 				}
 				else{
 					++deleted;
@@ -418,7 +424,7 @@ namespace approx{
 			connections = std::move(new_connections);
 			for (int i = 0; i < connections.size(); ++i) {
 				if (connections[i].other_face >= 0)
-					connections[i].other_face = face_num[connections[i].other_face];
+					connections[i].other_face -= needed[connections[i].other_face];
 			}
 			faces = std::move(new_faces); //a kello lapok
 			for (AtomType& a : _atoms){
@@ -475,7 +481,7 @@ namespace approx{
 
 		//szamitott test
 		//TODO: a belso lapos bohockodast meg kell csinalni
-		Body<T> approximated_body() {
+		Body<T> approximated_body(InsideHandling mode = InsideHandling::LeaveOut) {
 			garbage_collection();
 			std::vector<int> ind{};
 			for (int i = 0; i < connections.size(); ++i) {

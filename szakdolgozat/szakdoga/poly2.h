@@ -43,7 +43,7 @@ namespace approx{
 		Iterator end() { return pts.end(); }
 
 		//pontok szama
-		int size() const { return pts.size(); }
+		int size() const { return (int)pts.size(); }
 		//pontokat tartalmazo vektor konstans elerese
 		const std::vector<Vector2<T>>& points() const { return pts; }
 		//i. pont elerese
@@ -52,7 +52,7 @@ namespace approx{
 		
 		//elojeles terulet, elojele seggithet annak eldonteseben hogy cw vagy ccw felsorolasban van megadva
 		T signed_area() const {
-			int n = pts.size();
+			int n = (int)pts.size();
 			T result = 0;
 			for (int i = 0; i < n; ++i){
 				result += pts[(i + 1) % n].x*pts[i].y - pts[i].x*pts[(i + 1) % n].y;

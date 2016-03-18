@@ -47,19 +47,27 @@ public:
 
 protected:
 	/*	TODO list
-		 Sík BUG - y,z normálisok nem jól mennek a síknál
-		 HACK: mikor elfogadok egy vágást a sorter (blendhez) nem tud keresni active + 1 et -> error
+		 BUG: error approximation reszen - REPO: cut, set norm.y to 2 , cut and accept -> bug
+		 STUPID USER POPUP - érvénytelen vágás esetén
+		 Sorter and Merger refactor
+
+		 Priority que
 	*/
 
 	// ENGINE
 	bool EngineInit();
+	void MergeDataContainer(approx::BodyList&, const approx::BodyList&);
+	void _MergeDataContainer(approx::BodyList&,const approx::BodyList&);
 
 	approx::Approximator<float> app;
 	approx::BodyList data;
 	approx::BodyList targetdata;
 
-	//MOST : Kell vmi default sík
-	approx::Plane<float> p = approx::Plane<float>({ 1,1,1 }, approx::Vector3<float>(15.0f,30.0f,30.0f));  //vagosik
+	approx::Plane<float> p = approx::Plane<float>({ 0,0,1 }, approx::Vector3<float>(0.0f,0.0f,26.0f));  //vagosik
+
+	approx::Vector3<float> centr;
+	float distance;
+	glm::vec3 _planenormal;
 
 	//----------------------------------------
 	// EVENTS
@@ -77,11 +85,17 @@ protected:
 	bool IsItActive(const int&);
 
 	int ActiveAtom;
+	int _tmpActiveAtom;
 	bool transparency = true;
 	GLuint NumberOfAtoms = 1;
 
 	std::deque<Utility::data_t> SortedObjects;
 	void SortAlphaBlendedObjects(approx::BodyList&);
+
+	void SetActiveAtomProperties(float&);
+	void SetAtomProperties(float&);
+	void SetTargetAtomProperties();
+	void SetPlaneProperties();
 
 	//------------------------------------------
 	// UI
@@ -94,8 +108,9 @@ protected:
 
 	//------------------------------------------
 	// DRAWING
+	int CuttingPlaneFreq = 15;
 	void DrawCuttingPlane(glm::mat4&, glm::mat4&, glm::mat4&);
-	void Draw3D(const int&, const float&, const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
+	void Draw3D(const int&, /*float,*/ const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void Draw2D(const int&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void DrawTargetBody();
 
@@ -110,11 +125,15 @@ protected:
 
 	// IDs of shader variables
 	GLuint m_loc_mvp;
+	GLuint m_loc_world;
+	GLuint m_loc_worldIT;
 
 	GLuint eyePos;
 	GLuint Lights;
 	GLuint View;
 	GLuint Opacity;
+	GLuint DifCol;
+	GLuint SpecCol;
 
 	//----------------------------------------------
 

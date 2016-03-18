@@ -59,7 +59,7 @@ namespace approx{
 
 		//elemszam
 		int size() const {
-			return ind_map.size();
+			return (int)ind_map.size();
 		}
 
 		ConstIterator begin() const { return ConstIterator(&vecs,&ind_map,0); }
@@ -113,13 +113,13 @@ namespace approx{
 
 		void push_back(const Vector3<T>& v) {
 			if (!vmap.count(v)) {
-				vmap[v] = vecs.size();
+				vmap[v] = (int)vecs.size();
 				vecs.push_back(v);
 			}
 			inds.push_back(vmap[v]);
 		}
 		int transform_index(int ind) const { return inds[ind]; }
-		int size()const { return vecs.size(); }
+		int size()const { return (int)vecs.size(); }
 		Vector3<T> operator[](int ind) const {
 			return vecs[inds[ind]];
 		}

@@ -19,7 +19,7 @@ namespace ObjectCreator
 	void BindingBufferData(GLuint*, GLuint*, const std::vector<Vertex>);
 	void BindingBufferIndicies(GLuint*, const std::vector<GLushort>);
 
-	void CreateCuttingPlane(GLuint&, GLuint&, GLuint&);
+	void CreateCuttingPlane(GLuint&, GLuint&, GLuint&, const int&, const int&);
 	void Create2DObject(const std::vector<glm::vec2>&, GLuint& , GLuint&);
 	void Create3DObject(const std::vector<glm::vec3>&, const std::vector<unsigned short>&, GLuint&, GLuint&, GLuint&);
 };

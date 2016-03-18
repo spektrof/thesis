@@ -26,7 +26,7 @@ namespace approx{
 			std::vector<int> res;
 			res.reserve(n);
 			for (size_t i = 0; i < n; ++i){
-				res.push_back(i);
+				res.push_back((int)i);
 			}
 			return res;
 		}

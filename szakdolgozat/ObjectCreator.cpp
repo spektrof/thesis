@@ -59,28 +59,39 @@ void ObjectCreator::Create2DObject(const std::vector<glm::vec2>& points, GLuint&
 	glBindVertexArray(0);	//vao leszedése
 	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
 }
-void ObjectCreator::CreateCuttingPlane(GLuint& plane_vaoid, GLuint& plane_vboid, GLuint& plane_index) {
+void ObjectCreator::CreateCuttingPlane(GLuint& plane_vaoid, GLuint& plane_vboid, GLuint& plane_index, const int& size, const int& freq) {
 	// normálisa (0,0,1)
-	ObjectCreator::Vertex CuttingPlane[] = { { glm::vec3(-1, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ },
-	{ glm::vec3(-1, 0, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */ },
-	{ glm::vec3(-1, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */ },
-	{ glm::vec3(0, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */ },
-	{ glm::vec3(1, -1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */ },
-	{ glm::vec3(1, 0, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0) */ },
-	{ glm::vec3(1, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ },
-	{ glm::vec3(0, 1, 0)/*, glm::vec3(0, 0, 1)*//*, glm::vec3(1, 0, 0)*/ } };
+	std::vector<ObjectCreator::Vertex> CuttingPlane;
+	
+	float distance = (float)size / (float)freq;
+	for (int i = 0; i <= freq; ++i)
+	{
+		for (int j = 0; j <= freq; ++j)
+		{
+			CuttingPlane.push_back({ glm::vec3(-size/2 + i * distance , -size/2 + j * distance, 0.0f) });
+		}
+	}
 
-	GLushort Planeindices[] = {
-		0, 2, 4,
-		4, 6, 0,
-		1, 3, 5,
-		5, 7, 1 };
+	std::vector<GLushort> Planeindices;
+
+	for (int i = 0; i < freq; ++i)
+	{
+		for (int j = 0; j < freq; ++j)
+		{
+			Planeindices.push_back(i*(freq + 1) + j);
+			Planeindices.push_back((i+1)*(freq+1) + j);
+			Planeindices.push_back((i + 1)*(freq + 1) + j + 1);
+			Planeindices.push_back((i + 1)*(freq + 1) + j + 1);
+			Planeindices.push_back(i*(freq + 1) + j + 1);
+			Planeindices.push_back(i*(freq + 1) + j);
+		}
+	}
 
 	glGenVertexArrays(1, &plane_vaoid); // vao create
 	glGenBuffers(1, &plane_vboid);	//vbo create
 
-	BindingBufferData(&plane_vaoid, &plane_vboid, std::vector<Vertex>(CuttingPlane, CuttingPlane + 8));
-	BindingBufferIndicies(&plane_index, std::vector<GLushort>(Planeindices, Planeindices + 12));
+	BindingBufferData(&plane_vaoid, &plane_vboid, CuttingPlane);
+	BindingBufferIndicies(&plane_index, Planeindices);
 
 	glBindVertexArray(0);	//vao leszedése
 	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése

@@ -68,12 +68,12 @@ namespace approx{
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* normals, int n_id) : vecs(vertices), inds(ids), normals(normals), normal_id(n_id){}
 		//megadott de beszurando normalist hasznalo konstruktor
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()){
+			: vecs(vertices), inds(ids), normals(_normals), normal_id((int)normals->size()){
 			normals->push_back(normal);
 		}
 		//megadott de beszurando normalist hasznalo konstruktor a pontok mozgatasaval
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()){
+			: vecs(vertices), inds(ids), normals(_normals), normal_id((int)normals->size()){
 			normals->push_back(normal);
 		}
 		//iteratorokkal mukodo konstruktor, az iteratorok az indexeket adjak meg
@@ -192,7 +192,7 @@ namespace approx{
 		//a muveletigeny linearis a csucspontok szamaban
 		CutResult cut_by(const Plane<T>& p) const {
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg,cut;
 			int pts_added=0;
 			for (int i = 0; i < n; ++i){
@@ -201,7 +201,7 @@ namespace approx{
 				if (sign1 < 0){ //negativ oldalhoz tartozik
 					neg.push_back(inds[i]);
 					if (sign2 > 0){ //a kovetkezo pont pozitiv, kozottuk vagni kell
-						neg.push_back(vecs->size());
+						neg.push_back((int)vecs->size());
 						pos.push_back(neg.back());
 						cut.push_back(neg.back());
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
@@ -212,7 +212,7 @@ namespace approx{
 				else if (sign1 > 0){ //pozitiv oldalhoz tartozik
 					pos.push_back(inds[i]);
 					if (sign2 < 0){ //a kovetkezo pont negativ, kozottuk vagni kell
-						neg.push_back(vecs->size());
+						neg.push_back((int)vecs->size());
 						pos.push_back(neg.back());
 						cut.push_back(neg.back());
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
@@ -241,7 +241,7 @@ namespace approx{
 		//a muveletigeny linearis a pontok szamaban, valamint a vagopontok beszurasanal a megadott Maptype kereso es beszuro koltsege
 		template<class MapType> CutResult cut_by(const Plane<T>& p,MapType& m) const {
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg, cut;
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i){
@@ -253,7 +253,7 @@ namespace approx{
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
 						int ind;
 						if (!m.count(np)){
-							ind = vecs->size();
+							ind = (int)vecs->size();
 							vecs->push_back(np);
 							m[np] = ind;
 							++pts_added;
@@ -271,7 +271,7 @@ namespace approx{
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
 						int ind;
 						if (!m.count(np)){
-							ind = vecs->size();
+							ind = (int)vecs->size();
 							vecs->push_back(np);
 							m[np] = ind;
 							++pts_added;
@@ -301,7 +301,7 @@ namespace approx{
 			if (target_vecs == vecs && target_normals == normals) return cut_by(p);
 
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg,cut;
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i){
@@ -310,9 +310,9 @@ namespace approx{
 				target_vecs->push_back(points(i));
 				++pts_added;
 				if (sign1 < 0){
-					neg.push_back(target_vecs->size() - 1);
+					neg.push_back((int)target_vecs->size() - 1);
 					if (sign2 > 0){
-						neg.push_back(target_vecs->size());
+						neg.push_back((int)target_vecs->size());
 						pos.push_back(neg.back());
 						cut.push_back(neg.back());
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
@@ -321,9 +321,9 @@ namespace approx{
 					}
 				}
 				else if (sign1 > 0){
-					pos.push_back(target_vecs->size() - 1);
+					pos.push_back((int)target_vecs->size() - 1);
 					if (sign2 < 0){
-						neg.push_back(target_vecs->size());
+						neg.push_back((int)target_vecs->size());
 						pos.push_back(neg.back());
 						cut.push_back(neg.back());
 						Vector3<T> np = cut_point_stable(i, (i + 1) % n, sign1, sign2);
@@ -332,14 +332,14 @@ namespace approx{
 					}
 				}
 				else{
-					pos.push_back(target_vecs->size()-1);
-					neg.push_back(target_vecs->size()-1);
-					cut.push_back(target_vecs->size()-1);
+					pos.push_back((int)target_vecs->size()-1);
+					neg.push_back((int)target_vecs->size()-1);
+					cut.push_back((int)target_vecs->size()-1);
 				}
 				sign1 = sign2;
 			}
 			target_normals->push_back(normal());
-			int n_id = target_normals->size() - 1;
+			int n_id = (int)target_normals->size() - 1;
 			return{ Face<T>(target_vecs, std::move(pos), target_normals, n_id),
 					Face<T>(target_vecs, std::move(neg), target_normals, n_id),
 					cut,

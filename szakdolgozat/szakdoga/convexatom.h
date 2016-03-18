@@ -127,8 +127,8 @@ namespace approx{
 					_faces->push_back(cut.negative); //a kapott lapokat szortirozom az uj sokszogekbe
 					_faces->push_back(cut.positive); 
 					faces_added += 2; //2 uj lap kerult a taroloba
-					pos_faces.push_back(_faces->size() - 1);
-					neg_faces.push_back(_faces->size() - 2);
+					pos_faces.push_back((int)_faces->size() - 1);
+					neg_faces.push_back((int)_faces->size() - 2);
 					cut_map[indicies(i)] = {(int)neg_faces.size()-1,(int)pos_faces.size()-1,neg_faces.back(),pos_faces.back()};
 					pt_ids.push_back(cut.pt_inds.front());
 					pt_ids.push_back(cut.pt_inds.back());
@@ -189,8 +189,8 @@ namespace approx{
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
-				n_cut_f = _faces->size() - 2;
-				p_cut_f = _faces->size() - 1;
+				n_cut_f = (int)_faces->size() - 2;
+				p_cut_f = (int)_faces->size() - 1;
 				neg_faces.push_back(n_cut_f);
 				pos_faces.push_back(p_cut_f);
 				//a vetuleteket is clippelni kell

@@ -4,10 +4,10 @@ Hasznalati informacio:
 	A glm hasznalatahoz a T: meghajtot az OGLPack-ot hasznalo konyvtarba kell allitani
 TODO:
 	-textura koordinata kerdesek
-	-esetleges cw ccw megoldas
 	-approximacios test: csinal szamitas elott
 	 egy garbage collectiont, ami viszont nem funkcional ha van befejezetlen vagas
-	-jobbkezes balkezes koordinata rendszer
+	-approximacios test belso resz garbage collection szempontbol megvitat
+	-(jobbkezes balkezes koordinata rendszer)
 ===========================================================================================
                                       EGYESITESHEZ TUTORIAL:
 ===========================================================================================

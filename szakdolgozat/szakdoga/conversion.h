@@ -56,7 +56,7 @@ namespace approx{
 				}
 			}
 		}
-		res.index_ranges.push_back(res.indicies.size());
+		res.index_ranges.push_back((int)res.indicies.size());
 		return res;
 	}
 
@@ -95,7 +95,7 @@ namespace approx{
 		for (const Face<T>& f : body){
 			for (int i : f.indicies()){
 				if (!verts.count(i)){
-					verts[i] = res.points.size();
+					verts[i] = (int)res.points.size();
 					res.points.push_back(convert(f.vertex_container()->operator[](i)));
 				}
 			}

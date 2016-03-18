@@ -15,7 +15,7 @@ uniform int View;	//2D vagy 3D
 uniform float opacity = 1.0f;
 
 //fénytulajdonságok
-vec4 LightColor = vec4(0.5f,0.87f,0.1f,1);	//?? Mik legyenek ezek - jó a piros?
+vec4 LightColor = vec4(0.5f,0.87f,0.1f,1);	//?? Mik legyenek ezek - jó a sárga!?
 float LightPower = 2.0f;
 uniform vec3 MaterialDiffuseColor = vec3(1.0f, 0.0f, 0.0f);	//Lehet minden atom másszínu?
 uniform vec3 MaterialSpecularColor = vec3(0.6f, 0.5f, 0.2f);
