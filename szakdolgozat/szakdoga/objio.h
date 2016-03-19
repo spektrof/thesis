@@ -169,8 +169,16 @@ namespace approx {
 		static void write_obj_face(std::ostream& os, const Face<T>& face){
 			int n = face.normal_index();
 			os << "f ";
-			for (int ind : face.indicies()){
-				os << ind+1 << "//" << n+1 << " ";
+			T sign = dot(face.normal(), cross(face.points(2) - face.points(1), face.points(0) - face.points(1)));
+			if (sign > 0) {
+				for (int ind : face.indicies()) {
+					os << ind + 1 << "//" << n + 1 << " ";
+				}
+			}
+			else {
+				for (auto it = face.indicies().rbegin(); it != face.indicies().rend(); ++it) {
+					os << (*it + 1) << "//" << n + 1 << " ";
+				}
 			}
 			os << std::endl;
 		}
@@ -226,8 +234,16 @@ namespace approx {
 			write_obj_vector(f, "vn", w_normals);
 			for (const Face<T>& fac : b){
 				f << "f ";
-				for (int ind : fac.indicies()){
-					f << verts[ind] << "//" << normals[fac.normal_index()] << " ";
+				T sign = dot(fac.normal(), cross(fac.points(2) - fac.points(1), fac.points(0) - fac.points(1)));
+				if (sign > 0) { //ccwben van
+					for (int ind : fac.indicies()) {
+						f << verts[ind] << "//" << normals[fac.normal_index()] << " ";
+					}
+				}
+				else { //ccwbe forgatom
+					for (auto it = fac.indicies().rbegin(); it != fac.indicies().rend();++it) {
+						f << verts[*it] << "//" << normals[fac.normal_index()] << " ";
+					}
 				}
 				f << std::endl;
 			}

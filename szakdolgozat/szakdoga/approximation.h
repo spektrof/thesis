@@ -103,35 +103,40 @@ namespace approx{
 			cut_res.negative.reset();
 			faces.erase(faces.end() - cut_res.faces_added, faces.end());
 			vertices.erase(vertices.end() - cut_res.points_added, vertices.end());
-			normals.pop_back();
-			normals.pop_back();
+			if (cut_res.neg_cut_face >= 0) {
+				normals.pop_back();
+				normals.pop_back();
+			}
 			last_cut = -1;
 		}
 
-		void choose_both() {
+		bool choose_both() {
+			if (cut_res.neg_cut_face < 0) {
+				undo();
+				return false;
+			}
 			_atoms[last_cut] = std::move(*static_cast<AtomType*>(cut_res.negative.get()));
 			_atoms.push_back(*static_cast<AtomType*>(cut_res.positive.get()));
 
 			connections.resize(faces.size());
 			int posind = (int)_atoms.size() - 1;
 			//a vagas menten a ket fel atom parban lesz
-			connections[cut_res.neg_cut_face] = Connection( posind,cut_res.pos_cut_face );
-			connections[cut_res.pos_cut_face] = Connection( last_cut,cut_res.neg_cut_face );
+			connections[cut_res.neg_cut_face] = Connection(posind, cut_res.pos_cut_face);
+			connections[cut_res.pos_cut_face] = Connection(last_cut, cut_res.neg_cut_face);
 			for (const auto& e : cut_res.cut_map) { //bejarom a vago mapot
 				if (connections[e.first].other_atom > -1) { //csatlakozik valamivel a regi lap
 					//elvagom a masik lapot
-					const Face<T>& otherf = faces[connections[e.first].other_face];
 					faces.push_back(Face<T>(&vertices,
 											faces[e.second.neg_face_ind].indicies().rbegin(),
 											faces[e.second.neg_face_ind].indicies().rend(),
 											&normals,
-											otherf.normal_index()));
+											faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(Connection(last_cut,e.second.neg_face_ind));
 					faces.push_back(Face<T>(&vertices,
 											faces[e.second.pos_face_ind].indicies().rbegin(),
 											faces[e.second.pos_face_ind].indicies().rend(),
 											&normals,
-											otherf.normal_index()));
+											faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(Connection(posind, e.second.pos_face_ind));
 					//rendezem a kapcoslatokat
 					connections[e.second.neg_face_ind] = Connection( connections[e.first].other_atom, (int)faces.size()-2 );
@@ -145,6 +150,7 @@ namespace approx{
 						_atoms.back().surf_imprints(e.second.ind_in_pos_atom)
 						);
 				}
+				connections[e.first].other_atom = -3;
 			}
 			//ha nem vagtam el egy lapot akkor be kell allitanom az uj kapcsolati adatokat
 			//a negativ atom lapjaival semmi dolgom nincs, azok maradtak helyben,
@@ -156,31 +162,35 @@ namespace approx{
 			cut_res.positive.reset();
 			cut_res.negative.reset();
 			last_cut = -1;
+			return true;
 		}
 
-		void choose_negative() {
+		bool choose_negative() {
+			if (cut_res.neg_cut_face < 0 || !(*cut_res.negative)) {
+				undo();
+				return false;
+			}
 			_atoms[last_cut] = std::move(*static_cast<AtomType*>(cut_res.negative.get()));
 
 			connections.resize(faces.size());
 			//a vagas menten uresseg keletkezik
 			Connection extreme=decide_extreme(cut_res.positive->indicies());
 			connections[cut_res.neg_cut_face] = extreme;
-			connections[cut_res.pos_cut_face] = Connection(-3,-1);
+			connections[cut_res.pos_cut_face] = Connection(-3, -1);
 			for (const auto& e : cut_res.cut_map) { //bejarom a vago mapot
 				if (connections[e.first].other_atom > -1) { //csatlakozik valamivel a regi lap
 															//elvagom a masik lapot
-					const Face<T>& otherf = faces[connections[e.first].other_face];
 					faces.push_back(Face<T>(&vertices,
 						faces[e.second.neg_face_ind].indicies().rbegin(),
 						faces[e.second.neg_face_ind].indicies().rend(),
 						&normals,
-						otherf.normal_index()));
+						faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(Connection( last_cut,e.second.neg_face_ind ));
 					faces.push_back(Face<T>(&vertices,
 						faces[e.second.pos_face_ind].indicies().rbegin(),
 						faces[e.second.pos_face_ind].indicies().rend(),
 						&normals,
-						otherf.normal_index()));
+						faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(extreme); // a pozitiv fel extremalis uresseget kap
 					//rendezem a kapcoslatokat
 					connections[e.second.neg_face_ind] = Connection( connections[e.first].other_atom, (int)faces.size() - 2 );
@@ -194,6 +204,7 @@ namespace approx{
 						cut_res.positive->surf_imprints(e.second.ind_in_pos_atom)
 						);
 				}
+				connections[e.first].other_atom = -3;
 			}
 			for (int ind : cut_res.positive->indicies()) { //mivel kitoroltem a pozitivat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
@@ -204,31 +215,35 @@ namespace approx{
 			cut_res.positive.reset();
 			cut_res.negative.reset();
 			last_cut = -1;
+			return true;
 		}
 
-		void choose_positive() {
+		bool choose_positive() {
+			if (cut_res.pos_cut_face < 0 || !(*cut_res.positive)) {
+				undo();
+				return false;
+			}
 			_atoms[last_cut] = std::move(*static_cast<AtomType*>(cut_res.positive.get()));
 			
 			connections.resize(faces.size());
 			//a vagas menten uresseg keletkezik
 			Connection extreme = decide_extreme(cut_res.negative->indicies());
 			connections[cut_res.pos_cut_face] = extreme;
-			connections[cut_res.neg_cut_face] = Connection(-3,-1);
+			connections[cut_res.neg_cut_face] = Connection(-3, -1);
 			for (const auto& e : cut_res.cut_map) { //bejarom a vago mapot
 				if (connections[e.first].other_atom > -1) { //csatlakozik valamivel a regi lap
 															//elvagom a masik lapot
-					const Face<T>& otherf = faces[connections[e.first].other_face];
 					faces.push_back(Face<T>(&vertices,
 						faces[e.second.neg_face_ind].indicies().rbegin(),
 						faces[e.second.neg_face_ind].indicies().rend(),
 						&normals,
-						otherf.normal_index()));
+						faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(extreme);
 					faces.push_back(Face<T>(&vertices,
 						faces[e.second.pos_face_ind].indicies().rbegin(),
 						faces[e.second.pos_face_ind].indicies().rend(),
 						&normals,
-						otherf.normal_index()));
+						faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(Connection( last_cut,e.second.pos_face_ind )); // a pozitiv fel extremalis uresseget kap
 													//rendezem a kapcoslatokat
 					connections[e.second.neg_face_ind] = Connection( -3, -1 );
@@ -238,10 +253,11 @@ namespace approx{
 						connections[e.first].other_face,
 						(int)faces.size() - 2,
 						(int)faces.size() - 1,
-						_atoms[last_cut].surf_imprints(e.second.ind_in_neg_atom),
-						cut_res.negative->surf_imprints(e.second.ind_in_pos_atom)
+						cut_res.negative->surf_imprints(e.second.ind_in_neg_atom),
+						_atoms[last_cut].surf_imprints(e.second.ind_in_pos_atom)
 						);
 				}
+				connections[e.first].other_atom = -3;
 			}
 			for (int ind : cut_res.negative->indicies()) { //mivel kitoroltem a pozitivat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
@@ -252,6 +268,7 @@ namespace approx{
 			cut_res.positive.reset();
 			cut_res.negative.reset();
 			last_cut = -1;
+			return true;
 		}
 
 
@@ -351,24 +368,27 @@ namespace approx{
 			}
 
 			//az eredeti atomot toroljuk beszurjuk az ujakat
-			void choose_both(){
+			bool choose_both(){
 				if (a->pending()){
-					a->choose_both();
+					return a->choose_both();
 				}
+				return false;
 			}
 
 			//a negativ atomot megtartjuk a pozitivat es az eredetit eldobjuk
-			void choose_negative(){
+			bool choose_negative(){
 				if (a->pending()){
-					a->choose_negative();
+					return a->choose_negative();
 				}
+				return false;
 			}
 
 			//a pozitiv atomot megtartjuk a negativot es az eredetit eldobjuk
-			void choose_positive(){
+			bool choose_positive(){
 				if (a->pending()){
-					a->choose_positive();
+					return a->choose_positive();
 				}
+				return false;
 			}
 
 			//a vagast visszavonjuk, az eredeti atom megmarad, a beszurt lapok es pontok torlodnek
@@ -485,8 +505,12 @@ namespace approx{
 			garbage_collection();
 			std::vector<int> ind{};
 			for (int i = 0; i < connections.size(); ++i) {
-				if (connections[i].other_atom == -1) {
+				if (connections[i].other_atom == -1 || (mode == InsideHandling::AddInside && connections[i].other_atom==-2)) {
 					ind.push_back(i);
+				}
+				else if (connections[i].other_atom == -2 && mode == InsideHandling::FlipInside) {
+					ind.push_back(faces.size());
+					faces.push_back(faces[i].reversed());
 				}
 			}
 			return Body<T>(&faces, ind);

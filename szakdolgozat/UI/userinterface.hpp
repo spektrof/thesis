@@ -8,6 +8,7 @@
 #include <QRadioButton>
 #include <QLineEdit>
 #include <QTextEdit>
+#include <QMessageBox>
 #include <QSizePolicy> 
 #include <QVBoxLayout>
 #include "../../GeneratedFiles/ui_userinterface.h"
@@ -21,6 +22,8 @@ public:
 	UserInterface(QWidget *parent = 0);
 	~UserInterface();
 	Request GetRequest();
+	void RequestWrongCuttingErrorResolve();
+	void ErrorShow(const char*);
 
 protected:
 	void Init();
@@ -67,4 +70,5 @@ private:
 
 	Request request;
 
+	bool IsUserStupid;
 };

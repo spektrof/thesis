@@ -32,14 +32,13 @@ namespace approx{
 
 		struct SurfacePoly{ //2 dimenzios lenyomatokkent tarolom a celtest metszetlapjait az atommal
 			Plane<T> plane;
-			std::vector<Polygon2<T>> poly;
-
+			std::vector<std::pair<Polygon2<T>,bool>> poly; //vetuletek, a logikai ertek pontosan akkor igaz ha nem kimetszo sokszog (pl fank belseje)
 			SurfacePoly(const Plane<T>& pl) : plane(pl) {}
 			//osszegzem az egyes polygonok teruletet
 			T area() const { 
 				T s = 0;
-				for (const Polygon2<T>& p : poly){
-					s += p.area();
+				for (const std::pair<Polygon2<T>,bool>& p : poly){
+					s += p.first.area() * (p.second ? 1 : -1);
 				}
 				return s;
 			}
@@ -136,15 +135,15 @@ namespace approx{
 					avg_pt += vc[pt_ids[pt_ids.size() - 2]];
 					//gondoskodnom kell az elvagott vetuletek elosztasarol a ket lap kozott
 					Line<T> line = f_poly[i]->plane.intersection_line(p);
-					for (const Polygon2<T>& poly : f_poly[i]->poly) { //vegigiteralom az ideeso vetuleteket
-						if (poly.size() > 2) {
-							typename Polygon2<T>::CutResult cut = poly.cut_by(line); //elvagom a vetuletet
+					for (const std::pair<Polygon2<T>,bool>& poly : f_poly[i]->poly) { //vegigiteralom az ideeso vetuleteket
+						if (poly.first.size() > 2) {
+							typename Polygon2<T>::CutResult cut = poly.first.cut_by(line); //elvagom a vetuletet
 																						//ha a vagas adott oldali eredmenye valodi sokszog akkor felveszem az adott oldalra
 							if (cut.positive.size() >= 3) {
-								pos_poly.back()->poly.push_back(cut.positive);
+								pos_poly.back()->poly.emplace_back(cut.positive, poly.second);
 							}
 							if (cut.negative.size() >= 3) {
-								neg_poly.back()->poly.push_back(cut.negative);
+								neg_poly.back()->poly.emplace_back(cut.negative, poly.second);
 							}
 
 						}
@@ -196,11 +195,11 @@ namespace approx{
 				//a vetuleteket is clippelni kell
 				pos_poly.push_back(std::make_shared<SurfacePoly>(p));
 				neg_poly.push_back(pos_poly.back());
-				std::vector<Polygon2<T>> surf = target->cut_surface(p);
-				for (const Polygon2<T>& e : surf){
-					Polygon2<T> clipped = clipper.convex_clip(e);
+				std::vector<std::pair<Polygon2<T>,bool>> surf = target->cut_surface(p);
+				for (const std::pair<Polygon2<T>,bool>& e : surf){
+					Polygon2<T> clipped = clipper.convex_clip(e.first);
 					if (clipped.size() > 2) {
-						pos_poly.back()->poly.push_back(clipped);
+						pos_poly.back()->poly.emplace_back(clipped,e.second);
 					}
 				}
 			}
@@ -257,6 +256,7 @@ namespace approx{
 			return sum / static_cast<T>(3);
 		}
 
+		//az i-edik metszet-lenyomat 
 		PolyPtr surf_imprints(int i) const {
 			return f_poly[i];
 		}

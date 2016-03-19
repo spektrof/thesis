@@ -47,10 +47,6 @@ public:
 
 protected:
 	/*	TODO list
-		 BUG: error approximation reszen - REPO: cut, set norm.y to 2 , cut and accept -> bug
-		 STUPID USER POPUP - érvénytelen vágás esetén
-		 Sorter and Merger refactor
-
 		 Priority que
 	*/
 
@@ -85,7 +81,6 @@ protected:
 	bool IsItActive(const int&);
 
 	int ActiveAtom;
-	int _tmpActiveAtom;
 	bool transparency = true;
 	GLuint NumberOfAtoms = 1;
 

@@ -8,6 +8,7 @@
 // 
 
 #include <vector>
+#include <algorithm>
 #include "face.h"
 #include "indexiterator.h"
 #include "polygraph.h"
@@ -32,7 +33,6 @@ namespace approx{
 		typedef IndexIterator<Face<T>> FaceIterator;
 		typedef ConstIndexIterator<Face<T>> ConstFaceIterator;
 
-
 		Body& operator = (const Body& b) = default;
 		Body& operator =(Body&& b){
 			inds = std::move(b.inds);
@@ -40,8 +40,10 @@ namespace approx{
 			return *this;
 		}
 
-
-		bool valid() const { return _faces; }
+		//hasznalhato-e a test
+		bool valid() const { return _faces && inds.size(); }
+		//bool konverzio, erteke a valid metoduseval egyezik
+		operator bool() const { return valid(); }
 
 		//mozgatas masik tarolora hivatkozassal
 		Body migrate_to(std::vector<Face<T>>* fcs){
@@ -54,7 +56,7 @@ namespace approx{
 		}
 
 		//a test lapszama
-		int size() const { return (int)inds.size(); }
+		int size() const { return inds.size(); }
 	    //az i. lap indexe a taroloban
 		int indicies(size_t i) const { return inds[i]; }
 		//indexlista lekerdezese konstans hozzaferesre
@@ -113,7 +115,7 @@ namespace approx{
 		}
 
 		//a metszo sik sajat koordinatarendszerbe levetitett lapok
-		std::vector<Polygon2<T>> cut_surface(const Plane<T>& plane) const {
+		std::vector<std::pair<Polygon2<T>, bool>> cut_surface(const Plane<T>& plane) const {
 			//a pontokat valos numerikus ertekuk szerint hasznalom
 			//felmerult a kerdes, miszerint a numerikus hiba okozta egyenloseg teszt nem jelent-e gondot,
 			//azonban amennyiben a modell szabalyosan van felepitve es a kozos pontok indexe megegyezik,
@@ -122,15 +124,15 @@ namespace approx{
 			Graph<T> neighbours;
 			//bazisnak hasznalt vektorok melyek a sikkal parhuzamosak igy veluk vett skalarszorzatok hasznalhatok a vetitesnel
 			std::pair<Vector3<T>, Vector3<T>> base = plane.ortho2d();
-			for (const Face<T>& face : *this){
+			for (const Face<T>& face : *this) {
 				std::vector<Vector3<T>> tmp_normals, tmp_vertices;
 				//vegigiteralok a test lapjain es metszem oket a sikkal
 				typename Face<T>::CutResult cut = face.cut_by(plane, &tmp_vertices, &tmp_normals);
 				//grafot epitek az egyes 2 dimenzios pontokbol
-				if (cut.pt_inds.size() > 1){ //van a lapnak lenyomata a sikon, normalis eset 2 pont de nem romlik el egyenes szogeknel sem
+				if (cut.pt_inds.size() > 1) { //van a lapnak lenyomata a sikon, normalis eset 2 pont de nem romlik el egyenes szogeknel sem
 					//levetitem a pontokat a sikra
 					Vector2<T> pt1(dot(base.first, tmp_vertices[cut.pt_inds.front()]), dot(base.second, tmp_vertices[cut.pt_inds.front()])),
-						       pt2(dot(base.first, tmp_vertices[cut.pt_inds.back()]), dot(base.second, tmp_vertices[cut.pt_inds.back()]));
+						pt2(dot(base.first, tmp_vertices[cut.pt_inds.back()]), dot(base.second, tmp_vertices[cut.pt_inds.back()]));
 					//a grafban szomszedokka teszem oket
 					neighbours[pt1].push_back(pt2);
 					neighbours[pt2].push_back(pt1);
@@ -138,8 +140,44 @@ namespace approx{
 				//mivel mar nincs szuksegem a sokszogekre eldobom a pontjaikat
 			}
 			//a neighbours tartalmazza a grafot melyet most sokszogekke kell alakitanunk
-			return get_polys(neighbours);
+			std::vector<Polygon2<T>> polys = get_polys(neighbours);
+			//rendezem terulet szerint novekvo sorrendbe es emgnezem hany maikban van benne
+			std::vector<std::pair<int, T>> sizes;
+			sizes.reserve(polys.size());
+			for (int i = 0; i < polys.size(); ++i) {
+				sizes.push_back({ i,polys[i].area() });
+			}
+			std::sort(sizes.begin(), sizes.end(), [](const std::pair<int, T>& a, const std::pair<int, T>& b) { return a.second < b.second; });
+			std::vector<std::pair<Polygon2<T>, bool>> result;
+			result.reserve(polys.size());
+			for (int i = 0; i < polys.size(); ++i) {
+				bool pos = true;
+				for (int j = i + 1; j < polys.size(); ++j) {
+					if (polys[sizes[j].first].contains(polys[sizes[i].first])) pos = !pos;
+				}
+				result.emplace_back(polys[sizes[i].first], pos);
+			}
+			return result;
 		}
+
+		//a legnagyobb atmero hosszaval es iranyaval megegyezo vektor
+		Vector3<T> diameter() const {
+			Vector3<T> diam;
+			for (int i = 0; i < size(); ++i) {
+				for (int j = i; j < size(); ++j) {
+					for (const Vector3<T>& p1 : faces(i)) {
+						for (const Vector3<T>& p2 : faces(j)) {
+							Vecotr3<T> d = (p1 - p2);
+							if (d.length() > diam.length()) {
+								diam = d;
+							}
+						}
+					}
+				}
+			}
+			return diam;
+		}
+
 
 	};
 

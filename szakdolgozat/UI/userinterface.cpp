@@ -28,6 +28,8 @@ UserInterface::UserInterface(QWidget *parent)
 	_accepttypes = new QComboBox();
 	AddItemsToDropMenu();
 
+	IsUserStupid = false;
+
 	Init();
 }
 
@@ -209,8 +211,9 @@ void UserInterface::newplane_event()
 
 Request UserInterface::GetRequest() 
 {
+	if (IsUserStupid) {	IsUserStupid = false;	}
 	if (request.happen == NONE) return request;
-
+	
 	Request result(request); 
 
 	ResetRequest();
@@ -415,4 +418,20 @@ Választás:
 		Optimális felületre illesztett
 		Globális hibára optimális(? )
 		Manuális*/
+}
+
+void UserInterface::RequestWrongCuttingErrorResolve()
+{
+	IsUserStupid = true;
+	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok | QMessageBox::Help);
+
+	_accept->setEnabled(false);
+	_accepttypes->setEnabled(false);
+	_undo->setEnabled(false);
+	_cutting->setEnabled(true);
+}
+
+void UserInterface::ErrorShow(const char* text)
+{
+	QMessageBox::information(this, tr("ERROR"), tr(text), QMessageBox::Ok | QMessageBox::Help);
 }

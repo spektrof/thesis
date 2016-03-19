@@ -40,6 +40,13 @@ template <class T> std::ostream& operator << (std::ostream& o, const approx::Fac
 	return o;
 }
 
+template <class T> std::ostream& operator << (std::ostream& o, const approx::Body<T>& b) {
+	for (auto& f : b) {
+		o << f;
+	}
+	return o;
+}
+
 template <class T> std::ostream& operator << (std::ostream& o, const approx::Plane<T>& p){
 	o << "Plane( { " << p.normal() << " }, " << p.signed_distance() << ")";
 	return o;

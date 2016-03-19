@@ -31,7 +31,6 @@ Visualization::Visualization(void)
 	programID = 0;
 
 	ActiveAtom = 0;
-	_tmpActiveAtom = 0;
 	//CuttingPlaneFreq = 10;
 }
 
@@ -150,7 +149,7 @@ void Visualization::Render()
 		SortAlphaBlendedObjects(data);
 		for (std::deque<Utility::data_t>::iterator it = SortedObjects.begin() ; it < SortedObjects.end() ; ++it)
 		{
-			if (cutting_mode && it->first == ActiveAtom) { continue;  }
+			//if (cutting_mode && it->first == ActiveAtom) { continue;  }
 			Draw3D(it->first, /*0.4f,*/ 1, glm::scale<float>(1.0f, 1.0f, 1.0f));
 		
 		}
@@ -164,25 +163,25 @@ void Visualization::Render()
 void Visualization::AcceptCutting()
 {
 	cutting_mode = false;
-	_tmpActiveAtom = 0;
 
 	switch (request.ta)
 	{ 
 		case BOTH:
+			if (!app.container().last_cut_result().choose_both()) { ui.ErrorShow("ERROR BOTH\nThe cut is dopped!"); return; }
+
 			NumberOfAtoms++;
-			app.container().last_cut_result().choose_both();
-			
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies,_3DvaoID,_3DvboID, _3Dindex);
 			break;
 		case POSITIVE:
-			app.container().last_cut_result().choose_positive();
+			if (!app.container().last_cut_result().choose_positive()) { ui.ErrorShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
 
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 			break;
 		case NEGATIVE:
-			app.container().last_cut_result().choose_negative();
+
+			if (!app.container().last_cut_result().choose_negative()) { ui.ErrorShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
 
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
@@ -193,18 +192,27 @@ void Visualization::AcceptCutting()
 
 void Visualization::GetResult()
 {
+	if (!app.container().atoms(ActiveAtom).intersects_plane(p))
+	{ 
+			std::cout << "HULYE VAGY!!\n"; 
+			ui.RequestWrongCuttingErrorResolve();
+			return; 
+	}
+
 	cutting_mode = true;
 	
 	app.container().cut(ActiveAtom, p);
-
+	
 	//data = app.cut_drawinfo();	//CSAK VÁGOTT
-	MergeDataContainer(data, app.cut_drawinfo());
-	//_MergeDataContainer(data, app.cut_drawinfo());
+	//MergeDataContainer(data, app.cut_drawinfo());		//Ne használjuk!
+	_MergeDataContainer(data, app.cut_drawinfo());
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 }
 
 void Visualization::GetUndo()
 {
+	cutting_mode = false;
+
 	app.container().last_cut_result().undo();
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
@@ -215,7 +223,7 @@ void Visualization::GetRestart()
 	cutting_mode = false;
 	NumberOfAtoms = 1;
 	ActiveAtom = 0;
-	_tmpActiveAtom = 0;
+
 	app.restart();
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
@@ -483,9 +491,9 @@ void Visualization::Resize(int _w, int _h)
 
 bool Visualization::IsItActive(const int& which)
 {
-	return	(request.ta == NEGATIVE && ( ActiveAtom + _tmpActiveAtom ) == which)
-		|| (request.ta == POSITIVE && (ActiveAtom + _tmpActiveAtom) + 1 == which)
-		|| (request.ta == BOTH && ((ActiveAtom + _tmpActiveAtom) + 1 == which || (ActiveAtom + _tmpActiveAtom) == which));
+	return	(request.ta == NEGATIVE && ( ActiveAtom  ) == which)
+		|| (request.ta == POSITIVE && (ActiveAtom ) + 1 == which)
+		|| (request.ta == BOTH && ((ActiveAtom ) + 1 == which || (ActiveAtom ) == which));
 }
 void Visualization::GetInfo()
 {
@@ -495,16 +503,15 @@ void Visualization::GetInfo()
 }
 
 //objektumonkénti rendezés, pontok alapján
-/*TODO: Atomonként majd atomon belül indexrendezés 3-as (háromszög) csoportokban*/
+/*TODO: Atomonként majd atomon belül indexrendezés 3-as (háromszög) csoportokban -> eroforras pocsekolas ha nem nagyon feltuno*/
 void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 {
 	SortedObjects.clear();
 	
-	for (int i = 0; i < data.index_ranges.size() - 1; i++)
+	for (size_t i = 0; i < data.index_ranges.size() - 1; i++)
 	{
 		int start = data.index_ranges[i];
 		int end = data.index_ranges[i+1];
-		int length = (end - start) / 3;
 
 		std::vector<float> sps;
 		sps.clear();
@@ -517,7 +524,9 @@ void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 		SortedObjects.push_back(Utility::data_t(i, result));
 	}
 
-	std::sort(SortedObjects.begin(), SortedObjects.end(), Utility::greater_second<Utility::data_t>());
+	//std::sort(SortedObjects.begin(), SortedObjects.end(), Utility::greater_second<Utility::data_t>());
+	std::sort(SortedObjects.begin(), SortedObjects.end(), [](Utility::data_t const& a, Utility::data_t const& b) {return a.second > b.second ; });
+
 	// CSAK NEM ÁTLÁTSZO atomok eseten kéne
 	/*std::deque<Utility::data_t>::iterator temp;
 	Utility::data_t temp_data;
@@ -563,37 +572,14 @@ void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 	
 }
 
-void Visualization::SetActiveAtomProperties(float& _opacity)
-{
-	_opacity = 0.6f;
-	glUniform3f(DifCol, 1.0f, 0.0f, 0.0f);
-	glUniform3f(SpecCol, 0.6f, 0.5f, 0.2f);
-}
-
-void Visualization::SetAtomProperties(float& _opacity)
-{
-	_opacity = 0.3f;
-	glUniform3f(DifCol, 0.0f, 0.0f, 1.0f);
-	glUniform3f(SpecCol, 0.2f, 0.5f, 0.6f);
-}
-
-void Visualization::SetTargetAtomProperties()
-{
-	glUniform3f(DifCol, 0.0f, 1.0f, 0.0f);
-	glUniform3f(SpecCol, 0.5f, 0.6f, 0.1f);
-}
-void Visualization::SetPlaneProperties() 
-{
-	glUniform3f(DifCol, 1.0f, 1.0f, 1.0f);
-	glUniform3f(SpecCol, 0.5f, 0.5f, 0.5f);
-}
 /*Dont bother the actual atom which was cutted, just insert our datas to the end of our vectors
   need that gap size (_tmpActiveAtom)
   RANGED
   ------------------------------------------------				-----------------------------------------------
   |		|	x	|		|		|		|		|	-------->	|		|		|		|		|	x	|		|		-> _tmpActiveAtom = 3 ( 2 mert tól ig a rangedben)
   ------------------------------------------------				-----------------------------------------------
-  */
+  NOTE : DONT USE, cause we need a tempolary object which should be set so many point
+ */
 void Visualization::MergeDataContainer(approx::BodyList& data, const approx::BodyList& cutresult)
 {
 	int CountOfPoints = (int)data.points.size();
@@ -615,7 +601,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 		data.index_ranges.push_back(cutresult.index_ranges[i] + LastIndexRange);
 	}
 
-	_tmpActiveAtom = (int)data.index_ranges.size() - 1 - ActiveAtom - 2 ;
+	//_tmpActiveAtom = (int)data.index_ranges.size() - 1 - ActiveAtom - 2 ;
 }
 
 /*	Search our points which only used in the cutted atom -> collect them in a set
@@ -629,13 +615,12 @@ void Visualization::_MergeDataContainer(approx::BodyList& data, const approx::Bo
 {
 	int start = data.index_ranges[ActiveAtom];
 	int end = data.index_ranges[ActiveAtom + 1];
-	bool legvege = end == data.index_ranges[data.index_ranges.size() - 1];
 	//Pontok törlése, indexek javítása
 	std::set<int> DeletedPoints;
 
 	for (int i = start + 1; i < end-1 ; ++i)
 	{
-		int count = 0;
+		auto count = 0;
 		for (int j = 0; j < start; ++j)
 		{
 			if (data.indicies[i] == data.indicies[j]) count++;
@@ -645,13 +630,14 @@ void Visualization::_MergeDataContainer(approx::BodyList& data, const approx::Bo
 			if (data.indicies[i] == data.indicies[j]) count++;
 		}
 		
-		int index = data.indicies[i];
+		auto index = data.indicies[i];
 		if (!count && DeletedPoints.count(index) == 0)	//torolheto
 		{
 			DeletedPoints.insert(index);
 		}
 	}
 
+	//Set orderd min to max by default and we want to erase in reverse mode to get the correct result
 	for (std::set<int>::reverse_iterator j = DeletedPoints.rbegin() ; j != DeletedPoints.rend() ; j++)
 	{
 		data.points.erase(data.points.begin() + *j);
@@ -661,29 +647,27 @@ void Visualization::_MergeDataContainer(approx::BodyList& data, const approx::Bo
 		}
 	}
 
-	//Indexek törlése
+	//Indexek törlése ; In order to erase the correct index we should go back to front
 	for (int i = end - 1; i >= start ; --i)
 	{
 		data.indicies.erase(data.indicies.begin()+i);
 	}
-	//if (start == 0) { data.indicies.erase(data.indicies.begin()); }
-	//if (legvege) { data.indicies.erase(data.indicies.begin()); }
 
-	//---------------------------
-	int CountOfPoints = (int)data.points.size();
+	//--------------------------- EPITES
+	auto CountOfPoints = data.points.size();
 
 	//Pontok hozzafuzese
-	for (size_t i = 0; i < cutresult.points.size();++i)
+	for (std::vector<glm::vec3>::const_iterator it = cutresult.points.begin(); it != cutresult.points.end(); ++it)
 	{
-		data.points.push_back(cutresult.points[i]);
+		data.points.push_back(*it);
 	}
 
 	//Indexek hozzafuzese
 	std::vector<GLushort> new_indicies(data.indicies.begin(),data.indicies.begin()+start);
 
-	for (size_t i = 0; i < cutresult.indicies.size();++i)
+	for (std::vector<GLushort>::const_iterator it = cutresult.indicies.begin(); it != cutresult.indicies.end(); ++it)
 	{
-		new_indicies.push_back(cutresult.indicies[i] + CountOfPoints);
+		new_indicies.push_back(*it + (int)CountOfPoints);
 	}
 	//már törölve vannak ezek az idnexek -> starttól
 	for (size_t i = start; i < data.indicies.size();++i)
@@ -693,22 +677,47 @@ void Visualization::_MergeDataContainer(approx::BodyList& data, const approx::Bo
 	data.indicies = new_indicies;
 
 	//Indexrange helyreallitas
-
-
-	std::vector<GLushort> new_ranges(data.index_ranges.begin(), data.index_ranges.begin() + ActiveAtom);
+	std::vector<GLushort> new_ranges(data.index_ranges.begin(), data.index_ranges.begin() + ActiveAtom +1);
 
 	int LastIndexRange = new_ranges.size() == 0 ? 0 : new_ranges[new_ranges.size() - 1];
-	int CutRange = cutresult.index_ranges[1] - cutresult.index_ranges[0];
 
-	for (size_t i = 0; i < cutresult.index_ranges.size();++i)
+	for (std::vector<GLushort>::const_iterator it = cutresult.index_ranges.begin()+1; it != cutresult.index_ranges.end(); ++it)
 	{
-		new_ranges.push_back(cutresult.index_ranges[i] + LastIndexRange);
+		new_ranges.push_back(*it + LastIndexRange);
 	}
 
 	for (size_t i =  ActiveAtom+2; i < data.index_ranges.size();++i)
 	{
-		new_ranges.push_back(data.index_ranges[i] + CutRange);
+		auto CutRange = data.index_ranges[i] - data.index_ranges[i - 1];
+		auto last_element = new_ranges[new_ranges.size() - 1];
+		new_ranges.push_back(last_element + CutRange);
 	}
 
 	data.index_ranges = new_ranges;
+}
+
+
+void Visualization::SetActiveAtomProperties(float& _opacity)
+{
+	_opacity = 0.6f;
+	glUniform3f(DifCol, 1.0f, 0.0f, 0.0f);
+	glUniform3f(SpecCol, 0.6f, 0.5f, 0.2f);
+}
+
+void Visualization::SetAtomProperties(float& _opacity)
+{
+	_opacity = 0.3f;
+	glUniform3f(DifCol, 0.0f, 0.0f, 1.0f);
+	glUniform3f(SpecCol, 0.2f, 0.5f, 0.6f);
+}
+
+void Visualization::SetTargetAtomProperties()
+{
+	glUniform3f(DifCol, 0.0f, 1.0f, 0.0f);
+	glUniform3f(SpecCol, 0.5f, 0.6f, 0.1f);
+}
+void Visualization::SetPlaneProperties()
+{
+	glUniform3f(DifCol, 1.0f, 1.0f, 1.0f);
+	glUniform3f(SpecCol, 0.5f, 0.5f, 0.5f);
 }

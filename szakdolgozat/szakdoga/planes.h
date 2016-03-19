@@ -46,6 +46,11 @@ namespace approx{
 			return dot(p, n) - dist;
 		}
 
+		//a siktol valo tavolsaga a pontnak
+		ScalarType distance(const Vector& p) const {
+			return abs(classify_point(p));
+		}
+
 		bool valid() const { return n.length() > 0; }
 	};
 
