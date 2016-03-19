@@ -10,9 +10,6 @@ Használati útmutató:
                                 
 TODO:
   - Priority que
-  - new approx bug when ask draw_info
-  - popup when user is stupid
-  - refactoring (merger, sorter)
       
 -------------------------------------------------------------------------------------
 
