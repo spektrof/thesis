@@ -31,6 +31,7 @@ protected:
 	void AddItemsToDropMenu();
 	void SetLabelProperties();
 	void SetButtonsProperties();
+	void SetDropDownProperties();
 	void SetInputLineProperties();
 	void CreateHead(QVBoxLayout*);
 	void CreateRadios(QHBoxLayout*);
@@ -49,6 +50,7 @@ private slots:
 	void backToMenu();
 	void typeaccept_handler();
 	void newplane_event();
+	void newprior_event();
 
 private:
 	QWidget *window;
@@ -65,10 +67,9 @@ private:
 	QPushButton* _restart;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
-	QComboBox* _dropDownMenu;
+	QComboBox* _automatic_dropdown;
+	QComboBox* _manual_dropdown;
 	QComboBox* _accepttypes;
 
 	Request request;
-
-	bool IsUserStupid;
 };

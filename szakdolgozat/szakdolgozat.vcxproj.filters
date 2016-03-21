@@ -75,14 +75,14 @@
     <ClCompile Include="szakdoga\stdafx.cpp">
       <Filter>OtherIncludesEtc_Mate</Filter>
     </ClCompile>
-    <ClCompile Include="ObjectCreator.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Utils\CameraAndLight.cpp">
+      <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Utility.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Utils\ObjectCreator.cpp">
+      <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="CameraAndLight.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Utils\Utility.cpp">
+      <Filter>Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -146,13 +146,19 @@
     <ClInclude Include="szakdoga\indexiterator.h">
       <Filter>Group2_Mate</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectCreator.h">
+    <ClInclude Include="prior.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utility.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Utils\CameraAndLight.h">
+      <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="CameraAndLight.h">
+    <ClInclude Include="Utils\ObjectCreator.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Utility.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="priorityfunctions.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

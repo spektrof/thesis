@@ -14,9 +14,11 @@
 #include <glm/gtc/type_ptr.hpp> //valueptr
 
 //----------------
-#include "../ObjectCreator.h"
-#include "../Utility.h"
-#include "../CameraAndLight.h"
+#include "../Utils/ObjectCreator.h"
+#include "../Utils/Utility.h"
+#include "../Utils/CameraAndLight.h"
+#include "../prior.h"
+#include "../priorityfunctions.h"
 
 //----------------
 #include "../UI/userinterface.hpp"
@@ -47,8 +49,10 @@ public:
 
 protected:
 	/*	TODO list
-		 Priority que
 	*/
+	void LetsDOSomething();
+	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
+		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 
 	// ENGINE
 	bool EngineInit();
@@ -72,6 +76,7 @@ protected:
 	void AcceptCutting();
 	void GetRestart();
 	void SetNewPlane();
+	void SetNewStrategy();
 
 	bool cutting_mode = false;
 
@@ -86,6 +91,9 @@ protected:
 
 	std::deque<Utility::data_t> SortedObjects;
 	void SortAlphaBlendedObjects(approx::BodyList&);
+
+	void PushAtomsToQue();
+	void SortAtomsByPrior();
 
 	void SetActiveAtomProperties(float&);
 	void SetAtomProperties(float&);
@@ -103,7 +111,7 @@ protected:
 
 	//------------------------------------------
 	// DRAWING
-	int CuttingPlaneFreq = 15;
+	int CuttingPlaneFreq = 12;
 	void DrawCuttingPlane(glm::mat4&, glm::mat4&, glm::mat4&);
 	void Draw3D(const int&, /*float,*/ const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void Draw2D(const int&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));

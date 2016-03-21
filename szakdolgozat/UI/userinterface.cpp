@@ -10,11 +10,11 @@ UserInterface::UserInterface(QWidget *parent)
 	_x = new QLabel("X", this);
 	_y = new QLabel("Y", this);
 	_z = new QLabel("Z", this);
-	_xf = new QLineEdit("15",this);
-	_yf = new QLineEdit("30", this);
-	_zf = new QLineEdit("30", this);
-	_xn = new QLineEdit("1", this);
-	_yn = new QLineEdit("1", this);
+	_xf = new QLineEdit("0",this);
+	_yf = new QLineEdit("0", this);
+	_zf = new QLineEdit("26", this);
+	_xn = new QLineEdit("0", this);
+	_yn = new QLineEdit("0", this);
 	_zn = new QLineEdit("1", this);
 	_user = new QRadioButton("User", this);
 	_autom = new QRadioButton("Automatic", this);
@@ -24,11 +24,10 @@ UserInterface::UserInterface(QWidget *parent)
 	_restart = new QPushButton("Restart", this);
 	_moreInfo = new QPushButton("More Info", this);
 	_back = new QPushButton("Back", this);
-	_dropDownMenu = new QComboBox();
+	_automatic_dropdown = new QComboBox();
+	_manual_dropdown = new QComboBox();
 	_accepttypes = new QComboBox();
 	AddItemsToDropMenu();
-
-	IsUserStupid = false;
 
 	Init();
 }
@@ -45,7 +44,8 @@ UserInterface::~UserInterface()
 	delete _restart;
 	delete _moreInfo;
 	delete _back;
-	delete _dropDownMenu;
+	delete _automatic_dropdown;
+	delete _manual_dropdown;
 	delete _accepttypes;
 	delete window;
 	delete _mainLayout;
@@ -103,6 +103,9 @@ void UserInterface::Init()
 	connect(_xn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
 	connect(_yn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
 	connect(_zn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
+	connect(_manual_dropdown, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
+	connect(_automatic_dropdown, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
+
 	//-------------------------------------------
 
 	window->setLayout(mainLayout);
@@ -111,15 +114,16 @@ void UserInterface::Init()
 
 void UserInterface::radio_handler()
 {
-	if (_autom->isChecked()) _dropDownMenu->setVisible(false);
-	else					 _dropDownMenu->setVisible(true);
+		_manual_dropdown->setVisible(_autom->isChecked() ? false : true);
+		_automatic_dropdown->setVisible(_autom->isChecked() ? true : false);
+		request.IsUserControl =  _autom->isChecked() ? false : true;
 }
 
 void UserInterface::cuttingEvent()
 {
 	request.happen = CUTTING;
 	request.ta = TypeAccept(_accepttypes->currentData().toInt());
-	request.uc = _user->isChecked() ? UserControl(_dropDownMenu->currentData().toInt()) : UserControl::AUTOMATIC;
+	request.uc = _user->isChecked() ? UserControl(_manual_dropdown->currentData().toInt()) : UserControl(_automatic_dropdown->currentData().toInt());
 
 	_cutting->setEnabled(false);
 	_undo->setEnabled(true);
@@ -170,7 +174,8 @@ void UserInterface::infoEvent()
 	_undo->setVisible(false);
 	_accept->setVisible(false);
 	_restart->setVisible(false);
-	_dropDownMenu->setVisible(false);
+	_automatic_dropdown->setVisible(false);
+	_manual_dropdown->setVisible(false);
 	_accepttypes->setVisible(false);
 	_moreInfo->setVisible(false);
 }
@@ -189,7 +194,9 @@ void UserInterface::backToMenu()
 	_restart->setVisible(true);
 	_accepttypes->setVisible(true);
 
-	_dropDownMenu->setVisible(false);
+	_manual_dropdown->setVisible(false);
+	_automatic_dropdown->setVisible(true);
+
 	_user->setChecked(false);
 	_autom->setChecked(true);
 
@@ -209,9 +216,21 @@ void UserInterface::newplane_event()
 	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
 }
 
+void UserInterface::newprior_event()
+{
+	request.happen = NEWSTRATEGY;
+	if (request.IsUserControl)
+	{
+		request.uc = UserControl(_manual_dropdown->currentData().toInt());
+	}
+	else
+	{
+		request.ac = AutomaticControl(_automatic_dropdown->currentData().toInt());
+	}
+}
+
 Request UserInterface::GetRequest() 
 {
-	if (IsUserStupid) {	IsUserStupid = false;	}
 	if (request.happen == NONE) return request;
 	
 	Request result(request); 
@@ -254,8 +273,42 @@ void UserInterface::SetButtonsProperties()
 	_restart->setStyleSheet("background-color: #bcee68;");
 	_moreInfo->setStyleSheet("background-color: #bcee68;");
 	_back->setStyleSheet("background-color: #bcee68;");
-	_dropDownMenu->setStyleSheet("background-color: #bcee68;");
+	_manual_dropdown->setStyleSheet("background-color: #bcee68;");
+	_automatic_dropdown->setStyleSheet("background-color: #bcee68;");
 	_accepttypes->setStyleSheet("background-color: #bcee68;");
+}
+void UserInterface::SetDropDownProperties()
+{
+	_manual_dropdown->setFixedHeight(25);
+	_automatic_dropdown->setFixedHeight(25);
+	_accepttypes->setFixedHeight(25);
+
+	_automatic_dropdown->setEditable(true);
+	_manual_dropdown->setEditable(true);
+	_accepttypes->setEditable(true);
+
+	_accepttypes->setEnabled(false);
+
+	_automatic_dropdown->lineEdit()->setReadOnly(true);
+	_manual_dropdown->lineEdit()->setReadOnly(true);
+	_accepttypes->lineEdit()->setReadOnly(true);
+
+	_manual_dropdown->lineEdit()->setAlignment(Qt::AlignCenter);
+	_automatic_dropdown->lineEdit()->setAlignment(Qt::AlignCenter);
+	_accepttypes->lineEdit()->setAlignment(Qt::AlignCenter);
+
+	for (int i = 0; i < _manual_dropdown->count(); ++i)
+	{
+		_manual_dropdown->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+	}
+	for (int i = 0; i < _automatic_dropdown->count(); ++i)
+	{
+		_automatic_dropdown->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+	}
+	for (int i = 0; i < _accepttypes->count(); ++i)
+	{
+		_accepttypes->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+	}
 }
 void UserInterface::SetInputLineProperties()
 {
@@ -291,6 +344,7 @@ void UserInterface::SetInputLineProperties()
 //	e.setValidator(v);
 
 }
+
 void UserInterface::CreateHead(QVBoxLayout* head)
 {
 	head->addWidget(_label, 0, Qt::AlignHCenter);
@@ -316,37 +370,16 @@ void UserInterface::CreateMiddleButtons(QHBoxLayout* middle_buttons)
 }
 void UserInterface::CreateMiddle(QVBoxLayout* middle, QHBoxLayout* middle_buttons, QHBoxLayout* middle_accept)
 {
-	if (_autom->isChecked()) _dropDownMenu->setVisible(false);
-	else					 _dropDownMenu->setVisible(true);
+	_manual_dropdown->setVisible(_autom->isChecked() ? false : true);
+	_automatic_dropdown->setVisible(_autom->isChecked() ? true : false);
 
-	//--------------------------
-	_dropDownMenu->setFixedHeight(25);
-	_accepttypes->setFixedHeight(25);
-
-	_dropDownMenu->setEditable(true);
-	_accepttypes->setEditable(true);
-
-	_accepttypes->setEnabled(false);
-
-	_dropDownMenu->lineEdit()->setReadOnly(true);
-	_accepttypes->lineEdit()->setReadOnly(true);
-
-	_dropDownMenu->lineEdit()->setAlignment(Qt::AlignCenter);
-	_accepttypes->lineEdit()->setAlignment(Qt::AlignCenter);
-
-	for (int i = 0; i < _dropDownMenu->count(); ++i) 
-	{
-		_dropDownMenu->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
-	}
-	for (int i = 0; i < _accepttypes->count(); ++i)
-	{
-		_accepttypes->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
-	}
+	SetDropDownProperties();
 
 	middle_accept->addWidget(_accepttypes);
 	middle_accept->addWidget(_accept);
 
-	middle->addWidget(_dropDownMenu);
+	middle->addWidget(_automatic_dropdown);
+	middle->addWidget(_manual_dropdown);
 	middle->addLayout(middle_buttons);
 	middle->addLayout(middle_accept);
 
@@ -383,46 +416,35 @@ void UserInterface::CreateBottom(QHBoxLayout* bottom)
 
 void UserInterface::AddItemsToDropMenu()
 {
-	_dropDownMenu->addItem("Random plane at the centroid of the atom", 1);
-	_dropDownMenu->addItem("Plane lying on a triangle contained in the atom", 2);
-	_dropDownMenu->addItem("Plane that least coplanar to any face of the atom", 3);
-	_dropDownMenu->addItem("Plane the best fitting to a part of the surface", 4);
-
 	_accepttypes->addItem("NEGATIVE", 0);
 	_accepttypes->addItem("POSITIVE", 1);
 	_accepttypes->addItem("BOTH", 2);
-	/*
-	Priority que
-	fv alapján - ezek a strategyk
-	egyet kivesz , 1-2 t vissza
-Választás:
+	
+	
+	_automatic_dropdown->addItem("Legnagyobb terfogatu", 0);
+	_automatic_dropdown->addItem("Legnagyobb atmeroju", 1);
+	_automatic_dropdown->addItem("Legregebb ideje erintetlen", 2);
+	_automatic_dropdown->addItem("Optimalis(parameteres)", 3);
+	_automatic_dropdown->addItem("Optimalis + atmero", 4);
+	_automatic_dropdown->addItem("Optimalis + terfogat", 5);
+	_automatic_dropdown->addItem("Manualis", 6);
 
-	Véletlen
-		Legnagyobb átmérőjű
-		Legnagyobb térfogatú
-		Legrégebb ideje érintetlen
-		Optimális(paraméteres)
-		Optimális + átmérő
-		Optimális + térfogat
-		Manuális
+	
+	//	Vágó sík :
 
-		Vágó sík :
-
-	Véletlen normálisú, súlyponton átmenő
-		Legkevésbé koplanáris, súlyponton átmenő
-		Átmérőre merőleges, súlyponton átmenő
-		Véletlen lap alatt fekvő
-		Optimális lap alatt fekvő
-		Összes pontra illesztett
-		Véletlen felületre illesztett
-		Optimális felületre illesztett
-		Globális hibára optimális(? )
-		Manuális*/
+	_manual_dropdown->addItem("Manualis", 0);
+	_manual_dropdown->addItem("Veletlen normalisu, sulyponton atmeno", 1);
+	_manual_dropdown->addItem("Atmerore meroleges, sulyponton atmeno", 2);
+	_manual_dropdown->addItem("Veletlen lap alatt fekvo", 3);
+	_manual_dropdown->addItem("Optimalis lap alatt fekvo", 4);
+	_manual_dropdown->addItem("Osszes pontra illesztett", 5);
+	_manual_dropdown->addItem("Veletlen feluletre illesztett", 6);
+	_manual_dropdown->addItem("Optimalis feluletre illesztett", 7);
+	_manual_dropdown->addItem("Globalis hibara optimalis(? )", 8);
 }
 
 void UserInterface::RequestWrongCuttingErrorResolve()
 {
-	IsUserStupid = true;
 	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok | QMessageBox::Help);
 
 	_accept->setEnabled(false);

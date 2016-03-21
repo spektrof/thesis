@@ -7,15 +7,34 @@ enum ToDo{
 	UNDO,
 	RESTART,
 	NEWPLANE,
+	NEWSTRATEGY,
 };
 
-enum UserControl {
-	AUTOMATIC,
-	RANDOMPLANE, 
-	LYINGONTRIANGLE, 
-	LEASTCOPLANAR,
-	BESTFITTING			
+//RANDOM
+enum AutomaticControl {
+	VOLUME,
+	ATMERO,
+	ERINTETLEN,
+	OPTIMALPARAMETER,
+	OPTIMALATMERO,
+	OPTIMALVOLUME,
+	RANDOMMANUAL,
 };
+
+//	Vágó sík :
+
+enum UserControl {
+	MANUAL,
+	RANDOMNORMALthCENTROID,
+	ATMEROREMEROLEGESSULYP,
+	RANDOMLAPUNDER,
+	OPTIMALLAPUNDER,
+	ALLPOINTILLESZTETT,
+	RANDOMFELULETILLESZT,
+	OPTIMFELULETILL,
+	GLOBHIBAOPTIM,
+};
+
 
 enum TypeAccept
 {
@@ -33,10 +52,12 @@ struct Coord {
 struct Request {
 	ToDo happen;
 	UserControl uc;
+	AutomaticControl ac;
 	TypeAccept ta;
 	Coord plane_coord;
 	Coord plane_norm;
+	bool IsUserControl;
 
-	Request(ToDo t = ToDo::NONE, UserControl u = UserControl::AUTOMATIC, Coord c = Coord(0,0,0), Coord n = Coord(1,0,0) ) 
-		: happen(t), uc(u), plane_coord(c),plane_norm(n) { }
+	Request(ToDo t = ToDo::NONE, UserControl u = UserControl(0),AutomaticControl a = AutomaticControl(0), Coord c = Coord(0,0,0), Coord n = Coord(1,0,0), bool ius = false) 
+		: happen(t), uc(u), ac(a), plane_coord(c),plane_norm(n), IsUserControl(ius) { }
 };

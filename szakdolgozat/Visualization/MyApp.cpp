@@ -31,7 +31,6 @@ Visualization::Visualization(void)
 	programID = 0;
 
 	ActiveAtom = 0;
-	//CuttingPlaneFreq = 10;
 }
 
 Visualization::~Visualization(void)
@@ -47,14 +46,10 @@ bool Visualization::Init()
 	glClearColor(0.125f, 0.25f, 0.5f, 1.0f);
 
 	glEnable(GL_DEPTH_TEST);
-	//glCullFace(GL_BACK);
-	//glEnable(GL_DEPTH_TEST);
+	glCullFace(GL_BACK);
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glBlendEquation(GL_FUNC_ADD);
-	// Enable blending
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// geometry creating
 	ObjectCreator::CreateCuttingPlane(plane_vaoid,plane_vboid,plane_index,10, CuttingPlaneFreq);	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
@@ -106,7 +101,7 @@ void Visualization::Render()
 	glUniform1i(View, c.GetView() );
 
 	//--------------------------------------------------------
-
+	
 	if (c.Is2DView())	// true when _2D
 	{
 		Draw2D(3, glm::scale<float>(3.0f, 3.0f, 3.0f));
@@ -126,6 +121,9 @@ void Visualization::Render()
 			break;
 		case NEWPLANE:
 			SetNewPlane();
+			break;	
+		case NEWSTRATEGY:
+			SetNewStrategy();
 			break;
 		case RESTART:
 			GetRestart();
@@ -149,9 +147,7 @@ void Visualization::Render()
 		SortAlphaBlendedObjects(data);
 		for (std::deque<Utility::data_t>::iterator it = SortedObjects.begin() ; it < SortedObjects.end() ; ++it)
 		{
-			//if (cutting_mode && it->first == ActiveAtom) { continue;  }
 			Draw3D(it->first, /*0.4f,*/ 1, glm::scale<float>(1.0f, 1.0f, 1.0f));
-		
 		}
 		
 	}
@@ -188,6 +184,8 @@ void Visualization::AcceptCutting()
 			break;
 	}
 
+	PushAtomsToQue();
+	SortAtomsByPrior();
 }
 
 void Visualization::GetResult()
@@ -236,6 +234,62 @@ void Visualization::SetNewPlane()
 		approx::Vector3<float>(request.plane_coord.x, request.plane_coord.y, request.plane_coord.z));
 	distance = p.classify_point(centr);
 	_planenormal = approx::convert(p.normal());
+}
+
+void Visualization::SetNewStrategy()
+{
+	if (request.IsUserControl)
+	{
+		switch (request.uc)
+		{
+			case MANUAL:
+				break;
+			case RANDOMNORMALthCENTROID:
+				break;
+			case ATMEROREMEROLEGESSULYP:
+				break;
+			case RANDOMLAPUNDER:
+				break;
+			case OPTIMALLAPUNDER:
+				break;
+			case ALLPOINTILLESZTETT:
+				break;
+			case RANDOMFELULETILLESZT:
+				break;
+			case OPTIMFELULETILL:
+				break;
+			case GLOBHIBAOPTIM:
+				break;
+		}
+	}
+	else {
+		switch (request.ac)
+		{
+			case VOLUME:
+				//prior = PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
+				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
+				//prior.sorter();
+				SortAtomsByPrior();
+				break;
+			case ATMERO:
+				//prior = PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
+				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
+				//prior.sorter();
+				SortAtomsByPrior();
+				break;
+			case ERINTETLEN:
+				break;
+			case OPTIMALPARAMETER:
+				break;
+			case OPTIMALATMERO:
+				break;
+			case OPTIMALVOLUME:
+				break;
+			case RANDOMMANUAL:
+				break;
+
+		}
+	}
 }
 
 void Visualization::AddShaders()
@@ -289,6 +343,7 @@ void Visualization::Draw3D(const int& which/*, float _opacity*/, const bool& bac
 		glCullFace(GL_BACK);
 	}
 
+	//glEnable(GL_BLEND);
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
 	glm::mat4 matWorld = trans * rot * scal;
@@ -323,8 +378,14 @@ void Visualization::DrawTargetBody()
 
 	glBindVertexArray(_target_vaoID);
 
-	glm::mat4 mvp = m_matProj * m_matView * glm::translate<float>(15.0f,30.0f,20.0f) * glm::scale<float>(0.2f,0.2f,0.2f);
+	glm::mat4 matWorld = glm::translate<float>(15.0f, 30.0f, 20.0f) * glm::scale<float>(0.2f, 0.2f, 0.2f);
+	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
+
+	glm::mat4 mvp = m_matProj * m_matView * matWorld;
+
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
+	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 
 	glUniform1f(Opacity,  1.0f );
 	SetTargetAtomProperties();
@@ -362,6 +423,8 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 	glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, CuttingPlaneWireType ? GL_LINE : GL_FILL);	
 
+//	glDisable(GL_BLEND);
+
 	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
 
@@ -391,6 +454,9 @@ void Visualization::Update()
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym){
+	case SDLK_k:
+		LetsDOSomething();
+		break;
 	case SDLK_t:	//opacity
 		transparency = !transparency;
 		break;
@@ -430,6 +496,8 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		centr = app.container().atoms(ActiveAtom).centroid();
 		distance = p.classify_point(centr);
 		_planenormal = approx::convert(p.normal());
+		std::cout << "AKTIV: " << ActiveAtom;
+		std::cout << " VOLUME: "<< app.container().atoms(ActiveAtom).volume() << "\n";
 		break;
 	case SDLK_KP_MINUS:
 		if (cutting_mode) return;
@@ -497,6 +565,7 @@ bool Visualization::IsItActive(const int& which)
 }
 void Visualization::GetInfo()
 {
+	app.container().atoms(1).volume();
 	std::cout << "A celtest terfogata: " << app.target().body().volume() << "\n";
 	std::cout << "negativ oldali keletkezett atom terfogata: " << app.container().last_cut_result().negative()->volume() << "\n";
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
@@ -696,7 +765,6 @@ void Visualization::_MergeDataContainer(approx::BodyList& data, const approx::Bo
 	data.index_ranges = new_ranges;
 }
 
-
 void Visualization::SetActiveAtomProperties(float& _opacity)
 {
 	_opacity = 0.6f;
@@ -718,6 +786,60 @@ void Visualization::SetTargetAtomProperties()
 }
 void Visualization::SetPlaneProperties()
 {
-	glUniform3f(DifCol, 1.0f, 1.0f, 1.0f);
-	glUniform3f(SpecCol, 0.5f, 0.5f, 0.5f);
+	glUniform3f(DifCol, 0.0f, 0.5f, 0.5f);
+	glUniform3f(SpecCol, 0.0f, 0.2f, 0.2f);
+}
+
+//We dont need this function later
+void Visualization::LetsDOSomething()
+{
+	prior.clear();
+	
+	for (GLuint i = 0;i < NumberOfAtoms;++i)
+	{
+		prior.insert(i,app.container().atoms(i));
+	}
+
+	prior.sorter();
+
+	std::vector<Utility::ResultData> result = prior.GetOrder();
+
+	struct writer
+	{
+		bool operator()(const Utility::ResultData& a)
+		{
+			std::cout << a.id << " " << a.value<<"\n";
+			return true;
+		}
+	};
+
+	std::for_each(result.begin(), result.end(), writer());
+
+}
+
+void Visualization::PushAtomsToQue()
+{
+	prior.clear();
+
+	for (GLuint i = 0;i < NumberOfAtoms;++i)
+	{
+		prior.insert(i, app.container().atoms(i));
+	}
+}
+void Visualization::SortAtomsByPrior()
+{
+	prior.sorter();
+
+	std::vector<Utility::ResultData> result = prior.GetOrder();
+
+	struct writer
+	{
+		bool operator()(const Utility::ResultData& a)
+		{
+			std::cout << a.id << " " << a.value << "\n";
+			return true;
+		}
+	};
+
+	std::for_each(result.begin(), result.end(), writer());
 }

@@ -167,7 +167,7 @@ namespace approx{
 				for (int j = i; j < size(); ++j) {
 					for (const Vector3<T>& p1 : faces(i)) {
 						for (const Vector3<T>& p2 : faces(j)) {
-							Vecotr3<T> d = (p1 - p2);
+							Vector3<T> d = (p1 - p2);
 							if (d.length() > diam.length()) {
 								diam = d;
 							}
