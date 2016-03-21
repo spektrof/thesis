@@ -10,9 +10,11 @@ Használati útmutató:
                                 
 TODO:
   - Sorter Functions for strategies
-  - Action Logs? (make easier the repro)
   - ActiveAtom marking based on the sorter function result
       
+BUGS:
+  - Haromszogek(altalaban 1, rosszul van osszerakva?? nem jelenik meg) - jo lenne talalni tenylegesen egy reprot hozza
+  - Neha atomsorrend rossz, kerdes megoldja e a centroidos megoldas?
 -------------------------------------------------------------------------------------
 
 Funkcióbillentyűk:
