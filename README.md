@@ -12,9 +12,11 @@ TODO:
   - Sorter Functions for strategies
   - ActiveAtom marking based on the sorter function result
       
+Jó lenne találni minden bughoz reprokat a teszthez s ezeket vhol gyűjteni
 BUGS:
-  - Haromszogek(altalaban 1, rosszul van osszerakva?? nem jelenik meg) - jo lenne talalni tenylegesen egy reprot hozza
+  - Haromszogek(altalaban 1, rosszul van osszerakva?? nem jelenik meg)
   - Neha atomsorrend rossz, kerdes megoldja e a centroidos megoldas?
+  - 
 -------------------------------------------------------------------------------------
 
 Funkcióbillentyűk:
