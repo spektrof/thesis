@@ -9,7 +9,9 @@ Használati útmutató:
   Ezt megismételhetjük restart segítségével.  
                                 
 TODO:
-  - Priority que
+  - Sorter Functions for strategies
+  - Action Logs? (make easier the repro)
+  - ActiveAtom marking based on the sorter function result
       
 -------------------------------------------------------------------------------------
 
