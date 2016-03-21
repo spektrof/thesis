@@ -35,7 +35,7 @@ Visualization::Visualization(void)
 
 Visualization::~Visualization(void)
 {
-
+	Clean();
 }
 
 //Inicializálás
@@ -63,6 +63,9 @@ bool Visualization::Init()
 	ObjectCreator::Create2DObject(input,_2DvaoID,_2DvboID);
 	//Ideiglenes3DKocka();
 	AddShaders();
+
+	DEBUG("---------------- INIT DONE ------------------\n"
+		  "---------------------------------------------\n");
 
 	return true;
 }
@@ -186,6 +189,9 @@ void Visualization::AcceptCutting()
 
 	PushAtomsToQue();
 	SortAtomsByPrior();
+
+	DEBUG("\tACCEPT :       " << request.ta << "\n\n");
+
 }
 
 void Visualization::GetResult()
@@ -193,6 +199,7 @@ void Visualization::GetResult()
 	if (!app.container().atoms(ActiveAtom).intersects_plane(p))
 	{ 
 			std::cout << "HULYE VAGY!!\n"; 
+			DEBUG("\tCUT :  HULYE USER\n");
 			ui.RequestWrongCuttingErrorResolve();
 			return; 
 	}
@@ -200,11 +207,14 @@ void Visualization::GetResult()
 	cutting_mode = true;
 	
 	app.container().cut(ActiveAtom, p);
-	
+
 	//data = app.cut_drawinfo();	//CSAK VÁGOTT
 	//MergeDataContainer(data, app.cut_drawinfo());		//Ne használjuk!
 	_MergeDataContainer(data, app.cut_drawinfo());
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+
+	DEBUG("\tCUT: sík - ( " << _planenormal.x << " , " << _planenormal.y << " , " << _planenormal.z << " ) " 
+			<< "\n\t\t pont - ( " << request.plane_coord.x<< " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n" );
 }
 
 void Visualization::GetUndo()
@@ -214,6 +224,8 @@ void Visualization::GetUndo()
 	app.container().last_cut_result().undo();
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+
+	DEBUG("\tUNDO\n");
 }
 
 void Visualization::GetRestart()
@@ -225,6 +237,7 @@ void Visualization::GetRestart()
 	app.restart();
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	DEBUG("\tRESTART\n");
 }
 
 void Visualization::SetNewPlane()
@@ -290,6 +303,7 @@ void Visualization::SetNewStrategy()
 
 		}
 	}
+	DEBUG("\tNEWSTRATEGY\n");
 }
 
 void Visualization::AddShaders()
@@ -498,6 +512,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		_planenormal = approx::convert(p.normal());
 		std::cout << "AKTIV: " << ActiveAtom;
 		std::cout << " VOLUME: "<< app.container().atoms(ActiveAtom).volume() << "\n";
+		DEBUG("\tATOMVALTAS: +\n\n");
 		break;
 	case SDLK_KP_MINUS:
 		if (cutting_mode) return;
@@ -505,6 +520,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		centr = app.container().atoms(ActiveAtom).centroid();
 		distance = p.classify_point(centr);
 		_planenormal = approx::convert(p.normal());
+		DEBUG("\tATOMVALTAS: -\n\n");
 		break;
 	}
 }
@@ -549,6 +565,8 @@ void Visualization::Clean()
 	glDeleteVertexArrays(1, &_3DvboID);
 
 	glDeleteProgram(programID);
+
+	DEBUG("------------------------- END -----------------------------------\n\n\n");
 }
 void Visualization::Resize(int _w, int _h)
 {

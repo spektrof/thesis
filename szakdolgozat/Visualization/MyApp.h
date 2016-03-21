@@ -19,6 +19,7 @@
 #include "../Utils/CameraAndLight.h"
 #include "../prior.h"
 #include "../priorityfunctions.h"
+#include "../logger/logger.h"
 
 //----------------
 #include "../UI/userinterface.hpp"
