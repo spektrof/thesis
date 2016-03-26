@@ -5,11 +5,8 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QGroupBox>
-#include <QRadioButton>
 #include <QLineEdit>
-#include <QTextEdit>
 #include <QMessageBox>
-#include <QSizePolicy> 
 #include <QVBoxLayout>
 #include "../../GeneratedFiles/ui_userinterface.h"
 #include "request.h"
@@ -33,43 +30,69 @@ protected:
 	void SetButtonsProperties();
 	void SetDropDownProperties();
 	void SetInputLineProperties();
-	void CreateHead(QVBoxLayout*);
-	void CreateRadios(QHBoxLayout*);
-	void CreateMiddleButtons(QHBoxLayout*);
-	void CreateMiddle(QVBoxLayout*, QHBoxLayout*, QHBoxLayout*);
-	void CreatePlaneDetails(QVBoxLayout*);
-	void CreateBottom(QHBoxLayout*);
-	
+	void CreateHead();
+	void CreateStrategiesGroup();
+	void CreatePlaneDetails();
+	void CreateButtonsGroup();
+	void CreateMoreStepsGroup();
+	void CreateBottom();
+
 private slots:
-	void radio_handler();
+	void prevAtomEvent();
+	void nextAtomEvent();
+	void nextPlaneEvent();
+	void newprior_event();
+	void newcutmode_event();
+	void newplane_event();
 	void cuttingEvent();
 	void undoEvent();
 	void acceptEvent();
+	void typeaccept_handler();
+	void nextNCutEvent();
 	void restartEvent();
 	void infoEvent();
 	void backToMenu();
-	void typeaccept_handler();
-	void newplane_event();
-	void newprior_event();
-
+	
 private:
 	QWidget *window;
 	QVBoxLayout* _mainLayout;
+
 	QLabel * _label, *_info;
+	QGroupBox *_strategy, *norms, *coords;
+
+	QLabel *_choice, *_cut;
+	QComboBox *_choiceStrategy, *_plane;
+	QPushButton *_prev, *_nextChoice, *_nextPlane;
+
 	QLabel * _x, *_y, *_z;
+	QLabel * _x2, *_y2, *_z2;
 	QLineEdit * _xf, *_yf, *_zf;
 	QLineEdit * _xn, *_yn, *_zn;
-	QRadioButton* _user;
-	QRadioButton* _autom;
-	QPushButton* _cutting;
-	QPushButton* _undo;
-	QPushButton* _accept;
+
+	QPushButton *_cutting, *_undo, *_accept;
+	QComboBox *_acceptTypes;
+
+	QLabel *_nextText;
+	QPushButton *_nextNOk;
+	QLineEdit *_n;
+
 	QPushButton* _restart;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
-	QComboBox* _automatic_dropdown;
-	QComboBox* _manual_dropdown;
-	QComboBox* _accepttypes;
+
+	QVBoxLayout *head;
+
+	QVBoxLayout *strategiesGroup;
+	QHBoxLayout *choiceGroup;
+	QHBoxLayout *cutGroup;
+	QHBoxLayout *plane_details;
+	
+	QVBoxLayout *buttonsGroup;
+	QHBoxLayout *acceptGroup;
+
+	QHBoxLayout *moreStepsGorup;
+
+	QHBoxLayout *bottom;
 
 	Request request;
 };

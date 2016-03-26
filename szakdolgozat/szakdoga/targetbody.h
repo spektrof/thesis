@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 
+#include "objrepair.h"
 #include "body.h"
 
 namespace approx{
@@ -26,7 +27,7 @@ namespace approx{
 			std::vector<int> res;
 			res.reserve(n);
 			for (size_t i = 0; i < n; ++i){
-				res.push_back((int)i);
+				res.push_back(i);
 			}
 			return res;
 		}
@@ -95,7 +96,31 @@ namespace approx{
 			return *this;
 		}
 
-		//friend bool load_obj(const std::string&,TargetBody<T>&);
+		//TODO
+		void ensure_safety() {
+			NullRepair<T> rep,nrep;
+			for (const Vector3<T>& v : vecs) {
+				rep.push_back(v);
+			}
+			for (const Vector3<T>& v : normals) {
+				nrep.push_back(v);
+			}
+			vecs = rep.needed_vecs();
+			normals = nrep.needed_vecs();
+			for (Face<T>& f : faces) {
+				for (int& ind : f.indicies()) {
+					ind = rep.transform_index(ind);
+				}
+				f.normal_index() = nrep.transform_index(f.normal_index());
+			}
+		}
+
+		void move_by(const Vector3<T>& v) {
+			for (auto it = vecs.begin(); it != vecs.end(); ++it) {
+				*it += v;
+			}
+		}
+
 		friend class ObjectLoader<T>;
 
 	};

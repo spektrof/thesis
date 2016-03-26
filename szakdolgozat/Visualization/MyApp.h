@@ -3,7 +3,8 @@
 #include <GL/glew.h>
 
 #include <vector>
-#include <deque>
+#include <set>
+
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -19,6 +20,7 @@
 #include "../Utils/CameraAndLight.h"
 #include "../prior.h"
 #include "../priorityfunctions.h"
+#include "../planegetters.h"
 #include "../logger/logger.h"
 
 //----------------
@@ -50,14 +52,24 @@ public:
 
 protected:
 	/*	TODO list
+		Blender, hogy rendezük sorba az atomokat???
+
+		2D//LINESTRIP - 2 színû, belsõ külsõ
+		// + az atom átláts stb tri fan
+
+		2.random a merõleges készítésnél -> továbbra is kérdés
+		// MIERT VALTOZIK MEG A POINTER SORTER ESETEN a priorban??? WTF (prior.sorter() - setnewstrategy)
+
+		UNDO mûvelet??? mindig merge és accept szabad -> n mûvelet is autoacceptek a kérdés?
+	
+		n+2. : COMMIT + MAIL !!! MAILBEN: randomkérdés + megkérni hogy ha van idejük akkor lehetne tesztelni + UNDO kérdés
+
 	*/
-	void LetsDOSomething();
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
 		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 
 	// ENGINE
 	bool EngineInit();
-	void MergeDataContainer(approx::BodyList&, const approx::BodyList&);
 	void _MergeDataContainer(approx::BodyList&,const approx::BodyList&);
 
 	approx::Approximator<float> app;
@@ -70,6 +82,13 @@ protected:
 	float distance;
 	glm::vec3 _planenormal;
 
+	void RefreshPlaneData(const Utility::PlaneResult&);
+	PlaneGetterFunctions<approx::Approximation<float>>* PlaneCalculator = new PlaneGetterFunctions<approx::Approximation<float>>();
+
+	typedef Utility::PlaneResult(PlaneGetterFunctions<approx::Approximation<float>>::*PlaneGetter)() const;
+	PlaneGetter PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
+
+
 	//----------------------------------------
 	// EVENTS
 	void GetUndo();
@@ -78,28 +97,35 @@ protected:
 	void GetRestart();
 	void SetNewPlane();
 	void SetNewStrategy();
+	void SetNewCuttingMode();
 
 	bool cutting_mode = false;
+
+	void CutChecker();
 
 	//-----------------------------------------
 	// Atom properties
 	void GetInfo();
 	bool IsItActive(const int&);
 
-	int ActiveAtom;
+	//std::vector <int>* lastUse = new std::vector <int>();
+	std::vector<int> priorQue;
+	int ActiveAtom, ActiveIndex;
 	bool transparency = true;
 	GLuint NumberOfAtoms = 1;
 
-	std::deque<Utility::data_t> SortedObjects;
+	std::vector<Utility::data_t> SortedObjects;
 	void SortAlphaBlendedObjects(approx::BodyList&);
 
-	void PushAtomsToQue();
-	void SortAtomsByPrior();
+	void GetPriorResult();
 
 	void SetActiveAtomProperties(float&);
 	void SetAtomProperties(float&);
 	void SetTargetAtomProperties();
 	void SetPlaneProperties();
+
+	void NextAtom();
+	void PrevAtom();
 
 	//------------------------------------------
 	// UI

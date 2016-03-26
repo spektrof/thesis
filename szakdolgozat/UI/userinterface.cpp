@@ -7,46 +7,102 @@ UserInterface::UserInterface(QWidget *parent)
 	_mainLayout = new QVBoxLayout();
 	_label = new QLabel("Welcome", this);
 	_info = new QLabel("Hey, Im imformation about this ui", this);
-	_x = new QLabel("X", this);
-	_y = new QLabel("Y", this);
-	_z = new QLabel("Z", this);
-	_xf = new QLineEdit("0",this);
+
+	_choice = new QLabel("Choice", this);
+	_cut = new QLabel("Cut", this);
+
+	_strategy = new QGroupBox(tr("Strategies"),this);
+	norms = new QGroupBox(tr("Normals"));
+	coords = new QGroupBox(tr("Coords"));
+
+	_choiceStrategy = new QComboBox();
+	_plane = new QComboBox();
+
+	_prev = new QPushButton("Prev", this);
+	_nextChoice = new QPushButton("Next", this);
+	_nextPlane = new QPushButton("Next", this);
+
+	_x = new QLabel("X", this);	_x2 = new QLabel("X", this);
+	_y = new QLabel("Y", this); _y2 = new QLabel("Y", this);
+	_z = new QLabel("Z", this); _z2 = new QLabel("Z", this);
+	_xf = new QLineEdit("0", this);
 	_yf = new QLineEdit("0", this);
 	_zf = new QLineEdit("26", this);
 	_xn = new QLineEdit("0", this);
 	_yn = new QLineEdit("0", this);
 	_zn = new QLineEdit("1", this);
-	_user = new QRadioButton("User", this);
-	_autom = new QRadioButton("Automatic", this);
-	_cutting = new QPushButton("Cutting",this);
+
+	_cutting = new QPushButton("Cutting", this);
 	_undo = new QPushButton("Undo", this);
 	_accept = new QPushButton("Accept", this);
+
+	_acceptTypes = new QComboBox();
+
+	_nextText = new QLabel("Next n steps", this);
+	_nextNOk = new QPushButton("OK", this);
+	_n = new QLineEdit("1",this);
+
 	_restart = new QPushButton("Restart", this);
 	_moreInfo = new QPushButton("More Info", this);
 	_back = new QPushButton("Back", this);
-	_automatic_dropdown = new QComboBox();
-	_manual_dropdown = new QComboBox();
-	_accepttypes = new QComboBox();
+
 	AddItemsToDropMenu();
+
+	head = new QVBoxLayout;
+	strategiesGroup = new QVBoxLayout;
+	choiceGroup = new QHBoxLayout;
+	cutGroup = new QHBoxLayout;
+	buttonsGroup = new QVBoxLayout;
+    plane_details = new QHBoxLayout;
+	acceptGroup = new QHBoxLayout;
+	moreStepsGorup = new QHBoxLayout;
+	bottom = new QHBoxLayout;
 
 	Init();
 }
 
 UserInterface::~UserInterface()
 {
-	delete _user;
-	delete _autom;
 	delete _label;
 	delete _info;
+
+	delete _choice;
+	delete _cut;
+	delete _choiceStrategy;
+	delete _plane;
+	delete _prev;
+	delete _nextChoice;
+	delete _nextPlane;
+
+	delete _x;
+	delete _y;
+	delete _z;
+	delete _x2;
+	delete _y2;
+	delete _z2;
+	delete _xf;
+	delete _yf;
+	delete _zf;
+	delete _xn;
+	delete _yn;
+	delete _zn;
+	delete norms;
+	delete coords;
+	delete _strategy;
+
 	delete _cutting;
 	delete _undo;
 	delete _accept;
+	delete _acceptTypes;
+
+	delete _nextText;
+	delete _nextNOk;
+	delete _n;
+
 	delete _restart;
 	delete _moreInfo;
 	delete _back;
-	delete _automatic_dropdown;
-	delete _manual_dropdown;
-	delete _accepttypes;
+
 	delete window;
 	delete _mainLayout;
 }
@@ -54,8 +110,8 @@ UserInterface::~UserInterface()
 void UserInterface::Init() 
 {
 	window->setStyleSheet("background-color: #7ac5cd;");
-	window->setFixedSize(300, 300);
-	window->move(1000, 200);
+	window->setFixedSize(400, 400);
+	window->move(900, 200);
 	//---------------------------------------
 	SetLabelProperties();
 	SetButtonsProperties();
@@ -63,48 +119,48 @@ void UserInterface::Init()
 	//---------------------------------------
 	QVBoxLayout *mainLayout = new QVBoxLayout;
 
-	QVBoxLayout *head = new QVBoxLayout;
-	QHBoxLayout *radios = new QHBoxLayout;
-	QHBoxLayout *middle_buttons = new QHBoxLayout;
-	QHBoxLayout *middle_accept = new QHBoxLayout;
-	QVBoxLayout *middle = new QVBoxLayout;
-	QVBoxLayout *plane_details = new QVBoxLayout;
-	QHBoxLayout *bottom = new QHBoxLayout;
 	//------------------------------------------
 
-	CreateHead(head);
-	CreateRadios(radios);
-	CreateMiddleButtons(middle_buttons);
-	CreateMiddle(middle,middle_buttons, middle_accept);
-	CreatePlaneDetails(plane_details);
-	CreateBottom(bottom);
+	CreateHead();
+	CreateStrategiesGroup();
+	CreatePlaneDetails();
+	CreateButtonsGroup();
+	CreateMoreStepsGroup();
+	CreateBottom();
 
 	//-----------------------------------------	
 	mainLayout->addLayout(head);
-	mainLayout->addLayout(radios);
-	mainLayout->addLayout(middle);
-	mainLayout->addLayout(plane_details);
+	mainLayout->addWidget(_strategy);
+	mainLayout->addLayout(buttonsGroup);
+	mainLayout->addLayout(moreStepsGorup);
 	mainLayout->addLayout(bottom);
 
 	//_----------------------------------------- connects
 
-	connect(_user, SIGNAL(clicked()), this, SLOT(radio_handler()));
-	connect(_autom, SIGNAL(clicked()), this, SLOT(radio_handler()));
-	connect(_cutting, SIGNAL(clicked()), this, SLOT(cuttingEvent()));
-	connect(_undo, SIGNAL(clicked()), this, SLOT(undoEvent()));
-	connect(_accept, SIGNAL(clicked()), this, SLOT(acceptEvent()));
-	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
-	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
-	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
-	connect(_accepttypes, SIGNAL(currentIndexChanged(int)), this, SLOT(typeaccept_handler()));
-	connect(_xf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_prev, SIGNAL(clicked()), this, SLOT(prevAtomEvent()));
+	connect(_nextChoice, SIGNAL(clicked()), this, SLOT(nextAtomEvent()));
+	connect(_nextPlane, SIGNAL(clicked()), this, SLOT(nextPlaneEvent()));
+	connect(_choiceStrategy, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
+	connect(_plane, SIGNAL(currentIndexChanged(int)), this, SLOT(newcutmode_event()));	//nem küld eventet
+
+	connect(_xf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));	//küld eventet, a textedited nem küld
 	connect(_yf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
 	connect(_zf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
 	connect(_xn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
 	connect(_yn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
 	connect(_zn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
-	connect(_manual_dropdown, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
-	connect(_automatic_dropdown, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
+
+	connect(_cutting, SIGNAL(clicked()), this, SLOT(cuttingEvent()));
+	connect(_undo, SIGNAL(clicked()), this, SLOT(undoEvent()));
+	connect(_accept, SIGNAL(clicked()), this, SLOT(acceptEvent()));
+	connect(_acceptTypes, SIGNAL(currentIndexChanged(int)), this, SLOT(typeaccept_handler()));
+
+	connect(_nextNOk, SIGNAL(clicked()), this, SLOT(nextNCutEvent()));
+
+	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
+	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
+	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
+
 
 	//-------------------------------------------
 
@@ -112,141 +168,196 @@ void UserInterface::Init()
 	window->show();
 }
 
-void UserInterface::radio_handler()
-{
-		_manual_dropdown->setVisible(_autom->isChecked() ? false : true);
-		_automatic_dropdown->setVisible(_autom->isChecked() ? true : false);
-		request.IsUserControl =  _autom->isChecked() ? false : true;
-}
-
 void UserInterface::cuttingEvent()
 {
-	request.happen = CUTTING;
-	request.ta = TypeAccept(_accepttypes->currentData().toInt());
-	request.uc = _user->isChecked() ? UserControl(_manual_dropdown->currentData().toInt()) : UserControl(_automatic_dropdown->currentData().toInt());
+	request.eventtype = CUTTING;
+	
+	_undo->setEnabled(request.cut_mode == MANUAL ? true : false);
+	_acceptTypes->setEnabled(request.cut_mode == MANUAL ? true : false);
+	_accept->setEnabled(request.cut_mode == MANUAL ? true : false);
+	_cutting->setEnabled(request.cut_mode == MANUAL ? false : true);
 
-	_cutting->setEnabled(false);
-	_undo->setEnabled(true);
-	_accept->setEnabled(true);
-	_accepttypes->setEnabled(true);
+	_choiceStrategy->setEnabled(request.cut_mode == MANUAL ? false : true);
+	_plane->setEnabled(request.cut_mode == MANUAL ? false : true);
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false);
+	_nextChoice->setEnabled(request.cut_mode == MANUAL ? false : true);
+	_prev->setEnabled(request.cut_mode == MANUAL ? false : true);
 }
 
 void UserInterface::undoEvent()
 {
-	request.happen = UNDO;
+	request.eventtype = UNDO;
+
 	_accept->setEnabled(false);
-	_accepttypes->setEnabled(false);
+	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
 	_cutting->setEnabled(true);
+
+	_choiceStrategy->setEnabled(true);
+	_plane->setEnabled(true);
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextChoice->setEnabled(true);
+	_prev->setEnabled(true);
 }
 
 void UserInterface::acceptEvent()
 {
-	request.happen = ACCEPT;
-	request.ta = TypeAccept(_accepttypes->currentData().toInt());
+	request.eventtype = ACCEPT;
+	request.type = TypeOfAccept(_acceptTypes->currentData().toInt());
 
 	_accept->setEnabled(false);
-	_accepttypes->setEnabled(false);
+	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
 	_cutting->setEnabled(true);
+
+	_choiceStrategy->setEnabled(true);
+	_plane->setEnabled(true);
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextChoice->setEnabled(true);
+	_prev->setEnabled(true);
 }
 
 void UserInterface::restartEvent()
 {
-	request.happen = RESTART;
-	request.ta = TypeAccept(0);
+	request = Request(RESTART);
+
+	_n->setText("1"); 
+	_xn->setText("0"); _yn->setText("0"); _zn->setText("1");
+
+	_choiceStrategy->setEnabled(true);
+	_prev->setEnabled(true);
+	_nextChoice->setEnabled(true);
+	_plane->setEnabled(true);
 
 	_accept->setEnabled(false);
-	_accepttypes->setEnabled(false);
+	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
 	_cutting->setEnabled(true);
+
+	_nextNOk->setEnabled(false);
+	_n->setEnabled(false);
 }
 
+void UserInterface::typeaccept_handler()
+{
+	request.type = TypeOfAccept(_acceptTypes->currentData().toInt());
+}
+
+void UserInterface::newplane_event()
+{
+	request.eventtype = NEWPLANE;
+
+	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
+	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
+}
+void UserInterface::newprior_event()
+{
+	request.eventtype = NEWSTRATEGY;
+	request.choice = ChoiceMode(_choiceStrategy->currentData().toInt());
+
+
+}
+void UserInterface::newcutmode_event()
+{
+	request.eventtype = NEWCUTTINGMODE;
+	request.cut_mode = CuttingMode(_plane->currentData().toInt());
+
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	coords->setVisible(request.cut_mode == MANUAL ? true : false);
+	norms->setVisible(request.cut_mode == MANUAL ? true : false);
+
+	_nextNOk->setEnabled(request.cut_mode == MANUAL ?  false : true);
+	_n->setEnabled(request.cut_mode == MANUAL ?  false : true);
+}
+
+void UserInterface::prevAtomEvent()
+{
+	request.eventtype = PREVATOM;
+}
+void UserInterface::nextAtomEvent()
+{
+	request.eventtype = NEXTATOM;
+}
+void UserInterface::nextPlaneEvent()
+{
+	request.eventtype = RECALCULATING;
+}
+void UserInterface::nextNCutEvent()
+{
+	request.eventtype = MORESTEPS;
+	request.CountsOfCutting = _n->text().toInt();
+}
+
+/*TODO : aktualizalni*/
 void UserInterface::infoEvent()
 {
 	_info->setVisible(true);
 	_back->setVisible(true);
-	
+
 	_label->setVisible(false);
-	_user->setVisible(false);
-	_autom->setVisible(false);
 	_cutting->setVisible(false);
 	_undo->setVisible(false);
 	_accept->setVisible(false);
 	_restart->setVisible(false);
-	_automatic_dropdown->setVisible(false);
-	_manual_dropdown->setVisible(false);
-	_accepttypes->setVisible(false);
-	_moreInfo->setVisible(false);
-}
+	_acceptTypes->setVisible(false);
 
+	_strategy->setVisible(false);
+	_nextNOk->setVisible(false);
+	_nextText->setVisible(false);
+	_n->setVisible(false);
+
+	_moreInfo->setVisible(false);
+
+
+}
 void UserInterface::backToMenu()
 {
 	_info->setVisible(false);
 	_back->setVisible(false);
 
 	_label->setVisible(true);
-	_user->setVisible(true);
-	_autom->setVisible(true);
+
 	_cutting->setVisible(true);
 	_undo->setVisible(true);
 	_accept->setVisible(true);
 	_restart->setVisible(true);
-	_accepttypes->setVisible(true);
+	_acceptTypes->setVisible(true);
 
-	_manual_dropdown->setVisible(false);
-	_automatic_dropdown->setVisible(true);
-
-	_user->setChecked(false);
-	_autom->setChecked(true);
+	_strategy->setVisible(true);
+	_nextNOk->setVisible(true);
+	_nextText->setVisible(true);
+	_n->setVisible(true);
 
 	_moreInfo->setVisible(true);
 }
 
-void UserInterface::typeaccept_handler()
-{
-	request.ta = TypeAccept(_accepttypes->currentData().toInt());
-}
-
-void UserInterface::newplane_event()
-{
-	request.happen = NEWPLANE;
-
-	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
-	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
-}
-
-void UserInterface::newprior_event()
-{
-	request.happen = NEWSTRATEGY;
-	if (request.IsUserControl)
-	{
-		request.uc = UserControl(_manual_dropdown->currentData().toInt());
-	}
-	else
-	{
-		request.ac = AutomaticControl(_automatic_dropdown->currentData().toInt());
-	}
-}
 
 Request UserInterface::GetRequest() 
 {
-	if (request.happen == NONE) return request;
+	if (request.eventtype == NONE) return request;
 	
 	Request result(request); 
 
 	ResetRequest();
-	if (result.happen == ACCEPT)
+	if (result.eventtype == ACCEPT)
 	{
-		request.ta = NEGATIVE;
-		_accepttypes->setCurrentIndex(0);
+		request.type = NEGATIVE;
+		_acceptTypes->setCurrentIndex(0);
+	}
+	else if (result.eventtype == RESTART)	//restarttal osszefuggo valtozasok
+	{
+		//_choiceStrategy->setCurrentIndex(0); // - prior sor csak sortot kapna -> nem jo mert idnex range out lesz
+		_plane->setCurrentIndex(0);
+		_acceptTypes->setCurrentIndex(0);
+		_xf->setText("0"); _yf->setText("0"); _zf->setText("26");
 	}
 	return result;
 }
 
 void UserInterface::ResetRequest() 
 {
-	request.happen = ToDo::NONE;
+	request.eventtype = NONE;
 }
 
 void UserInterface::SetLabelProperties()
@@ -254,18 +365,35 @@ void UserInterface::SetLabelProperties()
 	_label->setFont(QFont("Courier New", 16, QFont::Bold));
 	//	label->setAlignment(Qt::AlignHCenter);
 	_label->setMaximumHeight(25);
+
+	_choice->setFont(QFont("Courier New", 10, QFont::Bold));
+	_choice->setMaximumHeight(25);
+
+	_cut->setFont(QFont("Courier New", 10, QFont::Bold));
+	_cut->setMaximumHeight(25);
+
+	_nextText->setFont(QFont("Courier New", 10, QFont::Bold));
+	_nextText->setAlignment(Qt::AlignCenter);
+	_nextText->setMaximumHeight(25);
+	_nextText->setStyleSheet("margin-left : 100px;");
+
 }
 void UserInterface::SetButtonsProperties() 
 {
 	_cutting->setFixedSize(80, 30);
 	_undo->setFixedSize(80, 30);
+	_accept->setFixedSize(80, 30);
 
-	_autom->setChecked(true);
+	_nextChoice->setFixedSize(50, 25);
+	_nextNOk->setFixedSize(50, 25);
+	_nextPlane->setFixedSize(50, 25);
+	_prev->setFixedSize(50, 25);
 
 	_accept->setEnabled(false);
 	_undo->setEnabled(false);
-	_back->setVisible(false);
+	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
 
+	_back->setVisible(false);
 
 	_cutting->setStyleSheet("background-color: #bcee68;");
 	_undo->setStyleSheet("background-color: #bcee68;");
@@ -273,42 +401,47 @@ void UserInterface::SetButtonsProperties()
 	_restart->setStyleSheet("background-color: #bcee68;");
 	_moreInfo->setStyleSheet("background-color: #bcee68;");
 	_back->setStyleSheet("background-color: #bcee68;");
-	_manual_dropdown->setStyleSheet("background-color: #bcee68;");
-	_automatic_dropdown->setStyleSheet("background-color: #bcee68;");
-	_accepttypes->setStyleSheet("background-color: #bcee68;");
+	_nextChoice->setStyleSheet("background-color: #bcee68;");
+	_nextNOk->setStyleSheet("background-color: #bcee68;");
+	_nextPlane->setStyleSheet("background-color: #bcee68;");
+	_prev->setStyleSheet("background-color: #bcee68;");
+	_plane->setStyleSheet("background-color: #bcee68;");
+	_choiceStrategy->setStyleSheet("background-color: #bcee68;");
+	_acceptTypes->setStyleSheet("background-color: #bcee68;");
 }
 void UserInterface::SetDropDownProperties()
 {
-	_manual_dropdown->setFixedHeight(25);
-	_automatic_dropdown->setFixedHeight(25);
-	_accepttypes->setFixedHeight(25);
+	_choiceStrategy->setFixedSize(150, 20);
+	_plane->setFixedSize(220,20);
+	_acceptTypes->setFixedSize(80, 30);
 
-	_automatic_dropdown->setEditable(true);
-	_manual_dropdown->setEditable(true);
-	_accepttypes->setEditable(true);
+	_choiceStrategy->setEditable(true);
+	_plane->setEditable(true);
+	_acceptTypes->setEditable(true);
 
-	_accepttypes->setEnabled(false);
+	_acceptTypes->setEnabled(false);
 
-	_automatic_dropdown->lineEdit()->setReadOnly(true);
-	_manual_dropdown->lineEdit()->setReadOnly(true);
-	_accepttypes->lineEdit()->setReadOnly(true);
+	_choiceStrategy->lineEdit()->setReadOnly(true);
+	_plane->lineEdit()->setReadOnly(true);
+	_acceptTypes->lineEdit()->setReadOnly(true);
 
-	_manual_dropdown->lineEdit()->setAlignment(Qt::AlignCenter);
-	_automatic_dropdown->lineEdit()->setAlignment(Qt::AlignCenter);
-	_accepttypes->lineEdit()->setAlignment(Qt::AlignCenter);
+	_plane->lineEdit()->setAlignment(Qt::AlignCenter);
+	_choiceStrategy->lineEdit()->setAlignment(Qt::AlignCenter);
+	_acceptTypes->lineEdit()->setAlignment(Qt::AlignCenter);
 
-	for (int i = 0; i < _manual_dropdown->count(); ++i)
+	for (int i = 0; i < _plane->count(); ++i)
 	{
-		_manual_dropdown->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+		_plane->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
 	}
-	for (int i = 0; i < _automatic_dropdown->count(); ++i)
+	for (int i = 0; i < _choiceStrategy->count(); ++i)
 	{
-		_automatic_dropdown->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+		_choiceStrategy->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
 	}
-	for (int i = 0; i < _accepttypes->count(); ++i)
+	for (int i = 0; i < _acceptTypes->count(); ++i)
 	{
-		_accepttypes->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+		_acceptTypes->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
 	}
+
 }
 void UserInterface::SetInputLineProperties()
 {
@@ -322,12 +455,15 @@ void UserInterface::SetInputLineProperties()
 	_yn->setFixedWidth(25);
 	_zn->setFixedWidth(25);
 
+	_n->setFixedWidth(25);
+
 	_xf->setStyleSheet("background-color: #bcee68;");
 	_yf->setStyleSheet("background-color: #bcee68;");
 	_zf->setStyleSheet("background-color: #bcee68;");
 	_xn->setStyleSheet("background-color: #bcee68;");
 	_yn->setStyleSheet("background-color: #bcee68;");
 	_zn->setStyleSheet("background-color: #bcee68;");
+	_n->setStyleSheet("background-color: #bcee68;");
 
 	_xn->setAlignment(Qt::AlignCenter);
 	_yn->setAlignment(Qt::AlignCenter);
@@ -335,17 +471,14 @@ void UserInterface::SetInputLineProperties()
 	_xf->setAlignment(Qt::AlignCenter);
 	_yf->setAlignment(Qt::AlignCenter);
 	_zf->setAlignment(Qt::AlignCenter);
+	_n->setAlignment(Qt::AlignCenter);
 
-//	_xn->setInputMask("0.00");
-	//_xn->setMaxLength(4);
 
-	//_xn->setValidator(new QDoubleValidator(0.0, 100.0, 1));
-	//QFloatValidator *v = new QIntValidator(0, 100);
-//	e.setValidator(v);
-
+	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
+	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
 }
 
-void UserInterface::CreateHead(QVBoxLayout* head)
+void UserInterface::CreateHead()
 {
 	head->addWidget(_label, 0, Qt::AlignHCenter);
 	head->addWidget(_info, 0, Qt::AlignHCenter);
@@ -355,92 +488,136 @@ void UserInterface::CreateHead(QVBoxLayout* head)
 
 	_info->setVisible(false);
 }
-void UserInterface::CreateRadios(QHBoxLayout* radios)
+void UserInterface::CreateButtonsGroup()
 {
-	radios->addWidget(_user, 0, Qt::AlignCenter | Qt::AlignVCenter);
-	radios->addWidget(_autom, 0, Qt::AlignVCenter);
+	QHBoxLayout *upperButtons = new QHBoxLayout();
 
-	radios->setSpacing(0);
-}
-void UserInterface::CreateMiddleButtons(QHBoxLayout* middle_buttons)
-{
-	middle_buttons->addWidget(_cutting, 0, Qt::AlignVCenter);
-	middle_buttons->addWidget(_undo, 0, Qt::AlignVCenter);
+	upperButtons->addWidget(_cutting, 0, Qt::AlignBottom );
+	upperButtons->addWidget(_undo, 0, Qt::AlignBottom);
 	
-}
-void UserInterface::CreateMiddle(QVBoxLayout* middle, QHBoxLayout* middle_buttons, QHBoxLayout* middle_accept)
-{
-	_manual_dropdown->setVisible(_autom->isChecked() ? false : true);
-	_automatic_dropdown->setVisible(_autom->isChecked() ? true : false);
+	acceptGroup->addWidget(_acceptTypes, 0, Qt::AlignBottom);
+	acceptGroup->addWidget(_accept, 0, Qt::AlignBottom);
 
+	buttonsGroup->addLayout(upperButtons);
+	buttonsGroup->addLayout(acceptGroup);
+	//buttonsGroup->setAlignment(Qt::AlignBottom | Qt::AlignCenter);
+
+}
+
+void UserInterface::CreateStrategiesGroup()
+{
 	SetDropDownProperties();
 
-	middle_accept->addWidget(_accepttypes);
-	middle_accept->addWidget(_accept);
+	choiceGroup->addWidget(_choice, 0, Qt::AlignLeft);
+	choiceGroup->addWidget(_choiceStrategy, 0, Qt::AlignLeft);
+	choiceGroup->addWidget(_prev, 0, Qt::AlignLeft);
+	choiceGroup->addWidget(_nextChoice, 0, Qt::AlignLeft);
 
-	middle->addWidget(_automatic_dropdown);
-	middle->addWidget(_manual_dropdown);
-	middle->addLayout(middle_buttons);
-	middle->addLayout(middle_accept);
+	cutGroup->addWidget(_cut, 0, Qt::AlignLeft);
+	cutGroup->addWidget(_plane, 0, Qt::AlignLeft);
+	cutGroup->addWidget(_nextPlane, 0, Qt::AlignLeft);
 
+	strategiesGroup->addLayout(choiceGroup);
+	strategiesGroup->addLayout(cutGroup);
+
+	//strategiesGroup->setAlignment(choiceGroup, Qt::AlignTop);
+	//strategiesGroup->setAlignment(cutGroup, Qt::AlignTop);
+
+	_strategy->setLayout(strategiesGroup);
 }
-void UserInterface::CreatePlaneDetails(QVBoxLayout* plane_details)
+
+void UserInterface::CreateMoreStepsGroup()
 {
+	moreStepsGorup->addWidget(_nextText);
+	moreStepsGorup->addWidget(_n);
+	moreStepsGorup->addWidget(_nextNOk);
 
-	QHBoxLayout * _xline = new QHBoxLayout();
-	QHBoxLayout * _yline = new QHBoxLayout();
-	QHBoxLayout * _zline = new QHBoxLayout();
+	moreStepsGorup->setAlignment(Qt::AlignTrailing | Qt::AlignTrailing);
+	moreStepsGorup->addStretch(1);
 
-	_xline->addWidget(_x);
-	_yline->addWidget(_y);
-	_zline->addWidget(_z);
-
-	_xline->addWidget(_xf, 0, Qt::AlignLeft);
-	_yline->addWidget(_yf, 0, Qt::AlignLeft);
-	_zline->addWidget(_zf, 0, Qt::AlignLeft);
-
-	_xline->addWidget(_xn, 0, Qt::AlignLeft);
-	_yline->addWidget(_yn, 0, Qt::AlignLeft);
-	_zline->addWidget(_zn, 0, Qt::AlignLeft);
-
-	plane_details->addLayout(_xline);
-	plane_details->addLayout(_yline);
-	plane_details->addLayout(_zline);
+	_nextNOk->setEnabled(request.cut_mode == MANUAL ? false : true);
+	_n->setEnabled(request.cut_mode == MANUAL ? false : true);
 }
-void UserInterface::CreateBottom(QHBoxLayout* bottom)
+
+void UserInterface::CreatePlaneDetails()
+{
+	QHBoxLayout *planegroup = new QHBoxLayout();
+	QHBoxLayout *left = new QHBoxLayout();
+	QHBoxLayout *right = new QHBoxLayout();
+
+	QVBoxLayout *coordnames = new QVBoxLayout();
+	QVBoxLayout *coordnames2 = new QVBoxLayout();
+	QVBoxLayout *coorddata = new QVBoxLayout();
+	QVBoxLayout *normaldata = new QVBoxLayout();
+
+	coordnames->addWidget(_x, 0, Qt::AlignCenter);
+	coordnames->addWidget(_y, 0, Qt::AlignCenter);
+	coordnames->addWidget(_z, 0, Qt::AlignCenter);
+
+	coordnames2->addWidget(_x2, 0, Qt::AlignCenter);
+	coordnames2->addWidget(_y2, 0, Qt::AlignCenter);
+	coordnames2->addWidget(_z2, 0, Qt::AlignCenter);
+
+	coorddata->addWidget(_xf, 0, Qt::AlignCenter);
+	coorddata->addWidget(_yf, 0, Qt::AlignCenter);
+	coorddata->addWidget(_zf, 0, Qt::AlignCenter);
+
+	normaldata->addWidget(_xn, 0, Qt::AlignCenter);
+	normaldata->addWidget(_yn, 0, Qt::AlignCenter);
+	normaldata->addWidget(_zn, 0, Qt::AlignCenter);
+
+	left->addLayout(coordnames);
+	left->addLayout(coorddata);
+	coords->setLayout(left);
+	coords->setFixedSize(125, 100);
+
+	right->addLayout(coordnames2);
+	right->addLayout(normaldata);
+	norms->setLayout(right);
+	norms->setFixedSize(125, 100);
+
+	plane_details->addWidget(coords);
+	plane_details->addWidget(norms);
+
+	coords->setVisible(request.cut_mode == MANUAL ? true : false);
+	norms->setVisible(request.cut_mode == MANUAL ? true : false);
+
+	strategiesGroup->addLayout(plane_details);
+
+}
+void UserInterface::CreateBottom()
 {
 	bottom->addWidget(_restart, 0, Qt::AlignBottom | Qt::AlignLeft);
 	bottom->addWidget(_moreInfo, 0, Qt::AlignBottom | Qt::AlignRight);
-	bottom->addWidget(_back, 0,  Qt::AlignRight);
+	bottom->addWidget(_back, 0, Qt::AlignRight);
 }
 
 void UserInterface::AddItemsToDropMenu()
 {
-	_accepttypes->addItem("NEGATIVE", 0);
-	_accepttypes->addItem("POSITIVE", 1);
-	_accepttypes->addItem("BOTH", 2);
+	_acceptTypes->addItem("NEGATIVE", 0);
+	_acceptTypes->addItem("POSITIVE", 1);
+	_acceptTypes->addItem("BOTH", 2);
 	
-	
-	_automatic_dropdown->addItem("Legnagyobb terfogatu", 0);
-	_automatic_dropdown->addItem("Legnagyobb atmeroju", 1);
-	_automatic_dropdown->addItem("Legregebb ideje erintetlen", 2);
-	_automatic_dropdown->addItem("Optimalis(parameteres)", 3);
-	_automatic_dropdown->addItem("Optimalis + atmero", 4);
-	_automatic_dropdown->addItem("Optimalis + terfogat", 5);
-	_automatic_dropdown->addItem("Manualis", 6);
+	_choiceStrategy->addItem("Legnagyobb terfogatu", 0);
+	_choiceStrategy->addItem("Legnagyobb atmeroju", 1);
+	_choiceStrategy->addItem("Legregebb ideje erintetlen", 2);
+	_choiceStrategy->addItem("Optimalis(parameteres)", 3);
+	_choiceStrategy->addItem("Optimalis + atmero", 4);
+	_choiceStrategy->addItem("Optimalis + terfogat", 5);
 
-	
 	//	Vágó sík :
 
-	_manual_dropdown->addItem("Manualis", 0);
-	_manual_dropdown->addItem("Veletlen normalisu, sulyponton atmeno", 1);
-	_manual_dropdown->addItem("Atmerore meroleges, sulyponton atmeno", 2);
-	_manual_dropdown->addItem("Veletlen lap alatt fekvo", 3);
-	_manual_dropdown->addItem("Optimalis lap alatt fekvo", 4);
-	_manual_dropdown->addItem("Osszes pontra illesztett", 5);
-	_manual_dropdown->addItem("Veletlen feluletre illesztett", 6);
-	_manual_dropdown->addItem("Optimalis feluletre illesztett", 7);
-	_manual_dropdown->addItem("Globalis hibara optimalis(? )", 8);
+	_plane->addItem("Manualis", 0);
+	_plane->addItem("Optimalis lap alatt fekvo", 1);
+	_plane->addItem("Osszes pontra illesztett", 2);
+	_plane->addItem("Optimalis feluletre illesztett", 3);
+	_plane->addItem("Globalis hibara optimalis(? )", 4);
+	_plane->addItem("Atmerore meroleges, sulyponton atmeno", 5);
+	_plane->addItem("Veletlen", 6);
+	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 7);
+	_plane->addItem("Veletlen feluletre illesztett", 8);
+	_plane->addItem("Veletlen lap alatt fekvo", 9);
+
 }
 
 void UserInterface::RequestWrongCuttingErrorResolve()
@@ -448,7 +625,7 @@ void UserInterface::RequestWrongCuttingErrorResolve()
 	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok | QMessageBox::Help);
 
 	_accept->setEnabled(false);
-	_accepttypes->setEnabled(false);
+	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
 	_cutting->setEnabled(true);
 }

@@ -241,6 +241,8 @@
     <ClCompile Include="Visualization\MyApp.cpp" />
     <ClInclude Include="..\GeneratedFiles\ui_userinterface.h" />
     <ClCompile Include="main.cpp" />
+    <ClInclude Include="logger\logger.h" />
+    <ClInclude Include="planegetters.h" />
     <ClInclude Include="prior.h" />
     <ClInclude Include="priorityfunctions.h" />
     <ClInclude Include="szakdoga\approximation.h" />

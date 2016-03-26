@@ -36,7 +36,7 @@ int main(int argc, char* args[])
 	//Window Create
 	SDL_Window *win = 0;
 	win = SDL_CreateWindow("MeshApprox!",
-		200,									
+		100,									
 		50,									
 		800,									
 		600,									
@@ -81,7 +81,7 @@ int main(int argc, char* args[])
 	}
 
 	std::stringstream window_title;
-	window_title << "OpenGL " << glVersion[0] << "." << glVersion[1];
+	window_title << "MeshApprox ";
 	SDL_SetWindowTitle(win, window_title.str().c_str());
 
 	bool quit = false; //relates to running of our program

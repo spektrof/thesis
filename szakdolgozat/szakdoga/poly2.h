@@ -42,6 +42,10 @@ namespace approx{
 		Iterator begin() { return pts.begin(); }
 		Iterator end() { return pts.end(); }
 
+		bool operator == (const Polygon2<T>& p) const {
+			return pts == p.pts;
+		}
+
 		//pontok szama
 		int size() const { return pts.size(); }
 		//pontokat tartalmazo vektor konstans elerese
@@ -52,7 +56,7 @@ namespace approx{
 		
 		//elojeles terulet, elojele seggithet annak eldonteseben hogy cw vagy ccw felsorolasban van megadva
 		T signed_area() const {
-			int n = (int)pts.size();
+			int n = pts.size();
 			T result = 0;
 			for (int i = 0; i < n; ++i){
 				result += pts[(i + 1) % n].x*pts[i].y - pts[i].x*pts[(i + 1) % n].y;
@@ -159,7 +163,8 @@ namespace approx{
 		//mukodnie kell konvex es konkav esetre is
 		bool contains(const Polygon2<T>& p) const {
 			for (const Vector2<T>& pt : p) {
-				if (!contains(pt)) return false;
+				if (!contains(pt))
+					return false;
 			}
 			return true;
 		}
@@ -169,7 +174,18 @@ namespace approx{
 			bool inside = false;
 			int n = size();
 			for (int i = 0; i < n; ++i) {
-				if (line.classify_point(points(i)) * line.classify_point(points((i + 1) % n)) <= 0) inside = !inside;
+				T c1 = line.classify_point(points(i)),
+				  c2 = line.classify_point(points((i + 1) % n));
+				if (c1 * c2 < 0) {
+					T all = abs(c1) + abs(c2);
+					Vector2<T> pt = abs(c2) / all * points(i) + abs(c1) / all * points((i + 1) % n);
+					if (pt.x > v.x) {
+						inside = !inside;
+					}
+				}
+				else if (c1 == 0 && points(i).x > v.x) {
+					inside = !inside;
+				}
 			}
 			return inside;
 		}

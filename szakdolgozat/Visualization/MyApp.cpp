@@ -3,10 +3,6 @@
 
 #include <GL/GLU.h>
 
-#include <math.h>
-#include <vector>
-#include <set>
-
 #define CuttingPlaneWireType 1
 #define _3DWireType 0
 #define TRANSPARENCY 1
@@ -31,6 +27,7 @@ Visualization::Visualization(void)
 	programID = 0;
 
 	ActiveAtom = 0;
+	ActiveIndex = 0;
 }
 
 Visualization::~Visualization(void)
@@ -76,11 +73,21 @@ bool Visualization::EngineInit()
 		std::cout << "HIBA A FAJL BETOLTESENEL!\n";
 		return false;
 	}
+
+	PlaneCalculator->SetData(&app.container());
 	data = app.atom_drawinfo();
 	targetdata = app.target_drawinfo();
+
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,_target_vaoID,_target_vboID, _target_indexID);
+	
+	//lastUse->push_back(0);
+	//prior.SetLastUse(lastUse,app.container().begin());
 
+	prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
+	GetPriorResult();
+
+//	app.container().begin()
 	centr = app.container().atoms(ActiveAtom).centroid();
 	distance = p.classify_point(centr);
 	_planenormal = approx::convert(p.normal());
@@ -111,7 +118,8 @@ void Visualization::Render()
 	}
 	else // _3D
 	{
-		switch (request.happen)
+		
+		switch (request.eventtype)
 		{
 		case ACCEPT:
 			AcceptCutting();
@@ -128,12 +136,28 @@ void Visualization::Render()
 		case NEWSTRATEGY:
 			SetNewStrategy();
 			break;
+		case NEWCUTTINGMODE:
+			SetNewCuttingMode();
+			break;
 		case RESTART:
 			GetRestart();
+			break;
+		case NEXTATOM:
+			NextAtom();
+			break;
+		case PREVATOM:
+			PrevAtom();
+			break;
+		case RECALCULATING:
+			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+			break;
+		case MORESTEPS:
+			for (int i = 0; i < request.CountsOfCutting; ++i)	{	GetResult();	}
 			break;
 		default:
 			break;
 		}
+
 
 		DrawCuttingPlane(glm::translate<float>( centr.x -  (_planenormal.x*distance - 1),
 												centr.y -  (_planenormal.y*distance - 1),
@@ -142,17 +166,47 @@ void Visualization::Render()
 						
 		DrawTargetBody();
 
+		glEnable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		/*	DRAWING METHOD:
 				1.Draw all opaque objects first. -> amik nem átlátszók
 				2.Sort all the transparent objects.	-> z buffer szerinti sorbarendezés , legbelsőt először
 				3.Draw all the transparent objects in sorted order.	-> a sorrend szerinti rajz
 		*/
-		SortAlphaBlendedObjects(data);
-		for (std::deque<Utility::data_t>::iterator it = SortedObjects.begin() ; it < SortedObjects.end() ; ++it)
+		//SortAlphaBlendedObjects(data);
+		/*SortedObjects.clear();
+		for (std::vector<int>::iterator it = priorQue.begin(); it != priorQue.end(); ++it)
 		{
-			Draw3D(it->first, /*0.4f,*/ 1, glm::scale<float>(1.0f, 1.0f, 1.0f));
+			SortedObjects.push_back(Utility::data_t(*it, 2));
+		}*/
+
+		/*for (std::vector<Utility::data_t>::iterator it = SortedObjects.begin() ; it != SortedObjects.end() ; ++it)
+		{
+			Draw3D(it->first /*0.4f,*/// );
+		//}
+
+		/* Mivel az összes 3ds atomot ugyanazzal a trafóval rajzolom ki így elég 1x felküldeni -> 
+		kérdés ugye jó ha itt szorzom össze a 3 mtx ot? shaderkódban sokszor megtenné ezt ami lassabb lenne sztem*/
+
+		glm::mat4 matWorld = glm::mat4(1);
+		glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
+
+		glm::mat4 mvp = m_matProj * m_matView * matWorld;
+
+		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+		glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
+		glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
+	
+
+		for (int i = 0; i < data.index_ranges.size()-1; ++i)
+		{
+			Draw3D(i /*0.4f,*/,1);
 		}
-		
+
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
 	}
 
 	glUseProgram(0);
@@ -162,21 +216,31 @@ void Visualization::Render()
 void Visualization::AcceptCutting()
 {
 	cutting_mode = false;
-
-	switch (request.ta)
+	
+	switch (request.type)
 	{ 
 		case BOTH:
 			if (!app.container().last_cut_result().choose_both()) { ui.ErrorShow("ERROR BOTH\nThe cut is dopped!"); return; }
 
 			NumberOfAtoms++;
+
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies,_3DvaoID,_3DvboID, _3Dindex);
+
+			prior.erase(ActiveIndex);
+			prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
+			prior.insert(NumberOfAtoms-1, &app.container().atoms(NumberOfAtoms-1));
+
 			break;
 		case POSITIVE:
 			if (!app.container().last_cut_result().choose_positive()) { ui.ErrorShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
 
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+
+			prior.erase(ActiveIndex);
+			prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
+
 			break;
 		case NEGATIVE:
 
@@ -184,13 +248,17 @@ void Visualization::AcceptCutting()
 
 			data = app.atom_drawinfo();
 			ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+
+			prior.erase(ActiveIndex);
+			prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
+
 			break;
 	}
 
-	PushAtomsToQue();
-	SortAtomsByPrior();
+	GetPriorResult();
+	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
-	DEBUG("\tACCEPT :       " << request.ta << "\n\n");
+	DEBUG("\tACCEPT :       " << request.type << "\n\n");
 
 }
 
@@ -208,13 +276,15 @@ void Visualization::GetResult()
 	
 	app.container().cut(ActiveAtom, p);
 
+	DEBUG("\tCUT: sík - ( " << request.plane_norm.x << " , " << request.plane_norm.y << " , " << request.plane_norm.z << " ) "
+		<< "\n\t\t pont - ( " << request.plane_coord.x << " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n");
+
+	if (request.cut_mode != MANUAL) { CutChecker(); return;  }
+
 	//data = app.cut_drawinfo();	//CSAK VÁGOTT
-	//MergeDataContainer(data, app.cut_drawinfo());		//Ne használjuk!
 	_MergeDataContainer(data, app.cut_drawinfo());
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 
-	DEBUG("\tCUT: sík - ( " << _planenormal.x << " , " << _planenormal.y << " , " << _planenormal.z << " ) " 
-			<< "\n\t\t pont - ( " << request.plane_coord.x<< " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n" );
 }
 
 void Visualization::GetUndo()
@@ -222,6 +292,7 @@ void Visualization::GetUndo()
 	cutting_mode = false;
 
 	app.container().last_cut_result().undo();
+
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 
@@ -232,65 +303,58 @@ void Visualization::GetRestart()
 {
 	cutting_mode = false;
 	NumberOfAtoms = 1;
+
 	ActiveAtom = 0;
+	ActiveIndex = 0;
 
 	app.restart();
+	PlaneCalculator->SetData(&app.container());
+	PlaneCalculator->SetActive(ActiveAtom);
+
 	data = app.atom_drawinfo();
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+
+	prior.clear();
+	prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
+	GetPriorResult();
+
+	RefreshPlaneData(Utility::PlaneResult(request.plane_norm,request.plane_coord));
+
 	DEBUG("\tRESTART\n");
 }
 
 void Visualization::SetNewPlane()
 {
-	p = approx::Plane<float>(
-							 { request.plane_norm.x, request.plane_norm.y, request.plane_norm.z },
-		approx::Vector3<float>(request.plane_coord.x, request.plane_coord.y, request.plane_coord.z));
-	distance = p.classify_point(centr);
-	_planenormal = approx::convert(p.normal());
+	PlaneCalculator->SetRequest(Utility::PlaneResult(request.plane_norm, request.plane_coord));
+
+	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+
 }
 
 void Visualization::SetNewStrategy()
 {
-	if (request.IsUserControl)
-	{
-		switch (request.uc)
-		{
-			case MANUAL:
-				break;
-			case RANDOMNORMALthCENTROID:
-				break;
-			case ATMEROREMEROLEGESSULYP:
-				break;
-			case RANDOMLAPUNDER:
-				break;
-			case OPTIMALLAPUNDER:
-				break;
-			case ALLPOINTILLESZTETT:
-				break;
-			case RANDOMFELULETILLESZT:
-				break;
-			case OPTIMFELULETILL:
-				break;
-			case GLOBHIBAOPTIM:
-				break;
-		}
-	}
-	else {
-		switch (request.ac)
+	switch (request.choice)
 		{
 			case VOLUME:
-				//prior = PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 				//prior.sorter();
-				SortAtomsByPrior();
+				prior.clear();
+				for (int i = 0;i < NumberOfAtoms;++i){	prior.insert(i, &app.container().atoms(i));	}
+				GetPriorResult();
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				break;
-			case ATMERO:
-				//prior = PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
+			case DIAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
 				//prior.sorter();
-				SortAtomsByPrior();
+				prior.clear();
+				for (int i = 0;i < NumberOfAtoms;++i)	{	prior.insert(i, &app.container().atoms(i));}
+				GetPriorResult();
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				break;
-			case ERINTETLEN:
+			case UNTOUCHED:
+				//prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetLastUse);
+				//prior.sorter();
+				//SortAtomsByPrior();
 				break;
 			case OPTIMALPARAMETER:
 				break;
@@ -298,12 +362,75 @@ void Visualization::SetNewStrategy()
 				break;
 			case OPTIMALVOLUME:
 				break;
-			case RANDOMMANUAL:
+			case RANDOM:
 				break;
 
 		}
-	}
+
 	DEBUG("\tNEWSTRATEGY\n");
+}
+
+void Visualization::SetNewCuttingMode()
+{
+	switch (request.cut_mode)
+	{
+	case MANUAL:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case RANDOMNORMALCENTROID:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomNormalCentroid);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case ATMEROREMEROLEGESSULYP:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterMerSulyp);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case RANDOMLAPALATT:
+		break;
+	case OPTIMALLAPALATT:
+		break;
+	case MINDENPONTRAILLESZTETT:
+		break;
+	case RANDOMFELULETILLESZT:
+		break;
+	case OPTIMFELULETILL:
+		break;
+	case GLOBHIBAOPTIM:
+		break;
+	case RANDOM:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Random);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	}
+}
+
+void Visualization::NextAtom()
+{
+	ActiveIndex = (ActiveIndex + 1) % NumberOfAtoms;
+	ActiveAtom = priorQue[ActiveIndex];
+
+	PlaneCalculator->SetActive(ActiveAtom);
+
+	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+
+	std::cout << "AKTIV: " << ActiveAtom;
+	std::cout << " VOLUME: " << app.container().atoms(ActiveAtom).volume() << "\n";
+	DEBUG("\tATOMVALTAS: +\n\n");
+}
+
+void Visualization::PrevAtom()
+{ 
+	ActiveIndex = (ActiveIndex - 1 + NumberOfAtoms) % NumberOfAtoms;
+	ActiveAtom = priorQue[ActiveIndex];
+
+	PlaneCalculator->SetActive(ActiveAtom);
+
+	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+
+	std::cout << "AKTIV: " << ActiveAtom;
+	std::cout << " VOLUME: " << app.container().atoms(ActiveAtom).volume() << "\n";
+	DEBUG("\tATOMVALTAS: -\n\n");
 }
 
 void Visualization::AddShaders()
@@ -356,20 +483,13 @@ void Visualization::Draw3D(const int& which/*, float _opacity*/, const bool& bac
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 	}
-
-	//glEnable(GL_BLEND);
+	
+	
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
-	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
-
-	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-	
 	glBindVertexArray(_3DvaoID);
 
-	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
+	//ezeket elég lenne 1x feltölteni, ha nem változnak a draw3d scale stb jei - s megnézni ha shaderben számol gyorsabb e!!
 
 	float _opacity;
 	if (IsItActive(which)) { SetActiveAtomProperties(_opacity); }
@@ -468,9 +588,6 @@ void Visualization::Update()
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym){
-	case SDLK_k:
-		LetsDOSomething();
-		break;
 	case SDLK_t:	//opacity
 		transparency = !transparency;
 		break;
@@ -504,23 +621,13 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 	case SDLK_RIGHT:
 		l.Add(l.GetLightUnit(c.GetUp()));
 		break;
-	case SDLK_KP_PLUS:	//atomváltás
-		if (cutting_mode) return;
-		ActiveAtom = (ActiveAtom + 1) % NumberOfAtoms;
-		centr = app.container().atoms(ActiveAtom).centroid();
-		distance = p.classify_point(centr);
-		_planenormal = approx::convert(p.normal());
-		std::cout << "AKTIV: " << ActiveAtom;
-		std::cout << " VOLUME: "<< app.container().atoms(ActiveAtom).volume() << "\n";
-		DEBUG("\tATOMVALTAS: +\n\n");
-		break;
-	case SDLK_KP_MINUS:
-		if (cutting_mode) return;
-		ActiveAtom = (ActiveAtom - 1) % NumberOfAtoms;
-		centr = app.container().atoms(ActiveAtom).centroid();
-		distance = p.classify_point(centr);
-		_planenormal = approx::convert(p.normal());
-		DEBUG("\tATOMVALTAS: -\n\n");
+	case SDLK_o:
+		std::cout << "SORTED OBJECTS - DRAWING\n";
+		for (std::vector<Utility::data_t>::iterator it = SortedObjects.begin(); it != SortedObjects.end(); it++)
+		{
+			std::cout << it->first << " - ";
+		}
+		std::cout << "\n";
 		break;
 	}
 }
@@ -577,118 +684,42 @@ void Visualization::Resize(int _w, int _h)
 
 bool Visualization::IsItActive(const int& which)
 {
-	return	(request.ta == NEGATIVE && ( ActiveAtom  ) == which)
-		|| (request.ta == POSITIVE && (ActiveAtom ) + 1 == which)
-		|| (request.ta == BOTH && ((ActiveAtom ) + 1 == which || (ActiveAtom ) == which));
+	return	(request.type == NEGATIVE && ( ActiveAtom  ) == which)
+		|| (request.type == POSITIVE && (ActiveAtom ) + 1 == which)
+		|| (request.type == BOTH && ((ActiveAtom ) + 1 == which || (ActiveAtom ) == which));
 }
 void Visualization::GetInfo()
 {
-	app.container().atoms(1).volume();
 	std::cout << "A celtest terfogata: " << app.target().body().volume() << "\n";
 	std::cout << "negativ oldali keletkezett atom terfogata: " << app.container().last_cut_result().negative()->volume() << "\n";
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
 }
 
 //objektumonkénti rendezés, pontok alapján
-/*TODO: Atomonként majd atomon belül indexrendezés 3-as (háromszög) csoportokban -> eroforras pocsekolas ha nem nagyon feltuno*/
+/*TODO: Atomonként majd atomon belül indexrendezés 3-as (háromszög) csoportokban -> eroforras pocsekolas ha nem nagyon feltuno
+Probléma: az atomok átlátszósága nem tökéletes(önmagukra tekintve), függ a lapok renderelésétől
+-> ezért lenne jó laponként/háromszogenkent rajzolni -> teljes átindexelést igényelne
+*/
 void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 {
 	SortedObjects.clear();
-	
+
 	for (size_t i = 0; i < data.index_ranges.size() - 1; i++)
 	{
 		int start = data.index_ranges[i];
-		int end = data.index_ranges[i+1];
+		int end = data.index_ranges[i + 1];
 
 		std::vector<float> sps;
 		sps.clear();
-		for (int ObjectTriangles = start; ObjectTriangles < end ; ++ObjectTriangles)
+		for (int ObjectTriangles = start; ObjectTriangles < end; ++ObjectTriangles)
 		{
 			glm::vec3 sp = data.points[data.indicies[ObjectTriangles]];
-			sps.push_back( glm::dot( c.GetEye() - sp , c.GetEye() -sp) );
+			sps.push_back(glm::dot(c.GetEye() - sp, c.GetEye() - sp));
 		}
 		auto result = *std::min_element(std::begin(sps), std::end(sps));
 		SortedObjects.push_back(Utility::data_t(i, result));
 	}
 
-	//std::sort(SortedObjects.begin(), SortedObjects.end(), Utility::greater_second<Utility::data_t>());
-	std::sort(SortedObjects.begin(), SortedObjects.end(), [](Utility::data_t const& a, Utility::data_t const& b) {return a.second > b.second ; });
-
-	// CSAK NEM ÁTLÁTSZO atomok eseten kéne
-	/*std::deque<Utility::data_t>::iterator temp;
-	Utility::data_t temp_data;
-	if (!cutting_mode)
-	{
-		switch (request.ta)
-		{
-		case BOTH:
-			temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom + 1; });
-			temp_data = Utility::data_t(temp->first, temp->second);
-			SortedObjects.erase(temp);
-			SortedObjects.push_front(temp_data);
-
-			temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom; });
-			temp_data = Utility::data_t(temp->first, temp->second);
-			SortedObjects.erase(temp);
-			SortedObjects.push_front(temp_data);
-			break;
-		case POSITIVE:
-			temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {
-				return a.first == ActiveAtom + 1;
-			});
-			temp_data = Utility::data_t(temp->first, temp->second);
-			SortedObjects.erase(temp);
-			SortedObjects.push_front(temp_data);
-			break;
-		case NEGATIVE:
-			temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom; });
-			temp_data = Utility::data_t(temp->first, temp->second);
-			SortedObjects.erase(temp);
-			SortedObjects.push_front(temp_data);
-			break;
-
-		}
-	}
-	else {
-		temp = std::find_if(SortedObjects.begin(), SortedObjects.end(), [&, this](Utility::data_t const& a) {return a.first == ActiveAtom; });
-		temp_data = Utility::data_t(temp->first, temp->second);
-		SortedObjects.erase(temp);
-		SortedObjects.push_front(temp_data);
-	}
-	*/
-	
-}
-
-/*Dont bother the actual atom which was cutted, just insert our datas to the end of our vectors
-  need that gap size (_tmpActiveAtom)
-  RANGED
-  ------------------------------------------------				-----------------------------------------------
-  |		|	x	|		|		|		|		|	-------->	|		|		|		|		|	x	|		|		-> _tmpActiveAtom = 3 ( 2 mert tól ig a rangedben)
-  ------------------------------------------------				-----------------------------------------------
-  NOTE : DONT USE, cause we need a tempolary object which should be set so many point
- */
-void Visualization::MergeDataContainer(approx::BodyList& data, const approx::BodyList& cutresult)
-{
-	int CountOfPoints = (int)data.points.size();
-
-	for (size_t i = 0; i < cutresult.points.size();++i)
-	{
-		data.points.push_back(cutresult.points[i]);
-	}
-
-	int LastIndexRange = data.index_ranges[data.index_ranges.size() - 1];
-	
-	for (size_t i = 0; i < cutresult.indicies.size();++i)
-	{
-		data.indicies.push_back(cutresult.indicies[i] + CountOfPoints);
-	}
-
-	for (size_t i = 1; i < cutresult.index_ranges.size();++i)
-	{
-		data.index_ranges.push_back(cutresult.index_ranges[i] + LastIndexRange);
-	}
-
-	//_tmpActiveAtom = (int)data.index_ranges.size() - 1 - ActiveAtom - 2 ;
 }
 
 /*	Search our points which only used in the cutted atom -> collect them in a set
@@ -808,56 +839,34 @@ void Visualization::SetPlaneProperties()
 	glUniform3f(SpecCol, 0.0f, 0.2f, 0.2f);
 }
 
-//We dont need this function later
-void Visualization::LetsDOSomething()
+void Visualization::GetPriorResult()
 {
-	prior.clear();
+	std::vector<Utility::PriorResult> result = prior.GetOrder();
+	priorQue = prior.GetPriorIndexes();
+
+	ActiveIndex = 0;
+	ActiveAtom = priorQue[ActiveIndex];
+
+	PlaneCalculator->SetActive(ActiveAtom);
+
+	std::for_each(result.begin(), result.end(), Utility::writer());
+}
+
+void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
+{
+	p = approx::Plane<float>(newplanedata.normal, newplanedata.point);
+	distance = p.classify_point(centr);
+	_planenormal = approx::convert(p.normal());
+}
+
+void Visualization::CutChecker()
+{
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() != 0;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() != 0;
+
+	if (IntersectionWithNegative && IntersectionWithPositive) request.type = BOTH;
+	else if (IntersectionWithNegative) request.type = NEGATIVE;
+		else request.type = POSITIVE;
 	
-	for (GLuint i = 0;i < NumberOfAtoms;++i)
-	{
-		prior.insert(i,app.container().atoms(i));
-	}
-
-	prior.sorter();
-
-	std::vector<Utility::ResultData> result = prior.GetOrder();
-
-	struct writer
-	{
-		bool operator()(const Utility::ResultData& a)
-		{
-			std::cout << a.id << " " << a.value<<"\n";
-			return true;
-		}
-	};
-
-	std::for_each(result.begin(), result.end(), writer());
-
-}
-
-void Visualization::PushAtomsToQue()
-{
-	prior.clear();
-
-	for (GLuint i = 0;i < NumberOfAtoms;++i)
-	{
-		prior.insert(i, app.container().atoms(i));
-	}
-}
-void Visualization::SortAtomsByPrior()
-{
-	prior.sorter();
-
-	std::vector<Utility::ResultData> result = prior.GetOrder();
-
-	struct writer
-	{
-		bool operator()(const Utility::ResultData& a)
-		{
-			std::cout << a.id << " " << a.value << "\n";
-			return true;
-		}
-	};
-
-	std::for_each(result.begin(), result.end(), writer());
+	AcceptCutting();
 }

@@ -33,7 +33,7 @@ namespace approx{
 		ScalarType signed_distance() const { return dist; }
 		
 		//normalvektor lekerdezes
-		Vector& normal() { return n; }
+		//Vector& normal() { return n; }
 		Vector normal() const{ return n; }
 
 		//egy pont amely a sikon helyezkedik el es a normalvektor skalarszorosa
@@ -71,15 +71,15 @@ namespace approx{
 			  s3 = normal().y*normal().y + normal().z*normal().z;
 			if (s1 >= s2 && s1 >= s3){
 				Vector3<T> w(-(normal().y / s1), normal().x / s1, 0);
-				return{ w, cross(normal(), w) };
+				return{ w.normalized(), cross(normal(), w).normalized() };
 			}
 			else if (s2 >= s3 && s2 >= s1){
 				Vector3<T> w(-(normal().z / s2), 0, normal().x / s2);
-				return{ w, cross(normal(), w) };
+				return{ w.normalized(), cross(normal(), w).normalized() };
 			}
 			else{
 				Vector3<T> w(0, -(normal().z / s3), normal().y / s3);
-				return{ w, cross(normal(), w) };
+				return{ w.normalized(), cross(normal(), w).normalized() };
 			}			
 		}
 

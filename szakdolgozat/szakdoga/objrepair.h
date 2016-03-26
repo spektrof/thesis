@@ -8,6 +8,7 @@
 //
 
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <functional>
 #include "vectors.h"
@@ -85,6 +86,11 @@ namespace approx{
 			return vecs;
 		}
 
+		void clear() {
+			vecs.clear();
+			ind_map.clear();
+		}
+
 	};
 
 	//nulla tavolsaggal mukodik, viszont gyorsabban tud keresni mint a masik tipus
@@ -113,7 +119,7 @@ namespace approx{
 
 		void push_back(const Vector3<T>& v) {
 			if (!vmap.count(v)) {
-				vmap[v] = (int)vecs.size();
+				vmap[v] = vecs.size();
 				vecs.push_back(v);
 			}
 			inds.push_back(vmap[v]);
@@ -138,6 +144,10 @@ namespace approx{
 			return std::vector<Vector3<T>>(begin(), end());
 		}
 
+		void clear() {
+			vecs.clear();
+			inds.clear();
+		}
 	};
 
 }

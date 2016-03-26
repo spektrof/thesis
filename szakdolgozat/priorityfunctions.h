@@ -5,14 +5,26 @@
 template <class T>
 class SorterFunctions
 {
+	/*TODO ide tenni egy pointert beginre,endre és azon iterálni végig + egy vectorpointer és azt a számot visszaadni*/
+	//std::vector<int>* last_use;
+
 	public:
-		float GetDiamaterLength(T atom) const
+		SorterFunctions() /*: last_use(NULL) */{ }
+		~SorterFunctions() {}
+
+	/*	void SetLastUse(std::vector<int>* lu)
 		{
-			return atom.diameter().length();
+			last_use = lu;
+		}*/
+		float GetDiamaterLength(const T* atom) const
+		{
+			return atom->diameter().length();
 		}
 
-		float GetVolume(T atom) const
+		float GetVolume(const T* atom) const
 		{
-			return atom.volume();
+			return atom->volume();
 		}
+
+		
 };

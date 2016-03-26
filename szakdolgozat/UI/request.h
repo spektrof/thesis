@@ -1,42 +1,48 @@
 #pragma once
+#include "../szakdoga/approximator.h"
 
 enum ToDo{
 	NONE,
 	ACCEPT,
 	CUTTING,
 	UNDO,
-	RESTART,
 	NEWPLANE,
 	NEWSTRATEGY,
+	NEWCUTTINGMODE,
+	RESTART,
+	NEXTATOM,
+	PREVATOM,
+	RECALCULATING,
+	MORESTEPS,
 };
 
 //RANDOM
-enum AutomaticControl {
+enum ChoiceMode {
 	VOLUME,
-	ATMERO,
-	ERINTETLEN,
+	DIAMETER,
+	UNTOUCHED,
 	OPTIMALPARAMETER,
 	OPTIMALATMERO,
 	OPTIMALVOLUME,
-	RANDOMMANUAL,
 };
 
 //	Vágó sík :
 
-enum UserControl {
+enum CuttingMode {
 	MANUAL,
-	RANDOMNORMALthCENTROID,
-	ATMEROREMEROLEGESSULYP,
-	RANDOMLAPUNDER,
-	OPTIMALLAPUNDER,
-	ALLPOINTILLESZTETT,
-	RANDOMFELULETILLESZT,
+	OPTIMALLAPALATT,
+	MINDENPONTRAILLESZTETT,
 	OPTIMFELULETILL,
 	GLOBHIBAOPTIM,
+	ATMEROREMEROLEGESSULYP,
+	RANDOM,
+	RANDOMNORMALCENTROID,
+	RANDOMFELULETILLESZT,
+	RANDOMLAPALATT,
 };
 
 
-enum TypeAccept
+enum TypeOfAccept
 {
 	NEGATIVE,
 	POSITIVE,
@@ -45,19 +51,23 @@ enum TypeAccept
 
 struct Coord {
 	float x, y, z;
-	Coord(float a, float b, float c) : x(a),y(b),z(c) {}
+	Coord(float a, float b, float c) : x(a), y(b), z(c) {}
+	operator approx::Vector3<float>() const { return approx::Vector3<float>(x, y, z);  }
 };
 
 
 struct Request {
-	ToDo happen;
-	UserControl uc;
-	AutomaticControl ac;
-	TypeAccept ta;
+	ToDo eventtype;
+	ChoiceMode choice;
+	CuttingMode cut_mode;
+	TypeOfAccept type;
+	/*Vagosik*/
 	Coord plane_coord;
 	Coord plane_norm;
-	bool IsUserControl;
+	/*Tobb vagas*/
+	ushort CountsOfCutting;
 
-	Request(ToDo t = ToDo::NONE, UserControl u = UserControl(0),AutomaticControl a = AutomaticControl(0), Coord c = Coord(0,0,0), Coord n = Coord(1,0,0), bool ius = false) 
-		: happen(t), uc(u), ac(a), plane_coord(c),plane_norm(n), IsUserControl(ius) { }
+	Request(const ToDo t = ToDo::NONE, const ChoiceMode ch = ChoiceMode(0), const CuttingMode cu = CuttingMode(0),
+		    const TypeOfAccept a = TypeOfAccept(0), const Coord p = Coord(0,0,26), const Coord n = Coord(0,0,1), const ushort c = 1)
+		: eventtype(t), choice(ch), cut_mode(cu), type(a), plane_coord(p), plane_norm(n), CountsOfCutting(c) { }
 };

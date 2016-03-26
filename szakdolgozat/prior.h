@@ -1,20 +1,21 @@
 #pragma once
 
 #include "Utils/Utility.h"
+#include "szakdoga\approximator.h"
 
 template <typename T, template<typename> class V>
 class PriorityQue
 {
-	V<T>* PriorityFunctions;
-	typedef float (V<T>::*GETTER)(T) const;
+	V<T>* PriorityFunctions = new V<T>();
+	typedef float (V<T>::*GETTER)(const T*) const;
 
 	GETTER m_getterFunc;
 
 	struct Data {
 		int id;
-		T AtomData;
+		const T* AtomData;
 		float value;
-		Data(const int& _id, const T& atom,const float& vol = 0) : id(_id), AtomData(atom),value(vol) {}
+		Data(const int& _id, const T* atom,const float& vol = 0) : id(_id), AtomData(atom),value(vol) {}
 	};
 
 	std::vector<Data> order;
@@ -25,10 +26,20 @@ public:
 		m_getterFunc = getterFunc;
 	}
 
-	//TODO: beszuro rendezes -> Accept esetén kihagyható a sorter meghívás
-	void insert(const int& _id, const T& atom)
+	/*Beszuro rendezes*/
+	void insert(const int& _id, const T* atom)
 	{
-		order.push_back( Data(_id, atom, (PriorityFunctions->*m_getterFunc)(atom)) );
+		float tmp_val = (PriorityFunctions->*m_getterFunc)(atom);
+		std::vector<Data>::iterator it = order.begin();
+
+		for (; it != order.end() && it->value > tmp_val; ++it) { }
+
+		order.insert(it, Data(_id, atom, tmp_val) );
+	}
+
+	void erase(const int& e)
+	{
+		order.erase(order.begin() + e);
 	}
 
 	void clear()
@@ -36,11 +47,9 @@ public:
 		order.clear();
 	}
 
+	/*Only use when we choose an other strategy*/
 	void sorter()
 	{
-		/*At lehet meg gondolni hogy legyen, azt gondolom hogy check szempontjából kell csak ez a volume
-		  De ha akarjuk ellenorizni akkor kell ez az iteráció - viszont így insertben értelmetlenné válik a számolása -> többször lefut
-		*/
 		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)
 		{
 			it->value = (PriorityFunctions->*m_getterFunc)(it->AtomData);
@@ -50,22 +59,44 @@ public:
 		std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
 	}
 
+	void RefreshDataPointer(const int& _id, const T* atom)
+	{
+		order[_id].AtomData = atom;
+	}
+
 	void SetComparer(GETTER getterfunc)
 	{
 		m_getterFunc = getterfunc;
 	}
 
-	std::vector<Utility::ResultData> GetOrder() const
+	std::vector<Utility::PriorResult> GetOrder() const
 	{
-		std::vector<Utility::ResultData> result;
+		std::vector<Utility::PriorResult> result;
 		result.clear();
 
 		for (std::vector<Data>::const_iterator it = order.begin(); it != order.end(); ++it)
 		{
-			result.push_back(Utility::ResultData(it->id,it->value));
+			result.push_back(Utility::PriorResult(it->id,it->value));
 		}
 
 		return result;
 	}
 
+	std::vector<int> GetPriorIndexes() const
+	{
+		std::vector<int> result;
+		result.clear();
+
+		for (std::vector<Data>::const_iterator it = order.begin(); it != order.end(); ++it)
+		{
+			result.push_back(it->id);
+		}
+
+		return result;
+	}
+
+	/*void SetLastUse(std::vector<int>* lu, approx::Approximation::Iterator begin)
+	{
+		PriorityFunctions->SetLastUse(lu);
+	}*/
 };

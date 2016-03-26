@@ -126,8 +126,8 @@ namespace approx{
 					_faces->push_back(cut.negative); //a kapott lapokat szortirozom az uj sokszogekbe
 					_faces->push_back(cut.positive); 
 					faces_added += 2; //2 uj lap kerult a taroloba
-					pos_faces.push_back((int)_faces->size() - 1);
-					neg_faces.push_back((int)_faces->size() - 2);
+					pos_faces.push_back(_faces->size() - 1);
+					neg_faces.push_back(_faces->size() - 2);
 					cut_map[indicies(i)] = {(int)neg_faces.size()-1,(int)pos_faces.size()-1,neg_faces.back(),pos_faces.back()};
 					pt_ids.push_back(cut.pt_inds.front());
 					pt_ids.push_back(cut.pt_inds.back());
@@ -166,11 +166,13 @@ namespace approx{
 			}
 
 			if (pt_ids.size()){ //a vagasnak volt hatasa, keletkezett lap
-				avg_pt /= pt_ids.size(); //kozeppont szamitasa
+				avg_pt /= static_cast<T>(pt_ids.size()); //kozeppont szamitasa
 				// a kapott pontokat a sulypont korul a lap sikjan forgasszog szerint rendezem
 				//a kapott lap konvex, tehat az ismetlodesek kiszurese utan megkapom a megfelelp sokszoget
-				Vector3<T> vx = vc[pt_ids.front()] - avg_pt, //x vektor a sikon
-						   vy = cross(p.normal(),vx); //y vektor a sikon
+				
+				auto base = p.ortho2d();
+				Vector3<T> vx = base.first, //x vektor a sikon
+					vy = base.second; //y vektor a sikon
 				//rendezes a tangensbol visszanyert szog alapjan
 				std::sort(pt_ids.begin(), pt_ids.end(), [&](int a, int b){
 					Vector3<T> v1 = vc[a] - avg_pt, v2 = vc[b] - avg_pt;
@@ -178,18 +180,22 @@ namespace approx{
 						x2 = dot(v2, vx), y2 = dot(v2,vy);
 					return atan2(x1, y1) < atan2(x2, y2);
 				});
+
+
+
 				//a rendezett pontokbol minden masodik egyedi bekerul a sokszogre
 				std::vector<int> new_fc{pt_ids[0]};
-				for (int i = 2; i < pt_ids.size(); i += 2){
+				for (int i = 2; i < (int)pt_ids.size(); i += 2){
 					if(vc[pt_ids[i]] != vc[new_fc.back()]) new_fc.push_back(pt_ids[i]); //egy csucsnal lehet hogy tobb el osszefut, nem akarunk egymas utan ugyanolyan pontokat
 				}
+
 				_faces->emplace_back(faces(0).vertex_container(),new_fc, faces(0).normal_container(),p.normal());
 				Polygon2<T> clipper = _faces->back().to_2d(base.first,base.second); //a lap a sik koordinatarendszerebe athelyezve
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
-				n_cut_f = (int)_faces->size() - 2;
-				p_cut_f = (int)_faces->size() - 1;
+				n_cut_f = _faces->size() - 2;
+				p_cut_f = _faces->size() - 1;
 				neg_faces.push_back(n_cut_f);
 				pos_faces.push_back(p_cut_f);
 				//a vetuleteket is clippelni kell
@@ -246,7 +252,13 @@ namespace approx{
 					++it;
 				}
 				if (clipf.size() >= 3){
-					sum += clipf.to_2d().area()*f.to_plane().signed_distance();
+
+					T x = clipf.to_2d().area();
+					T y = clipf.to_plane().signed_distance();
+					Vector3<T> norm1 = clipf.to_plane().normal(),
+						       norm2 = clipf.normal();
+
+					sum += clipf.to_2d().area()*clipf.to_plane().signed_distance();
 				}
 			}
 
@@ -254,6 +266,11 @@ namespace approx{
 				sum += f_poly[i]->area()*faces(i).to_plane().signed_distance();
 			}
 			return sum / static_cast<T>(3);
+		}
+
+		//Fourier-egyutthato, azaz a metszet es a teljes terfogatanak a hanyadosa
+		T fourier() const {
+			return intersection_volume() / volume();
 		}
 
 		//az i-edik metszet-lenyomat 
@@ -268,6 +285,17 @@ namespace approx{
 			f_poly[ind] = p1;
 			indicies().push_back(rep_ind2);
 			f_poly.push_back(p2);
+		}
+
+		int good_normals() const {
+			Vector3<T> cent = centroid();
+			int i = 0;
+			for (const Face<T>& f : *this) {
+				if (dot(f.normal(), cent - f.points(0)) > 0)
+					return i;
+				++i;
+			}
+			return -1;
 		}
 
 	};

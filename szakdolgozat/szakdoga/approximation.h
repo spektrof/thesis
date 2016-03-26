@@ -404,7 +404,7 @@ namespace approx{
 		//az eredmenykent keletkezett atomok, lapok es pontok bekerulnek a taroloba
 		CutResult cut(size_t ind, const Plane<T>& p){
 			if (pending()) undo();
-			last_cut = (int)ind;
+			last_cut = ind;
 			cut_res = _atoms[ind].cut_by(p);
 			return CutResult(this);
 		}
@@ -431,7 +431,7 @@ namespace approx{
 			std::vector<Face<T>> new_faces;
 			std::vector<Connection> new_connections;
 			int deleted = 0;
-			for (int i = 0; i < faces.size();++i){
+			for (int i = 0; i < (int)faces.size();++i){
 				if (needed[i]) { //az adott lap kell
 					needed[i] = deleted; //elotte ennyit toroltunk, annyival kell lejjebb vinni
 					new_faces.push_back(std::move(faces[i])); //elrakjuk az uj laptartoba
@@ -442,7 +442,7 @@ namespace approx{
 				}
 			}
 			connections = std::move(new_connections);
-			for (int i = 0; i < connections.size(); ++i) {
+			for (int i = 0; i < (int)connections.size(); ++i) {
 				if (connections[i].other_face >= 0)
 					connections[i].other_face -= needed[connections[i].other_face];
 			}
@@ -465,7 +465,7 @@ namespace approx{
 					
 			std::vector<Vector3<T>> new_vertices, new_normals;
 			deleted = 0;
-			for (int i = 0; i < vertices.size();++i){
+			for (int i = 0; i < (int)vertices.size();++i){
 				if (needed[i]){
 					needed[i] = deleted;
 					new_vertices.push_back(vertices[i]);
@@ -475,7 +475,7 @@ namespace approx{
 				}
 			}
 			deleted = 0;
-			for (int i = 0; i < normals.size(); ++i){
+			for (int i = 0; i < (int)normals.size(); ++i){
 				if (normal_needed[i]){
 					normal_needed[i] = deleted;
 					new_normals.push_back(normals[i]);
@@ -501,16 +501,29 @@ namespace approx{
 
 		//szamitott test
 		//TODO: a belso lapos bohockodast meg kell csinalni
-		Body<T> approximated_body(InsideHandling mode = InsideHandling::LeaveOut) {
+		Body<T> approximated_body(InsideHandling mode = InsideHandling::LeaveOut, T fouriermin=0.5f) {
 			garbage_collection();
 			std::vector<int> ind{};
-			for (int i = 0; i < connections.size(); ++i) {
-				if (connections[i].other_atom == -1 || (mode == InsideHandling::AddInside && connections[i].other_atom==-2)) {
-					ind.push_back(i);
-				}
-				else if (connections[i].other_atom == -2 && mode == InsideHandling::FlipInside) {
-					ind.push_back(faces.size());
-					faces.push_back(faces[i].reversed());
+			std::vector<T> fouriers;
+			fouriers.reserve(_atoms.size());
+			for (const AtomType a : _atoms) {
+				fouriers.push_back(a.fourier());
+			}
+			for (int i = 0; i < (int)_atoms.size(); ++i) {
+				if (fouriers[i] >= fouriermin) {
+					for (int idx : _atoms[i].indicies()) {
+						int other = connections[idx].other_atom;
+						if (other == -1 || (mode == InsideHandling::AddInside && other == -2)) {
+							ind.push_back(idx);
+						}
+						else if (other >= 0 && fouriers[other] < fouriermin) {
+							ind.push_back(idx);
+						}
+						else if (other == -2 && mode == InsideHandling::FlipInside) {
+							ind.push_back(faces.size());
+							faces.push_back(faces[idx].reversed());
+						}
+					}
 				}
 			}
 			return Body<T>(&faces, ind);

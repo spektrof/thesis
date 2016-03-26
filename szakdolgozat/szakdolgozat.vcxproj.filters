@@ -55,6 +55,9 @@
     <Filter Include="Test">
       <UniqueIdentifier>{73d2fc08-ae27-49bb-bc62-054b0dbe28a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{5941a021-f821-46ab-a528-68618581d796}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -97,9 +100,6 @@
     </ClInclude>
     <ClInclude Include="UI\request.h">
       <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="UI\userinterface.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="szakdoga\targetbody.h">
       <Filter>Group5_Mate</Filter>
@@ -160,6 +160,15 @@
     </ClInclude>
     <ClInclude Include="priorityfunctions.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="logger\logger.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="planegetters.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\userinterface.hpp">
+      <Filter>UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
