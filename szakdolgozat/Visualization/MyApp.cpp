@@ -58,7 +58,7 @@ bool Visualization::Init()
 	input.push_back(glm::vec2(1.0f, 3.0f));
 
 	ObjectCreator::Create2DObject(input,_2DvaoID,_2DvboID);
-	//Ideiglenes3DKocka();
+	
 	AddShaders();
 
 	DEBUG("---------------- INIT DONE ------------------\n"
@@ -159,9 +159,9 @@ void Visualization::Render()
 		}
 
 
-		DrawCuttingPlane(glm::translate<float>( centr.x -  (_planenormal.x*distance - 1),
-												centr.y -  (_planenormal.y*distance - 1),
-												centr.z -  (_planenormal.z*distance - 1)),
+		DrawCuttingPlane(glm::translate<float>( centr.x -  (_planenormal.x*distance),
+												centr.y -  (_planenormal.y*distance),
+												centr.z -  (_planenormal.z*distance)),
 						Utility::GetRotateFromNorm(_planenormal), glm::scale<float>(5.0f, 5.0f, 5.0f));
 						
 		DrawTargetBody();
@@ -695,11 +695,7 @@ void Visualization::GetInfo()
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
 }
 
-//objektumonkénti rendezés, pontok alapján
-/*TODO: Atomonként majd atomon belül indexrendezés 3-as (háromszög) csoportokban -> eroforras pocsekolas ha nem nagyon feltuno
-Probléma: az atomok átlátszósága nem tökéletes(önmagukra tekintve), függ a lapok renderelésétől
--> ezért lenne jó laponként/háromszogenkent rajzolni -> teljes átindexelést igényelne
-*/
+
 void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 {
 	SortedObjects.clear();
@@ -855,6 +851,7 @@ void Visualization::GetPriorResult()
 void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 {
 	p = approx::Plane<float>(newplanedata.normal, newplanedata.point);
+	centr = app.container().atoms(ActiveAtom).centroid();
 	distance = p.classify_point(centr);
 	_planenormal = approx::convert(p.normal());
 }

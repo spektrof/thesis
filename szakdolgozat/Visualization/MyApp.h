@@ -57,13 +57,9 @@ protected:
 		2D//LINESTRIP - 2 színû, belsõ külsõ
 		// + az atom átláts stb tri fan
 
-		2.random a merõleges készítésnél -> továbbra is kérdés
 		// MIERT VALTOZIK MEG A POINTER SORTER ESETEN a priorban??? WTF (prior.sorter() - setnewstrategy)
 
 		UNDO mûvelet??? mindig merge és accept szabad -> n mûvelet is autoacceptek a kérdés?
-	
-		n+2. : COMMIT + MAIL !!! MAILBEN: randomkérdés + megkérni hogy ha van idejük akkor lehetne tesztelni + UNDO kérdés
-
 	*/
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
 		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
