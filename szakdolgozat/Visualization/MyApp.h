@@ -52,7 +52,7 @@ public:
 
 protected:
 	/*	TODO list
-		Blender, hogy rendezük sorba az atomokat???
+		Blender : doksi
 
 		2D//LINESTRIP - 2 színû, belsõ külsõ
 		// + az atom átláts stb tri fan
@@ -60,6 +60,14 @@ protected:
 		// MIERT VALTOZIK MEG A POINTER SORTER ESETEN a priorban??? WTF (prior.sorter() - setnewstrategy)
 
 		UNDO mûvelet??? mindig merge és accept szabad -> n mûvelet is autoacceptek a kérdés?
+
+		1.LastUse ?
+		2.Tovabbi strategyk
+		3.2D
+		3/4. Test másik test fájlra
+		4.optimizing: pl lehetne mindig Plane típust visszaadni planegettersben?
+		n. Headerben rendezni a dolgokat
+
 	*/
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
 		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
@@ -104,14 +112,14 @@ protected:
 	void GetInfo();
 	bool IsItActive(const int&);
 
-	//std::vector <int>* lastUse = new std::vector <int>();
+	//std::vector <int> lastUse;
 	std::vector<int> priorQue;
 	int ActiveAtom, ActiveIndex;
 	bool transparency = true;
 	GLuint NumberOfAtoms = 1;
 
-	std::vector<Utility::data_t> SortedObjects;
-	void SortAlphaBlendedObjects(approx::BodyList&);
+	/*std::vector<Utility::data_t> SortedObjects;
+	void SortAlphaBlendedObjects(approx::BodyList&);*/
 
 	void GetPriorResult();
 

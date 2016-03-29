@@ -47,7 +47,7 @@ namespace approx{
 		}
 
 		//pontok szama
-		int size() const { return pts.size(); }
+		int size() const { return (int)pts.size(); }
 		//pontokat tartalmazo vektor konstans elerese
 		const std::vector<Vector2<T>>& points() const { return pts; }
 		//i. pont elerese

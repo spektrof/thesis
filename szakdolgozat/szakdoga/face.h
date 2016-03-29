@@ -68,12 +68,12 @@ namespace approx{
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* normals, int n_id) : vecs(vertices), inds(ids), normals(normals), normal_id(n_id){}
 		//megadott de beszurando normalist hasznalo konstruktor
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()){
+			: vecs(vertices), inds(ids), normals(_normals), normal_id((int)normals->size()){
 			normals->push_back(normal);
 		}
 		//megadott de beszurando normalist hasznalo konstruktor a pontok mozgatasaval
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()){
+			: vecs(vertices), inds(ids), normals(_normals), normal_id((int)normals->size()){
 			normals->push_back(normal);
 		}
 		//iteratorokkal mukodo konstruktor, az iteratorok az indexeket adjak meg
@@ -192,7 +192,7 @@ namespace approx{
 		//a muveletigeny linearis a csucspontok szamaban
 		CutResult cut_by(const Plane<T>& p) const {
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg,cut;
 			int pts_added=0;
 			for (int i = 0; i < n; ++i){
@@ -241,7 +241,7 @@ namespace approx{
 		//a muveletigeny linearis a pontok szamaban, valamint a vagopontok beszurasanal a megadott Maptype kereso es beszuro koltsege
 		template<class MapType> CutResult cut_by(const Plane<T>& p,MapType& m) const {
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg, cut;
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i){
@@ -301,7 +301,7 @@ namespace approx{
 			if (target_vecs == vecs && target_normals == normals) return cut_by(p);
 
 			T sign1 = p.classify_point(points(0)), sign2;
-			int n = size();
+			int n = (int)size();
 			std::vector<int> pos, neg,cut;
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i){

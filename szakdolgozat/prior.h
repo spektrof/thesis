@@ -59,11 +59,6 @@ public:
 		std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
 	}
 
-	void RefreshDataPointer(const int& _id, const T* atom)
-	{
-		order[_id].AtomData = atom;
-	}
-
 	void SetComparer(GETTER getterfunc)
 	{
 		m_getterFunc = getterfunc;
@@ -95,8 +90,8 @@ public:
 		return result;
 	}
 
-	/*void SetLastUse(std::vector<int>* lu, approx::Approximation::Iterator begin)
+	/*void SetLastUse(std::vector<int>* lu, approx::Approximation<float>::Iterator begin, approx::Approximation<float>::Iterator end)
 	{
-		PriorityFunctions->SetLastUse(lu);
+		PriorityFunctions->SetLastUse(lu,begin,end);
 	}*/
 };

@@ -56,7 +56,7 @@ namespace approx{
 		}
 
 		//a test lapszama
-		int size() const { return inds.size(); }
+		int size() const { return (int)inds.size(); }
 	    //az i. lap indexe a taroloban
 		int indicies(size_t i) const { return inds[i]; }
 		//indexlista lekerdezese konstans hozzaferesre

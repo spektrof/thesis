@@ -81,16 +81,13 @@ bool Visualization::EngineInit()
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,_target_vaoID,_target_vboID, _target_indexID);
 	
-	//lastUse->push_back(0);
-	//prior.SetLastUse(lastUse,app.container().begin());
+	//lastUse.push_back(0);
+	//prior.SetLastUse(&lastUse,app.container().begin(), app.container().end());
 
 	prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
 	GetPriorResult();
 
-//	app.container().begin()
-	centr = app.container().atoms(ActiveAtom).centroid();
-	distance = p.classify_point(centr);
-	_planenormal = approx::convert(p.normal());
+	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
 	return true;
 }
@@ -276,10 +273,17 @@ void Visualization::GetResult()
 	
 	app.container().cut(ActiveAtom, p);
 
+	
+	if (request.cut_mode != MANUAL) { 
+		CutChecker(); 
+
+		DEBUG("\tCUT: sík - ( " <<p.normal().x << " , " << p.normal().y << " , " << p.normal().z << " ) "
+			<< "\n\t\t pont - ( " << p.example_point().x << " , " << p.example_point().y << " , " << p.example_point().z << " )\n");
+
+		return;  }
+
 	DEBUG("\tCUT: sík - ( " << request.plane_norm.x << " , " << request.plane_norm.y << " , " << request.plane_norm.z << " ) "
 		<< "\n\t\t pont - ( " << request.plane_coord.x << " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n");
-
-	if (request.cut_mode != MANUAL) { CutChecker(); return;  }
 
 	//data = app.cut_drawinfo();	//CSAK VÁGOTT
 	_MergeDataContainer(data, app.cut_drawinfo());
@@ -339,35 +343,40 @@ void Visualization::SetNewStrategy()
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 				//prior.sorter();
 				prior.clear();
-				for (int i = 0;i < NumberOfAtoms;++i){	prior.insert(i, &app.container().atoms(i));	}
+				for (GLuint i = 0;i < NumberOfAtoms;++i){	prior.insert(i, &app.container().atoms(i));	}
 				GetPriorResult();
 				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				DEBUG("Choice : VOLUME\n");
 				break;
 			case DIAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
 				//prior.sorter();
 				prior.clear();
-				for (int i = 0;i < NumberOfAtoms;++i)	{	prior.insert(i, &app.container().atoms(i));}
+				for (GLuint i = 0;i < NumberOfAtoms;++i)	{	prior.insert(i, &app.container().atoms(i));}
 				GetPriorResult();
 				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				DEBUG("Choice : DIAMETER\n");
 				break;
 			case UNTOUCHED:
 				//prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetLastUse);
 				//prior.sorter();
-				//SortAtomsByPrior();
+			/*	prior.clear();
+				for (GLuint i = 0;i < NumberOfAtoms;++i) { prior.insert(i, &app.container().atoms(i)); }
+				GetPriorResult();
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());*/
+				DEBUG("Choice : UNTOUCHED\n");
 				break;
 			case OPTIMALPARAMETER:
+				DEBUG("Choice : OPTIMALPARAMETER\n");
 				break;
 			case OPTIMALATMERO:
+				DEBUG("Choice : OPTIMALATMERO\n");
 				break;
 			case OPTIMALVOLUME:
-				break;
-			case RANDOM:
+				DEBUG("Choice : OPTIMALVOLUME\n");
 				break;
 
 		}
-
-	DEBUG("\tNEWSTRATEGY\n");
 }
 
 void Visualization::SetNewCuttingMode()
@@ -377,30 +386,42 @@ void Visualization::SetNewCuttingMode()
 	case MANUAL:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		DEBUG("CuttingMode : MANUAL\n");
 		break;
 	case RANDOMNORMALCENTROID:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomNormalCentroid);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		DEBUG("CuttingMode : RANDOMNORMALCENTROID\n");
 		break;
 	case ATMEROREMEROLEGESSULYP:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterMerSulyp);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		DEBUG("CuttingMode : ATMEROREMEROLEGESSULYP\n");
 		break;
 	case RANDOMLAPALATT:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomUnderFace);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		DEBUG("CuttingMode : RANDOMLAPALATT\n");
 		break;
 	case OPTIMALLAPALATT:
+		DEBUG("CuttingMode : OPTIMALLAPALATT\n");
 		break;
 	case MINDENPONTRAILLESZTETT:
+		DEBUG("CuttingMode : MINDENPONTRAILLESZTETT\n");
 		break;
 	case RANDOMFELULETILLESZT:
+		DEBUG("CuttingMode : RANDOMFELULETILLESZT\n");
 		break;
 	case OPTIMFELULETILL:
+		DEBUG("CuttingMode : OPTIMFELULETILL\n");
 		break;
 	case GLOBHIBAOPTIM:
+		DEBUG("CuttingMode : GLOBHIBAOPTIM\n");
 		break;
 	case RANDOM:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Random);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		DEBUG("CuttingMode : RANDOM\n");
 		break;
 	}
 }
@@ -621,14 +642,6 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 	case SDLK_RIGHT:
 		l.Add(l.GetLightUnit(c.GetUp()));
 		break;
-	case SDLK_o:
-		std::cout << "SORTED OBJECTS - DRAWING\n";
-		for (std::vector<Utility::data_t>::iterator it = SortedObjects.begin(); it != SortedObjects.end(); it++)
-		{
-			std::cout << it->first << " - ";
-		}
-		std::cout << "\n";
-		break;
 	}
 }
 void Visualization::KeyboardUp(SDL_KeyboardEvent&)
@@ -695,7 +708,7 @@ void Visualization::GetInfo()
 	std::cout << "pozitiv oldali keletkezett atom terfogata: " << app.container().last_cut_result().positive()->volume() << "\n";
 }
 
-
+/*
 void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 {
 	SortedObjects.clear();
@@ -717,6 +730,7 @@ void Visualization::SortAlphaBlendedObjects(approx::BodyList& data)
 	}
 
 }
+*/
 
 /*	Search our points which only used in the cutted atom -> collect them in a set
 	Delete them in reverse mode and decrease our indexes

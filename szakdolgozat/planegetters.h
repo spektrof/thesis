@@ -72,4 +72,16 @@ public:
 
 	   	 return res;
 	 }
+	Utility::PlaneResult RandomUnderFace()
+	{
+		std::vector<approx::Face<float>> faces = data->face_container();
+		int randomFace = rd() % faces.size();
+
+		approx::Plane<float> plane = faces[randomFace].to_plane();
+
+		Utility::PlaneResult res(plane.normal(),plane.example_point());
+
+		return res;
+	}
+
 };
