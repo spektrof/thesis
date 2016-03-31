@@ -287,7 +287,7 @@ namespace approx{
 			f_poly.push_back(p2);
 		}
 
-		int good_normals() const {
+		int bad_normal_ind() const {
 			Vector3<T> cent = centroid();
 			int i = 0;
 			for (const Face<T>& f : *this) {
@@ -296,6 +296,44 @@ namespace approx{
 				++i;
 			}
 			return -1;
+		}
+
+		//a celtest atomba eso lapindexeinek listaja
+		std::vector<int> face_indicies_inside() const {
+			std::vector<int> res;
+			for (int ind : target->indicies()) {
+				std::vector<Vector3<T>> tmp_vert, tmp_norm;
+				ConstFaceIterator it = begin();
+				Face<T> clipf = target->faces(ind);
+				while (it != end() && clipf.size() >= 3) {
+					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(), &tmp_vert, &tmp_norm);
+					clipf = cut.negative;
+					++it;
+				}
+				if (clipf.size() >= 3) {
+					res.push_back(ind);
+				}
+			}
+			return res;
+		}
+
+		//az atomba eso lapok listaja
+		std::vector<Face<T>> faces_inside() const {
+			std::vector<Face<T>> res;
+			for (const Face<T>& f : *target) {
+				std::vector<Vector3<T>> tmp_vert, tmp_norm;
+				ConstFaceIterator it = begin();
+				Face<T> clipf = f;
+				while (it != end() && clipf.size() >= 3) {
+					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(), &tmp_vert, &tmp_norm);
+					clipf = cut.negative;
+					++it;
+				}
+				if (clipf.size() >= 3) {
+					res.push_back(f);
+				}
+			}
+			return res;
 		}
 
 	};

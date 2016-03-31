@@ -185,5 +185,8 @@
     <None Include="test.obj">
       <Filter>Test</Filter>
     </None>
+    <None Include="torus.obj">
+      <Filter>Test</Filter>
+    </None>
   </ItemGroup>
 </Project>

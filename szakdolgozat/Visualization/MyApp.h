@@ -54,19 +54,43 @@ protected:
 	/*	TODO list
 		Blender : doksi
 
+		Kérdések:
+			- 2D , lsd 1.a)
+					- a pontok lekérése: mikor kérhetem? (vágás után, accept után) ; most createljek mindent minden futásban vagy akkor mergeljem össze?
+																VAGY indexeket teszek egy vectorba és ezek futnak le ciklusban
+			- síkillesztés (x,y,f(x,y)) ? 2D hez ?
+			- Fourier numerikus hiba -> epszilon? : megvalósításom?
+			- véletlen felülethez lekérés
+			- planegetters megvalósítások
+
 		2D//LINESTRIP - 2 színû, belsõ külsõ
 		// + az atom átláts stb tri fan
+		1.a) 2D :		
+				Probléma:
+					Geometry Shader - meg kell adni a bemenõ típust ! https://www.opengl.org/wiki/Geometry_Shader
+							Triangle VS Point?
+					Solution:
+						2 ProgramID
+						1. : 2D hez |
+										= > Külön shaderek (2D_vertex, 3D_vertex, geometry, 3D_fragment, 3D_vertex)
+						2. : 3D hez |
+						
+						RENDERNÉL:
+							Camera check után mennek a glUse ok
+			Test projekt: c:\Users\...\Documents\Visual Studio 2015\Projects\2dtesting\2dtesting\
 
-		// MIERT VALTOZIK MEG A POINTER SORTER ESETEN a priorban??? WTF (prior.sorter() - setnewstrategy)
+		1.b) Adj matrix, lsd: planegetters.h
 
-		UNDO mûvelet??? mindig merge és accept szabad -> n mûvelet is autoacceptek a kérdés?
-
-		1.LastUse ?
 		2.Tovabbi strategyk
-		3.2D
-		3/4. Test másik test fájlra
+	
 		4.optimizing: pl lehetne mindig Plane típust visszaadni planegettersben?
 		n. Headerben rendezni a dolgokat
+
+		n+1) Projection matrix: perspective vs ortho -> camera optimizing
+
+		Apró bugok frissítés gyanánt:
+			- Fourier mezõ inaktív vágásnál!
+			- 0,0,0 normálisú sík WARNING
 
 	*/
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
@@ -75,10 +99,11 @@ protected:
 	// ENGINE
 	bool EngineInit();
 	void _MergeDataContainer(approx::BodyList&,const approx::BodyList&);
-
+	 
 	approx::Approximator<float> app;
 	approx::BodyList data;
 	approx::BodyList targetdata;
+	std::vector<approx::PolyFace2D> _2Ddata;
 
 	approx::Plane<float> p = approx::Plane<float>({ 0,0,1 }, approx::Vector3<float>(0.0f,0.0f,26.0f));  //vagosik
 
@@ -91,7 +116,14 @@ protected:
 
 	typedef Utility::PlaneResult(PlaneGetterFunctions<approx::Approximation<float>>::*PlaneGetter)() const;
 	PlaneGetter PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
+	//---------------------------------------
+	//DISPLAY
+	std::set<int>* display = new std::set<int>();
+	std::set<int> liveAtoms;
+	std::set<int> relevantAtoms;
 
+	float fourier;
+	void CalculateDisplayVectorsByFourier(const TypeOfAccept& ta);
 
 	//----------------------------------------
 	// EVENTS
@@ -102,6 +134,7 @@ protected:
 	void SetNewPlane();
 	void SetNewStrategy();
 	void SetNewCuttingMode();
+	void SetNewDisplayMode();
 
 	bool cutting_mode = false;
 
@@ -112,7 +145,7 @@ protected:
 	void GetInfo();
 	bool IsItActive(const int&);
 
-	//std::vector <int> lastUse;
+	std::vector <int> lastUse;
 	std::vector<int> priorQue;
 	int ActiveAtom, ActiveIndex;
 	bool transparency = true;
@@ -178,6 +211,8 @@ protected:
 
 	//----------------------------------------------
 	// Structure
+	bool logger = false;
+
 	void AddShaders();
 	void AddShaderUniformLocations();
 };

@@ -42,6 +42,9 @@ UserInterface::UserInterface(QWidget *parent)
 	_nextNOk = new QPushButton("OK", this);
 	_n = new QLineEdit("1",this);
 
+	_displayType = new QLabel("Megj. atomok fourier egyutthato alapjan:",this);
+	_fourierGroups = new QComboBox();
+
 	_restart = new QPushButton("Restart", this);
 	_moreInfo = new QPushButton("More Info", this);
 	_back = new QPushButton("Back", this);
@@ -56,6 +59,7 @@ UserInterface::UserInterface(QWidget *parent)
     plane_details = new QHBoxLayout;
 	acceptGroup = new QHBoxLayout;
 	moreStepsGorup = new QHBoxLayout;
+	fourierGorup = new QHBoxLayout;
 	bottom = new QHBoxLayout;
 
 	Init();
@@ -126,6 +130,7 @@ void UserInterface::Init()
 	CreatePlaneDetails();
 	CreateButtonsGroup();
 	CreateMoreStepsGroup();
+	CreateFourierGroup();
 	CreateBottom();
 
 	//-----------------------------------------	
@@ -133,6 +138,7 @@ void UserInterface::Init()
 	mainLayout->addWidget(_strategy);
 	mainLayout->addLayout(buttonsGroup);
 	mainLayout->addLayout(moreStepsGorup);
+	mainLayout->addLayout(fourierGorup);
 	mainLayout->addLayout(bottom);
 
 	//_----------------------------------------- connects
@@ -156,6 +162,7 @@ void UserInterface::Init()
 	connect(_acceptTypes, SIGNAL(currentIndexChanged(int)), this, SLOT(typeaccept_handler()));
 
 	connect(_nextNOk, SIGNAL(clicked()), this, SLOT(nextNCutEvent()));
+	connect(_fourierGroups, SIGNAL(currentIndexChanged(int)), this, SLOT(newdisplay()));
 
 	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
@@ -219,7 +226,7 @@ void UserInterface::acceptEvent()
 
 void UserInterface::restartEvent()
 {
-	request = Request(RESTART);
+	request = Request(RESTART, ChoiceMode(_choiceStrategy->currentData().toInt()));
 
 	_n->setText("1"); 
 	_xn->setText("0"); _yn->setText("0"); _zn->setText("1");
@@ -269,6 +276,12 @@ void UserInterface::newcutmode_event()
 
 	_nextNOk->setEnabled(request.cut_mode == MANUAL ?  false : true);
 	_n->setEnabled(request.cut_mode == MANUAL ?  false : true);
+}
+void UserInterface::newdisplay()
+{
+	request.eventtype = NEWDISPLAY;
+
+	request.disp = Display(_fourierGroups->currentData().toInt());
 }
 
 void UserInterface::prevAtomEvent()
@@ -344,10 +357,11 @@ Request UserInterface::GetRequest()
 	{
 		request.type = NEGATIVE;
 		_acceptTypes->setCurrentIndex(0);
+	
 	}
 	else if (result.eventtype == RESTART)	//restarttal osszefuggo valtozasok
 	{
-		//_choiceStrategy->setCurrentIndex(0); // - prior sor csak sortot kapna -> nem jo mert idnex range out lesz
+		//_choiceStrategy->setCurrentIndex(0);
 		_plane->setCurrentIndex(0);
 		_acceptTypes->setCurrentIndex(0);
 		_xf->setText("0"); _yf->setText("0"); _zf->setText("26");
@@ -371,6 +385,9 @@ void UserInterface::SetLabelProperties()
 
 	_cut->setFont(QFont("Courier New", 10, QFont::Bold));
 	_cut->setMaximumHeight(25);
+
+	_displayType->setFont(QFont("Courier New", 10, QFont::Bold));
+	_displayType->setMaximumHeight(25);
 
 	_nextText->setFont(QFont("Courier New", 10, QFont::Bold));
 	_nextText->setAlignment(Qt::AlignCenter);
@@ -408,26 +425,31 @@ void UserInterface::SetButtonsProperties()
 	_plane->setStyleSheet("background-color: #bcee68;");
 	_choiceStrategy->setStyleSheet("background-color: #bcee68;");
 	_acceptTypes->setStyleSheet("background-color: #bcee68;");
+	_fourierGroups->setStyleSheet("background-color: #bcee68;");
 }
 void UserInterface::SetDropDownProperties()
 {
 	_choiceStrategy->setFixedSize(150, 20);
 	_plane->setFixedSize(220,20);
 	_acceptTypes->setFixedSize(80, 30);
+	_fourierGroups->setFixedSize(120, 20);
 
 	_choiceStrategy->setEditable(true);
 	_plane->setEditable(true);
 	_acceptTypes->setEditable(true);
+	_fourierGroups->setEditable(true);
 
 	_acceptTypes->setEnabled(false);
 
 	_choiceStrategy->lineEdit()->setReadOnly(true);
 	_plane->lineEdit()->setReadOnly(true);
 	_acceptTypes->lineEdit()->setReadOnly(true);
+	_fourierGroups->lineEdit()->setReadOnly(true);
 
 	_plane->lineEdit()->setAlignment(Qt::AlignCenter);
 	_choiceStrategy->lineEdit()->setAlignment(Qt::AlignCenter);
 	_acceptTypes->lineEdit()->setAlignment(Qt::AlignCenter);
+	_fourierGroups->lineEdit()->setAlignment(Qt::AlignCenter);
 
 	for (int i = 0; i < _plane->count(); ++i)
 	{
@@ -441,7 +463,10 @@ void UserInterface::SetDropDownProperties()
 	{
 		_acceptTypes->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
 	}
-
+	for (int i = 0; i < _fourierGroups->count(); ++i)
+	{
+		_fourierGroups->setItemData(i, Qt::AlignCenter, Qt::TextAlignmentRole);
+	}
 }
 void UserInterface::SetInputLineProperties()
 {
@@ -539,6 +564,15 @@ void UserInterface::CreateMoreStepsGroup()
 	_n->setEnabled(request.cut_mode == MANUAL ? false : true);
 }
 
+void UserInterface::CreateFourierGroup()
+{
+	fourierGorup->addWidget(_displayType);
+	fourierGorup->addWidget(_fourierGroups);
+
+	fourierGorup->setAlignment(Qt::AlignTrailing | Qt::AlignTrailing);
+	fourierGorup->addStretch(1);
+}
+
 void UserInterface::CreatePlaneDetails()
 {
 	QHBoxLayout *planegroup = new QHBoxLayout();
@@ -612,12 +646,14 @@ void UserInterface::AddItemsToDropMenu()
 	_plane->addItem("Osszes pontra illesztett", 2);
 	_plane->addItem("Optimalis feluletre illesztett", 3);
 	_plane->addItem("Globalis hibara optimalis(? )", 4);
-	_plane->addItem("Atmerore meroleges, sulyponton atmeno", 5);
+	_plane->addItem("Atmerovel megegyezo iranyu, sulyponton atmeno", 5);
 	_plane->addItem("Veletlen", 6);
 	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 7);
 	_plane->addItem("Veletlen feluletre illesztett", 8);
 	_plane->addItem("Veletlen lap alatt fekvo", 9);
 
+	_fourierGroups->addItem("Elo atomok", 0);
+	_fourierGroups->addItem("Relevans atomok", 1);
 }
 
 void UserInterface::RequestWrongCuttingErrorResolve()

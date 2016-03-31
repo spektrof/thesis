@@ -45,5 +45,20 @@ namespace Utility
 
 	glm::vec3 DescartesToPolar(float, float );
 
+	//---------------------------
+
+	template <typename T>
+	T GetDeterminantBySarrus(const std::vector< std::vector<T> > matrix_3x3)
+	{
+		T sum_one = 0, sum_two = 0;
+
+		for (int i = 0; i < 3; ++i)
+		{
+			sum_one += matrix_3x3[0][(0 + i) % 3] * matrix_3x3[1][(1 + i) % 3] * matrix_3x3[2][(2 + i) % 3];
+			sum_two += matrix_3x3[2][(0 + i ) % 3] * matrix_3x3[1][(1 + i) % 3] * matrix_3x3[0][(2 + i) % 3];
+		}
+
+		return sum_one - sum_two;
+	}
 
 };

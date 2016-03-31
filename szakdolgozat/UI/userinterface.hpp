@@ -35,6 +35,7 @@ protected:
 	void CreatePlaneDetails();
 	void CreateButtonsGroup();
 	void CreateMoreStepsGroup();
+	void CreateFourierGroup();
 	void CreateBottom();
 
 private slots:
@@ -52,6 +53,7 @@ private slots:
 	void restartEvent();
 	void infoEvent();
 	void backToMenu();
+	void newdisplay();
 	
 private:
 	QWidget *window;
@@ -76,6 +78,9 @@ private:
 	QPushButton *_nextNOk;
 	QLineEdit *_n;
 
+	QLabel *_displayType;
+	QComboBox *_fourierGroups;
+
 	QPushButton* _restart;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
@@ -91,6 +96,7 @@ private:
 	QHBoxLayout *acceptGroup;
 
 	QHBoxLayout *moreStepsGorup;
+	QHBoxLayout *fourierGorup;
 
 	QHBoxLayout *bottom;
 

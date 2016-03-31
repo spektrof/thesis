@@ -49,25 +49,11 @@ public:
 
 		return res;
 	 }
-	Utility::PlaneResult DiameterMerSulyp()
+	Utility::PlaneResult DiameterSulyp()
 	 {
-		 approx::Vector3<float> d = data->atoms(Active).diameter();
-		 d.normalize();
-
-		 approx::Vector3<float> norm;
-		
-		 if (d.z == 0)	//2D
-		 {
-			 norm = approx::Vector3<float>(-d.y, d.x, 0);
-		 }
-		 else
-		 {
-			 //RANDOMMAL a 2 fix pontot esetleg
-			 float x = static_cast <float> (rd()) / static_cast <float> (rd.max());
-			 float y = static_cast <float> (rd()) / static_cast <float> (rd.max());
-			 norm = approx::Vector3<float>(1, 1, (-d.x * 1 - d.y * 1) / d.z) ;
-		 }
+		 approx::Vector3<float> norm = data->atoms(Active).diameter();
 		 norm.normalize();
+
 		 Utility::PlaneResult res( norm, data->atoms(Active).centroid());
 
 	   	 return res;
@@ -83,5 +69,41 @@ public:
 
 		return res;
 	}
+	Utility::PlaneResult RandomSurface()
+	{
+		Utility::PlaneResult res(approx::Vector3<float>(rd(), rd(), rd()), approx::Vector3<float>(rd() % 100, rd() % 100, rd() % 100));
 
+		return res;
+	}
 };
+
+//ADJ. MTX
+/*
+Optimális felület:
+ A ? nem csak [1..n]^2
+ n = ? (háromszögek száma)
+ m = ? (pontok száma)
+
+ F(i,j+x) = i. háromszög (j+x) mod 3 . vertexe
+ szimm diff F(k) = ???
+ k = i*3 + j ?
+
+ ez fordítva hogy N[i,j] = k ??
+
+ F mutat egy pontra?
+ és lényegében a pontok azonosíója kerül be az adott helyre
+
+*************************************
+Implementáció ötlet:
+
+Szükség van:
+ - pontokra + szomszédságukra VAGY GetterFv ami eldönti 2 pontról van e köztük él
+
+- Saját típus, rá összeadás operátor
+- F fv. megírása
+- Szomszédság:
+   - GetterFv szomszédságvizsgálatra , akár egybeépítve azzal is hogy visszaadjuk k-t, l-t
+   - ez minden N mtx elemre
+- A mtx felöltése
+
+*/

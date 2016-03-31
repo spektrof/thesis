@@ -24,9 +24,9 @@ void Camera::SwitchCameraView()
 void Camera::SetLight2DValues()
 {
 	cunit = glm::vec3(1, 0, 0);
-	eye = glm::vec3(0, 50, 0);
+	eye = glm::vec3(50, 900, -30);
 	up = glm::vec3(1, 0, 0);
-	at = glm::vec3(0, 0, 0);
+	at = glm::vec3(50, 0, -30);
 }
 void Camera::SetLight3DInitialValues()
 {

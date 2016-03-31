@@ -48,7 +48,7 @@ void ObjectCreator::Create2DObject(const std::vector<glm::vec2>& points, GLuint&
 
 	for (size_t i = 0; i < points.size(); ++i)
 	{
-		_2DObject.push_back({ glm::vec3(points[i].y, 0, points[i].x)/*, glm::vec3(0.0f,1.0f,0.0f)*//*, glm::vec3(1.0f, 1.0f, 0.0f)*/ });
+		_2DObject.push_back({ glm::vec3(points[i].x, 0, points[i].y)/*, glm::vec3(0.0f,1.0f,0.0f)*//*, glm::vec3(1.0f, 1.0f, 0.0f)*/ });
 	}
 
 	glGenVertexArrays(1, &_2DvaoID); // vao create 

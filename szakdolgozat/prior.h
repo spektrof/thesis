@@ -7,15 +7,15 @@ template <typename T, template<typename> class V>
 class PriorityQue
 {
 	V<T>* PriorityFunctions = new V<T>();
-	typedef float (V<T>::*GETTER)(const T*) const;
+	typedef float (V<T>::*GETTER)(const T*,const int& _id) const;
 
 	GETTER m_getterFunc;
 
 	struct Data {
 		int id;
-		const T* AtomData;
+		//const T* AtomData;
 		float value;
-		Data(const int& _id, const T* atom,const float& vol = 0) : id(_id), AtomData(atom),value(vol) {}
+		Data(const int& _id/*, const T* atom*/,const float& vol = 0) : id(_id), /*AtomData(atom),*/value(vol) {}
 	};
 
 	std::vector<Data> order;
@@ -29,12 +29,12 @@ public:
 	/*Beszuro rendezes*/
 	void insert(const int& _id, const T* atom)
 	{
-		float tmp_val = (PriorityFunctions->*m_getterFunc)(atom);
+		float tmp_val = (PriorityFunctions->*m_getterFunc)(atom,_id);
 		std::vector<Data>::iterator it = order.begin();
 
 		for (; it != order.end() && it->value > tmp_val; ++it) { }
 
-		order.insert(it, Data(_id, atom, tmp_val) );
+		order.insert(it, Data(_id/*, atom*/, tmp_val) );
 	}
 
 	void erase(const int& e)
@@ -48,16 +48,16 @@ public:
 	}
 
 	/*Only use when we choose an other strategy*/
-	void sorter()
+/*	void sorter()
 	{
 		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)
 		{
-			it->value = (PriorityFunctions->*m_getterFunc)(it->AtomData);
+			it->value = (PriorityFunctions->*m_getterFunc)(it->AtomData,it->id);
 		}
 
 		//std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return (lhs.AtomData.*m_getterFunc)() > (rhs.AtomData.*m_getterFunc)(); });
 		std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
-	}
+	}*/
 
 	void SetComparer(GETTER getterfunc)
 	{
@@ -90,8 +90,18 @@ public:
 		return result;
 	}
 
-	/*void SetLastUse(std::vector<int>* lu, approx::Approximation<float>::Iterator begin, approx::Approximation<float>::Iterator end)
+	void SetLastUse(std::vector<int>* lu)
 	{
-		PriorityFunctions->SetLastUse(lu,begin,end);
-	}*/
+		PriorityFunctions->SetLastUse(lu);
+		/*Azert van szukseg erre mert beszuro rendezessel dolgozunk -> csak egyszer szamoljuk az erteket viszont ez mindig valtozik
+			DE nem kéne mindig lefuttatni mert csak a last_use hoz kell
+		*/
+		// itt nem számít az atom csak az index
+		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)
+		{
+			it->value = (PriorityFunctions->*m_getterFunc)(NULL, it->id);
+		}
+
+		std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
+	}
 };
