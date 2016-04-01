@@ -24,7 +24,8 @@ Visualization::Visualization(void)
 	_target_vboID = 0;
 	_target_indexID = 0;
 	
-	programID = 0;
+	program2D_ID = 0;
+	program3D_ID = 0;
 
 	ActiveAtom = 0;
 	ActiveIndex = 0;
@@ -59,7 +60,9 @@ bool Visualization::Init()
 
 	ObjectCreator::Create2DObject(input,_2DvaoID,_2DvboID);
 	
-	AddShaders();
+	Add2DShaders();
+	Add3DShaders();
+	AddShaderUniformLocations();
 
 	DEBUG("---------------- INIT DONE ------------------\n"
 			"---------------------------------------------\n");
@@ -69,7 +72,7 @@ bool Visualization::Init()
 
 bool Visualization::EngineInit() 
 {
-	if (!app.set_target("test.obj", 5.0f)) {
+	if (!app.set_target("test.obj", 10.0f)) {
 		std::cout << "HIBA A FAJL BETOLTESENEL!\n";
 		return false;
 	}
@@ -107,23 +110,24 @@ bool Visualization::EngineInit()
 void Visualization::Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(programID);
-	//--------------------------------------------------------
-
-	glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye())); //jó ez? :DD
-	glUniform3fv(Lights,1, glm::value_ptr(l.GetLightDir()));
-	glUniform1i(View, c.GetView() );
-
+	
 	//--------------------------------------------------------
 	
 	if (c.Is2DView())	// true when _2D
 	{
-		glDisable(GL_BLEND);
-		Draw2D(3, glm::scale<float>(3.0f, 3.0f, 3.0f));
+		glUseProgram(program2D_ID);
+		
+		Draw2D();
 	}
 	else // _3D
 	{
-		
+		glUseProgram(program3D_ID);
+		//--------------------------------------------------------
+
+		glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye())); //jó ez? :DD
+		glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
+		glUniform1i(View, c.GetView());
+
 		switch (request.eventtype)
 		{
 		case ACCEPT:
@@ -305,8 +309,7 @@ void Visualization::GetResult()
 	
 	app.container().cut(ActiveAtom, p);
 
-	_2Ddata = app.atom2dfaces(ActiveAtom);
-	ObjectCreator::Create2DObject(_2Ddata[1].points, _2DvaoID,_2DvboID );
+	Get2DDrawInfo();
 
 	if (request.cut_mode != MANUAL) { 
 		CutChecker(); 
@@ -512,21 +515,41 @@ void Visualization::PrevAtom()
 	DEBUG("\tATOMVALTAS: -\n\n");
 }
 
-void Visualization::AddShaders()
+void Visualization::Add2DShaders()
+{
+	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/vert_2d.vert");
+	GLuint fs_ID = loadShader(GL_FRAGMENT_SHADER, "Shaders/frag_2d.frag");
+
+	program2D_ID = glCreateProgram();
+
+	glAttachShader(program2D_ID, vs_ID);
+	glAttachShader(program2D_ID, fs_ID);
+
+	glBindAttribLocation(program2D_ID, 0, "vs_in_pos");
+	
+	glLinkProgram(program2D_ID);
+
+	glDeleteShader(vs_ID);
+	glDeleteShader(fs_ID);
+
+	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
+
+}
+void Visualization::Add3DShaders()
 {
 	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/myVert.vert");
 	GLuint gs_ID = loadShader(GL_GEOMETRY_SHADER, "Shaders/geometry_shader.geom");
 	GLuint fs_ID = loadShader(GL_FRAGMENT_SHADER, "Shaders/myFrag.frag");
 
-	programID = glCreateProgram();
+	program3D_ID = glCreateProgram();
 
-	glAttachShader(programID, vs_ID);
-	glAttachShader(programID, gs_ID);
-	glAttachShader(programID, fs_ID);
+	glAttachShader(program3D_ID, vs_ID);
+	glAttachShader(program3D_ID, gs_ID);
+	glAttachShader(program3D_ID, fs_ID);
 
-	glBindAttribLocation(programID, 0, "vs_in_pos");
-	
-	glLinkProgram(programID);
+	glBindAttribLocation(program3D_ID, 0, "vs_in_pos");
+
+	glLinkProgram(program3D_ID);
 
 	glDeleteShader(vs_ID);
 	glDeleteShader(gs_ID);
@@ -534,20 +557,24 @@ void Visualization::AddShaders()
 
 	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
 
-	AddShaderUniformLocations();
 
 }
 void Visualization::AddShaderUniformLocations()
 {
-	m_loc_mvp = glGetUniformLocation(programID, "MVP");
-	m_loc_world = glGetUniformLocation(programID, "world");
-	m_loc_worldIT = glGetUniformLocation(programID, "worldIT");
-	eyePos = glGetUniformLocation(programID, "EyePosition");
-	Lights = glGetUniformLocation(programID, "LightDirection");
-	View = glGetUniformLocation(programID, "View");
-	Opacity = glGetUniformLocation(programID, "opacity");
-	DifCol = glGetUniformLocation(programID, "MaterialDiffuseColor");
-	SpecCol = glGetUniformLocation(programID, "MaterialSpecularColor");
+	m_loc_mvp = glGetUniformLocation(program3D_ID, "MVP");
+	m_loc_world = glGetUniformLocation(program3D_ID, "world");
+	m_loc_worldIT = glGetUniformLocation(program3D_ID, "worldIT");
+	eyePos = glGetUniformLocation(program3D_ID, "EyePosition");
+	Lights = glGetUniformLocation(program3D_ID, "LightDirection");
+	View = glGetUniformLocation(program3D_ID, "View");
+	Opacity = glGetUniformLocation(program3D_ID, "opacity");
+	DifCol = glGetUniformLocation(program3D_ID, "MaterialDiffuseColor");
+	SpecCol = glGetUniformLocation(program3D_ID, "MaterialSpecularColor");
+
+	m_loc_mvp2 = glGetUniformLocation(program2D_ID, "MVP");
+	color2D = glGetUniformLocation(program2D_ID, "COLOR");
+	alpha2D = glGetUniformLocation(program2D_ID, "ALPHA");
+
 }
 
 void Visualization::Draw3D(const int& which/*, float _opacity*/, const bool& backdropping, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
@@ -610,36 +637,62 @@ void Visualization::DrawTargetBody()
 		0);					// indexek cime
 }
 
-void Visualization::Draw2D(const int& NumbersOfVertices, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
+void Visualization::Draw2D(/*const int& NumbersOfVertices, */glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
-	//glPolygonMode(GL_BACK, GL_FILL);
-	//glPolygonMode(GL_FRONT, GL_FILL);
 
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
-
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 
-	glBindVertexArray(_2DvaoID);
+	glDisable(GL_BLEND);
+	IdsAndVertC tmp;
+
+	//***********************************************************
+
+	glUniform3f(color2D, 0.0f, 0.0f, 1.0f);
+	glUniform1f(alpha2D, 1.0f);
+
+	for (int i = 0;  (*_2DLine1).size()!=0 &&  i < (*_2DLine1)[Active2DIndex].size(); ++i)
+	{
+		tmp = (*_2DLine1)[Active2DIndex][i];
+		glBindVertexArray(tmp.VaoId);
+
+		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+
+		glDrawArrays(GL_LINE_STRIP,
+			0,
+			tmp.count);
+	}
+	
+	//***********************************************************
+
+	glUniform3f(color2D, 0.0f, 1.0f, 0.0f);
+	glUniform1f(alpha2D, 1.0f);
+
+	for (int i = 0;  (*_2DLine2).size() != 0 &&  i < (*_2DLine2)[Active2DIndex].size(); ++i)
+	{
+		tmp = (*_2DLine2)[Active2DIndex][i];
+		glBindVertexArray(tmp.VaoId);
+
+		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+
+		glDrawArrays(GL_LINE_STRIP,
+			0,
+			tmp.count);
+	}
+	
+	//**************************************************
+	glEnable(GL_BLEND);
+	glUniform3f(color2D, 1.0f, 0.0f, 0.0f);
+	glUniform1f(alpha2D, 0.5f);
+
+	tmp = (*_2DTri)[Active2DIndex];
+	glBindVertexArray(tmp.VaoId);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
 
 	glDrawArrays(GL_TRIANGLE_FAN,
 		0,
-		_2Ddata[0].points.size());
-	//glEnable(GL_LINE_SMOOTH);
-	//glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-
-	/*glDrawArrays(GL_LINES,
-	0,
-	_2Ddata[0].points.size());*/
-
-	/*glDrawArrays(GL_LINES,
-		0,
-		_2Ddata[0].points.size());*/
-	//glDrawArrays(GL_LINES, 0, 2);
+		tmp.count);
 }
 
 void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
@@ -684,6 +737,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 	case SDLK_p:	// change projections
 		c.SwitchCameraView();
+		Active2DIndex = 0;
 		break;
 	case SDLK_i: // info
 		GetInfo();
@@ -720,6 +774,18 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 			std::for_each(result.begin(), result.end(), Utility::writer());
 			std::cout << "\n";
 		}
+		break;
+	case SDLK_KP_PLUS:
+		Active2DIndex = (Active2DIndex + 1) % (*_2DTri).size();
+		break;
+	case SDLK_KP_MINUS:
+		Active2DIndex = (Active2DIndex - 1 + (*_2DTri).size()) % (*_2DTri).size();
+		break;
+	case SDLK_o:
+		Active2DIndex = 0;
+		_2DLine1 = _2DLine1 == &_2D_Line1Ids_N ? &_2D_Line1Ids_P : &_2D_Line1Ids_N;
+		_2DLine2 = _2DLine2 == &_2D_Line2Ids_N ? &_2D_Line2Ids_P : &_2D_Line2Ids_N;
+		_2DTri = _2DTri == &_2D_TriIds_N ? &_2D_TriIds_P : &_2D_TriIds_N;
 		break;
 	}
 }
@@ -763,7 +829,7 @@ void Visualization::Clean()
 	glDeleteBuffers(1, &_3Dindex);
 	glDeleteVertexArrays(1, &_3DvboID);
 
-	glDeleteProgram(programID);
+	glDeleteProgram(program3D_ID);
 
 	DEBUG("------------------------- END -----------------------------------\n\n\n");
 }
@@ -975,8 +1041,8 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 
 void Visualization::CutChecker()
 {
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() != 0;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() != 0;
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() > 0.001;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() > 0.001;
 
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
 	else if (IntersectionWithNegative) request.type = NEGATIVE;
@@ -1043,5 +1109,132 @@ void Visualization::CalculateDisplayVectorsByFourier(const TypeOfAccept& ta)
 	if (fourier > FOURIERCOEFFICIENT)
 	{
 		relevantAtoms.insert(NumberOfAtoms - 1);
+	}
+}
+
+void Visualization::Get2DDrawInfo()
+{
+	_2DTri = &_2D_TriIds_N;
+	_2DLine1 = &_2D_Line1Ids_N;
+	_2DLine2 = &_2D_Line2Ids_N;
+
+	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
+
+	std::vector<glm::vec2> points;
+
+	Active2DIndex = 0;
+	/* Ezekbol tobb is lehet - kell a resize*/
+	_2D_Line1Ids_N.clear();
+	_2D_Line2Ids_N.clear();
+	_2D_TriIds_N.clear();
+
+	_2D_Line1Ids_N.resize(_2Ddata.size());
+	_2D_Line2Ids_N.resize(_2Ddata.size());
+
+	for (int i = 0; i < _2Ddata.size(); ++i)
+	{
+		points.clear();
+		size_t sizeOfRanges = _2Ddata[i].ranges.size();
+		
+		//***********************************************
+		int start = _2Ddata[i].ranges[0];
+		int end = _2Ddata[i].ranges[1];
+
+		for (int j = start; j < end;++j)
+		{
+			points.push_back(_2Ddata[i].points[j]);
+		}
+		_2D_TriIds_N.push_back(IdsAndVertC(points.size()));
+
+		ObjectCreator::Create2DObject(points, _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
+		//***********************************************
+		if (sizeOfRanges == 2) continue;
+
+		for (int j = 1; j < sizeOfRanges - 1; ++j)
+		{
+			points.clear();
+
+			start = _2Ddata[i].ranges[j];
+			end = _2Ddata[i].ranges[j+1];
+
+			for (int j = start; j < end;++j)
+			{
+				points.push_back(_2Ddata[i].points[j]);
+			}
+			points.push_back(_2Ddata[i].points[start]);
+
+			switch (_2Ddata[i].outer[j])
+			{
+				case 0 :
+					_2D_Line1Ids_N[i].push_back(IdsAndVertC(points.size()));
+					ObjectCreator::Create2DObject(points, _2D_Line1Ids_N[i].back().VaoId, _2D_Line1Ids_N[i].back().VboId);
+					break;
+				case 1:
+					_2D_Line2Ids_N[i].push_back(IdsAndVertC(points.size()));
+					ObjectCreator::Create2DObject(points, _2D_Line2Ids_N[i].back().VaoId, _2D_Line2Ids_N[i].back().VboId);
+					break;
+			}
+
+		}
+	}
+
+	//*****************************************************************************
+	//POSITIVE
+
+	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().positive());
+
+	/* Ezekbol tobb is lehet - kell a resize*/
+	_2D_Line1Ids_P.clear();
+	_2D_Line2Ids_P.clear();
+	_2D_TriIds_P.clear();
+
+	_2D_Line1Ids_P.resize(_2Ddata.size());
+	_2D_Line2Ids_P.resize(_2Ddata.size());
+
+	for (int i = 0; i < _2Ddata.size(); ++i)
+	{
+		points.clear();
+		size_t sizeOfRanges = _2Ddata[i].ranges.size();
+
+		//***********************************************
+		int start = _2Ddata[i].ranges[0];
+		int end = _2Ddata[i].ranges[1];
+
+		for (int j = start; j < end;++j)
+		{
+			points.push_back(_2Ddata[i].points[j]);
+		}
+		_2D_TriIds_P.push_back(IdsAndVertC(points.size()));
+
+		ObjectCreator::Create2DObject(points, _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
+		//***********************************************
+		if (sizeOfRanges == 2) continue;
+
+		for (int j = 1; j < sizeOfRanges - 1; ++j)
+		{
+			points.clear();
+
+			start = _2Ddata[i].ranges[j];
+			end = _2Ddata[i].ranges[j + 1];
+
+			for (int j = start; j < end;++j)
+			{
+				points.push_back(_2Ddata[i].points[j]);
+			}
+			points.push_back(_2Ddata[i].points[start]);
+
+			switch (_2Ddata[i].outer[j])
+			{
+			case 0:
+				_2D_Line1Ids_P[i].push_back(IdsAndVertC(points.size()));
+				ObjectCreator::Create2DObject(points, _2D_Line1Ids_P[i].back().VaoId, _2D_Line1Ids_P[i].back().VboId);
+				break;
+			case 1:
+				_2D_Line2Ids_P[i].push_back(IdsAndVertC(points.size()));
+				ObjectCreator::Create2DObject(points, _2D_Line2Ids_P[i].back().VaoId, _2D_Line2Ids_P[i].back().VboId);
+				break;
+			}
+
+		}
 	}
 }

@@ -71,8 +71,15 @@ public:
 	}
 	Utility::PlaneResult RandomSurface()
 	{
-		Utility::PlaneResult res(approx::Vector3<float>(rd(), rd(), rd()), approx::Vector3<float>(rd() % 100, rd() % 100, rd() % 100));
+		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
 
+		if (faces.size() == 0) return Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0));
+
+		int randomFace = rd() % faces.size();
+
+		approx::Plane<float> plane = faces[randomFace].to_plane();
+
+		Utility::PlaneResult res(plane.normal(), plane.example_point());
 		return res;
 	}
 };
@@ -80,7 +87,7 @@ public:
 //ADJ. MTX
 /*
 Optimális felület:
- A ? nem csak [1..n]^2
+ A ? (1..n) x (1..3)
  n = ? (háromszögek száma)
  m = ? (pontok száma)
 

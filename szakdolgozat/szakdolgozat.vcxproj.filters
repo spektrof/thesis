@@ -188,5 +188,11 @@
     <None Include="torus.obj">
       <Filter>Test</Filter>
     </None>
+    <None Include="Shaders\frag_2d.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vert_2d.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
