@@ -9,10 +9,7 @@ Használati útmutató:
   Ezt megismételhetjük restart segítségével.  
                                 
 TODO:
-  - Legrégebben használthoz : == operator VAGY újabb paraméter
-  - UNDO ?
   - További stratégia
-  - 2D nézetes kép lekérés + kirajzolási mód
   - Shader fejlesztés doksi alapján
       
 -------------------------------------------------------------------------------------
