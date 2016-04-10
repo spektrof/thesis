@@ -1,5 +1,11 @@
 #pragma once
 
+/*	Keszitette: Lukacs Peter
+
+	A megjelenitest felugyelo osztaly. (OpenGL)
+	Ezen kivul feldolgozza a UI -rol jovo kereseket. (Qt)
+*/
+
 #include <GL/glew.h>
 
 #include <vector>
@@ -53,55 +59,55 @@ public:
 protected:
 	/*	TODO list
 		Blender : doksi
-
-		Kérdések:
-			- síkillesztés (x,y,f(x,y)) ? 2D hez ?
 		
-		1.b) Adj matrix, lsd: planegetters.h
-
-		2.Tovabbi strategyk
-	
 		4.optimizing: pl lehetne mindig Plane típust visszaadni planegettersben?
-		n. Headerben rendezni a dolgokat
 		n+n. 3D indexeket is átírni esetleg egy IdsAndVertC -ba
 
 		n+1) Projection matrix: perspective vs ortho -> camera optimizing
 
 		Apró bugok frissítés gyanánt:
-			- Relevansban is lehessen vagni
-			- 0,0,0 normálisú sík WARNING
-
+		Vagj 10 et veletlennel es a 10.nek a pozitiv vetuletei nem kozepre kerulnek, miert?
+				Test: 9 et vagok siman es aztan 1 et debuggal - majd szamolok hanyadik alakzat majd megnezem hogy az e a kamera amit szamoltam stb
+		Apró kis TODOk:
+		GLUTILSbol atrakni a fv t a utilitybe
+		CalculateDisplayVectorsByFourier paramétere?
+		gluniform - word & wordit mtx ok - persp. ? (felöltelni 1x vagy minden draw3d ben)
+		ENUM nevek angolra!
 	*/
-	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
-		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
-
+	//-----------------------------------------
 	// ENGINE
 	bool EngineInit();
-	void _MergeDataContainer(approx::BodyList&,const approx::BodyList&);
 	 
 	approx::Approximator<float> app;
 	approx::BodyList data;
 	approx::BodyList targetdata;
 	std::vector<approx::PolyFace2D> _2Ddata;
 
-	approx::Plane<float> p = approx::Plane<float>({ 0,0,1 }, approx::Vector3<float>(0.0f,0.0f,26.0f));  //vagosik
+	std::vector< std::vector<int> > adj_mtx;
+
+	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior =
+		PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
+	
+	//-----------------------------------------
+	//PLANE
+	approx::Plane<float> p = approx::Plane<float>({ 1,0,0 }, approx::Vector3<float>(0.0f,0.0f,0.0f));  //vagosik
 
 	approx::Vector3<float> centr;
 	float distance;
 	glm::vec3 _planenormal;
 
 	void RefreshPlaneData(const Utility::PlaneResult&);
-	PlaneGetterFunctions<approx::Approximation<float>>* PlaneCalculator = new PlaneGetterFunctions<approx::Approximation<float>>();
+	PlaneGetterFunctions<approx::Approximation<float>>* PlaneCalculator;
 
 	typedef Utility::PlaneResult(PlaneGetterFunctions<approx::Approximation<float>>::*PlaneGetter)() const;
 	PlaneGetter PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
+
 	//---------------------------------------
 	//DISPLAY
-	std::set<int>* display = new std::set<int>();
+	std::set<int>* display;
 	std::set<int> liveAtoms;
 	std::set<int> relevantAtoms;
 
-	float fourier;
 	void CalculateDisplayVectorsByFourier(const TypeOfAccept& ta);
 
 	//----------------------------------------
@@ -115,23 +121,16 @@ protected:
 	void SetNewCuttingMode();
 	void SetNewDisplayMode();
 
-	bool cutting_mode = false;
-
 	void CutChecker();
 
 	//-----------------------------------------
 	// Atom properties
-	void GetInfo();
 	bool IsItActive(const int&);
 
 	std::vector <int> lastUse;
 	std::vector<int> priorQue;
 	int ActiveAtom, ActiveIndex;
-	bool transparency = true;
 	GLuint NumberOfAtoms = 1;
-
-	/*std::vector<Utility::data_t> SortedObjects;
-	void SortAlphaBlendedObjects(approx::BodyList&);*/
 
 	void GetPriorResult();
 
@@ -139,6 +138,8 @@ protected:
 	void SetAtomProperties(float&);
 	void SetTargetAtomProperties();
 	void SetPlaneProperties();
+
+	void LastUseChanging(const TypeOfAccept&);
 
 	void NextAtom();
 	void PrevAtom();
@@ -155,13 +156,15 @@ protected:
 	//------------------------------------------
 	// DRAWING
 	int CuttingPlaneFreq = 12;
-	void DrawCuttingPlane(glm::mat4&, glm::mat4&, glm::mat4&);
-	void Draw3D(const int&, /*float,*/ const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
-	void Draw2D(/*const int&, */glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
+	void _MergeDataContainer(approx::BodyList&, const approx::BodyList&);
+
+	void DrawCuttingPlane(glm::mat4&, glm::mat4&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f));
+	void Draw3D(const int&, const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
+	void Draw2D(glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void DrawTargetBody();
 
 	//--------------------------------------------
-	// IDs
+	//IDs
 	GLuint program2D_ID;
 	GLuint program3D_ID;
 
@@ -170,15 +173,16 @@ protected:
 	GLuint _3DvboID,_2DvboID, plane_vboid;
 	GLuint _3Dindex,plane_index;
 
-	/* 2D indexes */
+	/* 2D ID-s */
 	void Get2DDrawInfo();
 	int Active2DIndex;
 	struct IdsAndVertC
 	{
 		int count;
+		glm::vec3 eye;
 		GLuint VaoId;
 		GLuint VboId;
-		IdsAndVertC(const int c = 0, const GLuint vao = 0, const GLuint vbo = 0) : VaoId(vao), VboId(vbo),count(c) {}
+		IdsAndVertC(const int c = 0, const glm::vec3& e = glm::vec3(0, 0, 0), const GLuint vao = 0, const GLuint vbo = 0) : VaoId(vao), VboId(vbo),count(c), eye(e) {}
 	};
 
 	std::vector<IdsAndVertC>* _2DTri = new std::vector<IdsAndVertC>();

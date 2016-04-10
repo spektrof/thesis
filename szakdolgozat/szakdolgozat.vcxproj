@@ -271,10 +271,9 @@
   <ItemGroup>
     <None Include="Shaders\frag_2d.frag" />
     <None Include="Shaders\geometry_shader.geom" />
-    <None Include="Shaders\myFrag.frag" />
-    <None Include="Shaders\myVert.vert" />
+    <None Include="Shaders\frag_3d.frag" />
+    <None Include="Shaders\vert_3d.vert" />
     <None Include="Shaders\vert_2d.vert" />
-    <None Include="UI\userinterface.ui" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test.obj">

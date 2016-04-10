@@ -175,13 +175,6 @@
     <None Include="Shaders\geometry_shader.geom">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\myFrag.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\myVert.vert">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="UI\userinterface.ui" />
     <None Include="test.obj">
       <Filter>Test</Filter>
     </None>
@@ -192,6 +185,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\vert_2d.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\frag_3d.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vert_3d.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

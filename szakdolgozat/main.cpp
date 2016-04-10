@@ -8,14 +8,8 @@
 
 #include "Visualization/MyApp.h"
 
-#define OPENGLINIT 1
-
 int main(int argc, char* args[])
 {
-	QApplication a(argc, args);
-
-	if (OPENGLINIT)
-	{
 	//SDL initialization, say if we got an error
 	if ( SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
@@ -87,7 +81,7 @@ int main(int argc, char* args[])
 	bool quit = false; //relates to running of our program
 	SDL_Event ev; //msg what we should use
 
-	
+	QApplication ui(argc, args);
 	Visualization app;
 
 	if (!app.Init())
@@ -142,10 +136,7 @@ int main(int argc, char* args[])
 
 	SDL_Quit();
 
-	}
-	//UserInterface mui;
-	//mui.show();
-	a.exit(0);
+	ui.exit(0);
 
 	return 0;
 }

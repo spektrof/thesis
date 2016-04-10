@@ -1,3 +1,8 @@
+#pragma once
+
+/*	TODO: atrakni a utilsba!!!
+*/
+
 #include <stdio.h>
 #include <string>
 #include <iostream>

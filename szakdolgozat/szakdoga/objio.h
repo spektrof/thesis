@@ -31,10 +31,31 @@ namespace approx {
 			return false;
 		}
 
+		static bool parse_node(const std::string& str, int& vind, int& nind) {
+			std::stringstream ss(str);
+			if (!(ss >> vind)) return false;
+			char c;
+			ss >> c;
+			if (ss.eof()) {
+				nind = -1;
+				return true;
+			}
+			if (ss.peek() != '/'){
+				int tmp;
+				ss >> tmp;
+				if (ss.eof()) {
+					nind = -1;
+					return true;
+				}
+			}
+			ss >> c;
+			return (bool)(ss >> nind);
+		}
+
 		//vaz metodus a .obj fajlformatum feldolgozasahoz, template parameterei a "javito" tipusok
 		//a javito tipusok dolga, hogy sajat belatasuk szerint osszevonjanak 2 numerikusan egyezonek nyilvanitott vektort
 		//a javitas celja hogy a fajlokbol bekerult testeken vegzett muveletek a numerikus pontossagra minel kevesbe legyenek erzekenyek
-		template <class Repair1, class Repair2> static bool load_obj_temp(const std::string& filename, TargetBody<T>& tb, Repair1& tmp_vecs, Repair2& tmp_normals){
+		template <class Repair1, class Repair2> static bool load_obj_temp(const std::string& filename, TargetBody<T>& tb, Repair1& tmp_vecs, Repair2& tmp_normals, bool triangulate) {
 			tb.vecs.clear();
 			tb.normals.clear();
 			tb.faces.clear();
@@ -43,80 +64,57 @@ namespace approx {
 			std::vector<Vector3<T>> accum_normals;
 			std::string line; //sor a fajlban
 			bool vt = false; //van-e textura koordinata a fajlban
-			while (std::getline(f, line)){
+			while (std::getline(f, line)) {
 				std::string::size_type ind = line.find('#');
-				if (ind != std::string::npos){
+				if (ind != std::string::npos) {
 					line.erase(ind);
 				}
-				if (line.size()){
+				if (line.size()) {
 					std::stringstream stream(line);//a sor darabolasara hasznalt stream
 					std::string beg;//sorkezdo szimbolum mely azonositja a sor tartalmat
 					T x, y, z; //skalar adatok beolvasasara
-					int ind1, ind2, ind3; //beolvasasra hasznalt indexek v,vt,vn
-					char sep; //elvalasztojel beolvasashoz
 					stream >> beg;
-					if (beg == "v"){//vertexpont
+					if (beg == "v") {//vertexpont
 						stream >> x >> y >> z;
 						if (stream.fail()) return exit_cleanup(tb);
 						tmp_vecs.push_back({ x, y, z });
 					}
-					else if (beg == "vn"){//normalvektor
-						//nem ezeket a normalokat fogom hasznalni, de cw ccw ellenorzeshez kellenek
+					else if (beg == "vn") {//normalvektor
+										   //nem ezeket a normalokat fogom hasznalni, de cw ccw ellenorzeshez kellenek
 						stream >> x >> y >> z;
 						if (stream.fail()) return exit_cleanup(tb);
 						accum_normals.push_back({ x, y, z });
 					}
-					else if (beg == "vt"){//textura koordinata
-						//textura koordinatakkal nem foglalkozom, de felirom hogy vannak mert mashogy kell beolvasnom
+					else if (beg == "vt") {//textura koordinata
+										   //textura koordinatakkal nem foglalkozom, de felirom hogy vannak mert mashogy kell beolvasnom
 						vt = true;
 					}
-					else if (beg == "f"){//lap indexekkel leirva
+					else if (beg == "f") {//lap indexekkel leirva
 						std::vector<int> inds;
-						Vector3<T> sum_normal;
-						if (vt && accum_normals.size()){ //f v/vt/vn
-							while (stream >> ind1 >> sep >> ind2 >> sep >> ind3){
-								inds.push_back(ind1 - 1);
-								sum_normal += accum_normals[ind3 - 1];
+						Vector3<T> sum_normal, calculated_normal;
+						std::string node;
+						int vind, nind;
+						while (stream >> node && node.length()){
+							if (!parse_node(node, vind, nind)) return exit_cleanup(tb);
+							inds.push_back(vind - 1);
+							if (nind > 0) {
+								calculated_normal += accum_normals[nind-1];
 							}
-							if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
-							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
-							if (dot(calculated_normal, sum_normal) < 0){
-								calculated_normal *= -1;
-								std::reverse(inds.begin(), inds.end());
-							}
-							tmp_normals.push_back(calculated_normal);
-							tb.faces.emplace_back(&tb.vecs, std::move(tmp_vecs.transform_range(inds)), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
 						}
-						else if (accum_normals.size()){ //f v//vn
-							while (stream >> ind1 >> sep >> sep >> ind3){
-								inds.push_back(ind1 - 1);
-								sum_normal += accum_normals[ind3 - 1];
-							}
-							if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
-							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
-							if (dot(calculated_normal, sum_normal) < 0){
-								calculated_normal *= -1;
-								std::reverse(inds.begin(), inds.end());
-							}
-							tmp_normals.push_back(calculated_normal);
-							tb.faces.emplace_back(&tb.vecs, std::move(tmp_vecs.transform_range(inds)), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
+						if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
+						calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
+						if (dot(calculated_normal, sum_normal) < 0){
+							calculated_normal *= -1;
+							std::reverse(inds.begin(), inds.end());
 						}
-						else if (vt){ //f v/vt - felteszem hogy ccw-ben adtak meg de nem tudom ellenorizni
-							while (stream >> ind1 >> sep >> ind2){
-								inds.push_back(ind1 - 1);
+
+						tmp_normals.push_back(calculated_normal);
+						if (triangulate) {
+							for (int i = 2; i < inds.size(); ++i) {
+								tb.faces.emplace_back(&tb.vecs, tmp_vecs.transform_range(std::vector<int>{inds[0], inds[i - 1], inds[i]}), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
 							}
-							if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
-							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
-							tmp_normals.push_back(calculated_normal);
-							tb.faces.emplace_back(&tb.vecs, std::move(tmp_vecs.transform_range(inds)), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
 						}
-						else { //f v -felteszem hogy ccw-ben van megadva, de nem tudom ellenorizni
-							while (stream >> ind1){
-								inds.push_back(ind1 - 1);
-							}
-							if ((stream.fail() && !stream.eof()) || inds.size()<3) return exit_cleanup(tb);
-							Vector3<T> calculated_normal = cross(tmp_vecs[inds[2]] - tmp_vecs[inds[1]], tmp_vecs[inds[0]] - tmp_vecs[inds[1]]).normalized();
-							tmp_normals.push_back(calculated_normal);
+						else {
 							tb.faces.emplace_back(&tb.vecs, std::move(tmp_vecs.transform_range(inds)), &tb.normals, tmp_normals.transform_index(tmp_normals.size() - 1));
 						}
 					}
@@ -129,6 +127,7 @@ namespace approx {
 			return true; //minden megfelelo
 		}
 
+
 	public:
 		// .obj formatumu fajl betoltese
 		// Eredmenye pontosan akkor igaz, ha sikerult betolteni egy ervenyes fajlt a megadott nevvel.
@@ -136,9 +135,9 @@ namespace approx {
 		// Amennyiben a fajl tartalmaz normalisokat, azokat felhasznalom a cw-ccw sorrenduseg ellenorzesere,
 		// ha nincs normalvektor adat a fajlban, felteszem, hogy ccw sorrendben megadott lapjaim vannak.
 		// Szinten felteszem, hogy a fajl helyesen van megadva, nem vegzek rajta korrekciot.
-		static bool load_obj(const std::string& filename, TargetBody<T>& tb){
+		static bool load_obj(const std::string& filename, TargetBody<T>& tb,bool triangulate = true){
 			NullRepair<T> d1,d2;
-			return load_obj_temp(filename, tb, d1, d2);
+			return load_obj_temp(filename, tb, d1, d2, triangulate);
 		}
 
 		// .obj formatumu fajl betoltese
@@ -147,11 +146,11 @@ namespace approx {
 		// Amennyiben a fajl tartalmaz normalisokat, azokat felhasznalom a cw-ccw sorrenduseg ellenorzesere,
 		// ha nincs normalvektor adat a fajlban, felteszem, hogy ccw sorrendben megadott lapjaim vannak.
 		// A megadott epszilonon beluli euklideszi tavolsagu pontokat egyenloknek veszem es explicit osszevonom.
-		static bool load_obj(const std::string& filename, TargetBody<T>& tb, T epsilon){
-			if (epsilon <= 0) return load_obj(filename, tb);
+		static bool load_obj(const std::string& filename, TargetBody<T>& tb, T epsilon, bool triangulate = true){
+			if (epsilon <= 0) return load_obj(filename, tb, triangulate);
 			RepairVector<T> d1(epsilon);
 			NullRepair<T> d2;
-			return load_obj_temp(filename, tb, d1, d2);
+			return load_obj_temp(filename, tb, d1, d2, triangulate);
 		}
 	};
 
@@ -169,7 +168,13 @@ namespace approx {
 		static void write_obj_face(std::ostream& os, const Face<T>& face){
 			int n = face.normal_index();
 			os << "f ";
-			T sign = dot(face.normal(), cross(face.points(2) - face.points(1), face.points(0) - face.points(1)));
+			int k = 2;
+			while (k < face.size() && (sin(face.points(k), face.points(1), face.points(0))  < 0.1f)) {
+				++k;
+			}
+			k %= face.size();
+			Vector3<T> normal = cross(face.points(k) - face.points(1), face.points(0) - face.points(1));
+			T sign = dot(face.normal(), normal);
 			if (sign > 0) {
 				for (int ind : face.indicies()) {
 					os << ind + 1 << "//" << n + 1 << " ";

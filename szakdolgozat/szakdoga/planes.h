@@ -66,9 +66,9 @@ namespace approx{
 		//kiszamol ket meroleges vektort amelyek felhasznalhatoak tengelykent
 		//a sikon fekvo alakzatok ket dimenzioba kepezesenel, ugyelve a numerikus elonyossegre
 		std::pair<Vector3<T>, Vector3<T>> ortho2d() const {
-			T s1 = normal().x*normal().x + normal().y*normal().y,
-			  s2 = normal().x*normal().x + normal().z*normal().z,
-			  s3 = normal().y*normal().y + normal().z*normal().z;
+			T s1 = sqrt(normal().x*normal().x + normal().y*normal().y),
+			  s2 = sqrt(normal().x*normal().x + normal().z*normal().z),
+			  s3 = sqrt(normal().y*normal().y + normal().z*normal().z);
 			if (s1 >= s2 && s1 >= s3){
 				Vector3<T> w(-(normal().y / s1), normal().x / s1, 0);
 				return{ w.normalized(), cross(normal(), w).normalized() };

@@ -54,9 +54,9 @@ namespace approx{
 		const Vector2<T>& points(size_t i) const { return pts[i]; }
 		Vector2<T>& points(size_t i) { return pts[i]; }
 		
-		//elojeles terulet, elojele seggithet annak eldonteseben hogy cw vagy ccw felsorolasban van megadva
+		//elojeles terulet, elojele segithet annak eldonteseben hogy cw vagy ccw felsorolasban van megadva
 		T signed_area() const {
-			int n = pts.size();
+			int n = (int)pts.size();
 			T result = 0;
 			for (int i = 0; i < n; ++i){
 				result += pts[(i + 1) % n].x*pts[i].y - pts[i].x*pts[(i + 1) % n].y;
@@ -116,51 +116,8 @@ namespace approx{
 			return{ Polygon2<T>(std::move(neg)), Polygon2<T>(std::move(pos))};
 		}
 
-		//Konvex darabokra szeleteli az esetleg konkav polygont.
-		//Jelenleg haromszogekre bontja, azonban ezt fejelszteni lehet. (TODO)
-		//A polygon ful levagas modszeret alaklmazza.
-		//TODO: ezt kivettem mert hibasan detektalja a fuleket, de kesobb kellhet
-		//std::vector<Polygon2<T>> convex_partitions() const {
-		//	bool cc = is_ccw();
-		//	std::vector<Vector2<T>> tmp = pts;
-		//	std::vector<Polygon2<T>> res;
-		//	while (tmp.size() > 3){
-		//		int i = 1;
-		//		while (ccw(tmp[i-1], tmp[i], tmp[(i + 1) % tmp.size()]) != cc) ++i;
-		//		res.push_back(Polygon2<T>(tmp.begin() + i - 1, tmp.begin() + i + 2));
-		//		tmp.erase(tmp.begin() + i);
-		//	}
-		//	if (tmp.size() == 3) res.push_back(Polygon2<T>(std::move(tmp)));
-		//	return res;
-		//}
-
-		//a Sutherland–Hodgman algoritmus alapjan megtalalja a masik polygon beleeso reszet
-		//Polygon2<T> convex_clip(const Polygon2<T>& p) const {
-		//	std::vector<Vector2<T>> outputlist = p.pts;
-		//	int inside = ccw(pts[0], pts[1], pts[2]) ? 1 : -1;
-		//	for (int i = 0; i < size(); ++i){
-		//		Vector2<T> tmp = pts[(i + 1) % size()] - pts[i];
-		//		Line<T> edge({-tmp.y,tmp.x},pts[i]);
-		//		std::vector<Vector2<T>> inputlist = std::move(outputlist);
-		//		outputlist.clear();
-		//		Vector2<T> S = inputlist.back();
-		//		for (const Vector2<T>& E : inputlist){
-		//			T clfe = edge.classify_point(E);
-		//			T clfs = edge.classify_point(S);
-		//			if (clfe*inside >= 0){
-		//				outputlist.push_back(E);
-		//			}
-		//			if (clfs*clfe < 0){
-		//				T all = abs(clfe) + abs(clfs);
-		//				outputlist.push_back((abs(clfs) / all)*E + (abs(clfe)/all)*S);;
-		//			}
-		//			S = E;
-		//		}
-		//	}
-		//	return Polygon2<T>(std::move(outputlist));
-		//}
-
-		//mukodnie kell konvex es konkav esetre is
+		//pontosan akkor igaz, ha a masik sokszog beleesik a sokszogbe
+		//mukodik konvex es konkav esetben is
 		bool contains(const Polygon2<T>& p) const {
 			for (const Vector2<T>& pt : p) {
 				if (!contains(pt))
@@ -169,6 +126,7 @@ namespace approx{
 			return true;
 		}
 
+		//pontosan akkor igaz, ha a pont beleesik a sokszogbe
 		bool contains(const Vector2<T>& v) const {
 			Line<T> line( Vector2<T>(0,1) , v);
 			bool inside = false;
@@ -190,6 +148,7 @@ namespace approx{
 			return inside;
 		}
 
+		//A Sutherland-Hodgman algoritmus alapjan konvex kivagja a p polygon beesõ részét.
 		Polygon2<T> convex_clip(const Polygon2<T>& p) const {
 			Polygon2<T>  output = p;
 			bool cc = ccw(pts[0], pts[1], pts[2]);
@@ -204,6 +163,21 @@ namespace approx{
 				}
 			}
 			return output;
+		}
+
+		//sulypont kiszamitasa
+		Vector2<T> centroid() const {
+			T sa = (-6 * signed_area());
+			T cx = 0,cy=0;
+			int n = size();
+			for (int i = 0; i < n; ++i) {
+				Vector2<T> pi = points(i),
+						   pi1=points((i+1)%n);
+				T mult = pi.x * pi1.y - pi1.x*pi.y;
+				cx += (pi.x + pi1.x) * mult;
+				cy += (pi.y + pi1.y)* mult;
+			}
+			return{ cx/sa,cy/sa };
 		}
 
 	};

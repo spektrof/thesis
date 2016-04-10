@@ -147,7 +147,9 @@ namespace approx{
 						(int)faces.size()-2,
 						(int)faces.size()-1,
 						_atoms[last_cut].surf_imprints(e.second.ind_in_neg_atom),
-						_atoms.back().surf_imprints(e.second.ind_in_pos_atom)
+						_atoms.back().surf_imprints(e.second.ind_in_pos_atom),
+						e.second.pt_ind1,
+						e.second.pt_ind2
 						);
 				}
 				connections[e.first].other_atom = -3;
@@ -201,7 +203,9 @@ namespace approx{
 						(int)faces.size() - 2,
 						(int)faces.size() - 1,
 						_atoms[last_cut].surf_imprints(e.second.ind_in_neg_atom),
-						cut_res.positive->surf_imprints(e.second.ind_in_pos_atom)
+						cut_res.positive->surf_imprints(e.second.ind_in_pos_atom),
+						e.second.pt_ind1,
+						e.second.pt_ind2
 						);
 				}
 				connections[e.first].other_atom = -3;
@@ -254,7 +258,9 @@ namespace approx{
 						(int)faces.size() - 2,
 						(int)faces.size() - 1,
 						cut_res.negative->surf_imprints(e.second.ind_in_neg_atom),
-						_atoms[last_cut].surf_imprints(e.second.ind_in_pos_atom)
+						_atoms[last_cut].surf_imprints(e.second.ind_in_pos_atom),
+						e.second.pt_ind1,
+						e.second.pt_ind2
 						);
 				}
 				connections[e.first].other_atom = -3;
@@ -404,7 +410,7 @@ namespace approx{
 		//az eredmenykent keletkezett atomok, lapok es pontok bekerulnek a taroloba
 		CutResult cut(size_t ind, const Plane<T>& p){
 			if (pending()) undo();
-			last_cut = ind;
+			last_cut = (int)ind;
 			cut_res = _atoms[ind].cut_by(p);
 			return CutResult(this);
 		}
@@ -527,6 +533,15 @@ namespace approx{
 				}
 			}
 			return Body<T>(&faces, ind);
+		}
+
+
+		//eltolt es atmeretezett targetbodynal ha el akarjuk menteni fajlba az eredmenyt,
+		//ezt hivjuk meg eloszor
+		//TODO
+		void final_transform() {
+			Vector3<T> t = target->inverse_transform();
+			T scl = target->inverse_scale();
 		}
 
 	};

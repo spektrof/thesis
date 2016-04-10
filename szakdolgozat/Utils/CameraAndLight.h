@@ -1,5 +1,10 @@
 #pragma once
 
+/*	Keszitette: Lukacs Peter
+
+	A kamera- es fenykezeleshez szukseges osztalyok.
+	Segitsegukkel mozgathatjuk kamerankat es a fenyforrasunkat.
+*/
 #include "glm/glm.hpp"
 #include "Utility.h"
 
@@ -11,16 +16,18 @@ public:
 
 	void SetIsLeftPressed(const bool& val) { is_left_pressed = val; }
 
+	void SetCamera(const glm::vec3&);
 	glm::vec3 GetEye() const { return eye; }
 	glm::vec3 GetUp() const { return up; }
 	glm::vec3 GetAt() const { return at; }
-	glm::vec3 GetVertUnit() const {	return cunit;	}
+	glm::vec3 GetVertUnit() const { return cunit; }
+	glm::vec3 GetZoomUnit() const { return Is2DView() ? glm::vec3(0, 1, 0) : cunit;	}
 	float GetView() const { return (float)ViewPoint; }
 	bool Is2DView() const { return ViewPoint == _2D; }
 
 	glm::vec3 GetCameraUnit() const { return Is2DView() ? glm::vec3(0, 0, -1) : glm::normalize(glm::cross(up, cunit)); }
 
-	void SwitchCameraView();
+	void SwitchCameraView(const glm::vec3& = glm::vec3(1,2,1));
 	void Add(const glm::vec3&);
 	void Sub( const glm::vec3&);
 
@@ -28,8 +35,8 @@ public:
 
 protected:
 
-	void SetLight2DValues();
-	void SetLight3DInitialValues();
+	void SetCamera2DValues(const glm::vec3&);
+	void SetCamera3DInitialValues();
 
 	bool is_left_pressed = false;	// camera moving
 

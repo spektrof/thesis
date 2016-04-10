@@ -1,4 +1,10 @@
 #pragma once
+
+/*	Keszitette: Lukacs Peter
+
+	A felhasznaloi felulet es a approximalast vegzo program kozotti kommunikaciohoz szukseges keres.
+*/
+
 #include "../szakdoga/approximator.h"
 
 enum ToDo{
@@ -15,9 +21,9 @@ enum ToDo{
 	PREVATOM,
 	RECALCULATING,
 	MORESTEPS,
+	EXPORT,
 };
 
-//RANDOM
 enum ChoiceMode {
 	VOLUME,
 	DIAMETER,
@@ -27,16 +33,10 @@ enum ChoiceMode {
 	OPTIMALVOLUME,
 };
 
-//	Vágó sík :
-
 enum CuttingMode {
 	MANUAL,
-	OPTIMALLAPALATT,
 	MINDENPONTRAILLESZTETT,
-	OPTIMFELULETILL,
-	GLOBHIBAOPTIM,
 	ATMEROSULYP,
-	RANDOM,
 	RANDOMNORMALCENTROID,
 	RANDOMFELULETILLESZT,
 	RANDOMLAPALATT,
@@ -66,15 +66,14 @@ struct Request {
 	ChoiceMode choice;
 	CuttingMode cut_mode;
 	TypeOfAccept type;
-	/*Display due to fourier egyutthato*/
 	Display disp;
-	/*Vagosik*/
+
 	Coord plane_coord;
 	Coord plane_norm;
-	/*Tobb vagas*/
-	ushort CountsOfCutting;
 
+	ushort CountsOfCutting;
+	 
 	Request(const ToDo t = ToDo::NONE, const ChoiceMode ch = ChoiceMode(0), const CuttingMode cu = CuttingMode(0),
-		    const TypeOfAccept a = TypeOfAccept(0), const Display d = Display(0), const Coord p = Coord(0,0,26), const Coord n = Coord(0,0,1), const ushort c = 1)
+		    const TypeOfAccept a = TypeOfAccept(0), const Display d = Display(0), const Coord p = Coord(0,0,0), const Coord n = Coord(1,0,0), const ushort c = 1)
 		: eventtype(t), choice(ch), cut_mode(cu), type(a), disp(d), plane_coord(p), plane_norm(n), CountsOfCutting(c) { }
 };

@@ -22,6 +22,14 @@ namespace approx{
 		}
 	};
 
+	template <class T> struct DifferentVector3 { //rendezesi muvelet a map tipussal valo hasznalathoz
+		bool operator ()(const Vector3<T>& a, const Vector3<T>& b) const {
+			return	a.x < b.x ||
+					(a.x == b.x && a.y < b.y) ||
+					(a.x == b.x && a.y == b.y && a.z < b.z);
+		}
+	};
+
 	template <class T> using Graph = std::map < Vector2<T>, std::vector<Vector2<T>>, Less2d<T> > ;
 
 	template <class T> void depth_first_search(const Graph<T>& graph, std::set<Vector2<T>,Less2d<T>>& visited, std::vector<Vector2<T>>& path, std::vector<Polygon2<T>>& result){

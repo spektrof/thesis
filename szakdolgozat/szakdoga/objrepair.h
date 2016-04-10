@@ -119,7 +119,7 @@ namespace approx{
 
 		void push_back(const Vector3<T>& v) {
 			if (!vmap.count(v)) {
-				vmap[v] = vecs.size();
+				vmap[v] = (int)vecs.size();
 				vecs.push_back(v);
 			}
 			inds.push_back(vmap[v]);

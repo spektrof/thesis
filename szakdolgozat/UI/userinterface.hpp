@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+/*	Keszitette: Lukacs Peter
+
+	Felhasznaloi felulet az approximalo programhoz
+*/
 #include <QtWidgets/QWidget>
 #include <QPushButton>
 #include <QComboBox>
@@ -54,6 +58,7 @@ private slots:
 	void infoEvent();
 	void backToMenu();
 	void newdisplay();
+	void exportEvent();
 	
 private:
 	QWidget *window;
@@ -82,6 +87,7 @@ private:
 	QComboBox *_fourierGroups;
 
 	QPushButton* _restart;
+	QPushButton* _export;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
 

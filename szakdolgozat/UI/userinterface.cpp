@@ -27,10 +27,10 @@ UserInterface::UserInterface(QWidget *parent)
 	_z = new QLabel("Z", this); _z2 = new QLabel("Z", this);
 	_xf = new QLineEdit("0", this);
 	_yf = new QLineEdit("0", this);
-	_zf = new QLineEdit("26", this);
-	_xn = new QLineEdit("0", this);
+	_zf = new QLineEdit("0", this);
+	_xn = new QLineEdit("1", this);
 	_yn = new QLineEdit("0", this);
-	_zn = new QLineEdit("1", this);
+	_zn = new QLineEdit("0", this);
 
 	_cutting = new QPushButton("Cutting", this);
 	_undo = new QPushButton("Undo", this);
@@ -46,6 +46,7 @@ UserInterface::UserInterface(QWidget *parent)
 	_fourierGroups = new QComboBox();
 
 	_restart = new QPushButton("Restart", this);
+	_export = new QPushButton("Export", this);
 	_moreInfo = new QPushButton("More Info", this);
 	_back = new QPushButton("Back", this);
 
@@ -104,6 +105,7 @@ UserInterface::~UserInterface()
 	delete _n;
 
 	delete _restart;
+	delete _export;
 	delete _moreInfo;
 	delete _back;
 
@@ -165,6 +167,7 @@ void UserInterface::Init()
 	connect(_fourierGroups, SIGNAL(currentIndexChanged(int)), this, SLOT(newdisplay()));
 
 	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
+	connect(_export, SIGNAL(clicked()), this, SLOT(exportEvent()));
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
 	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
 
@@ -186,7 +189,7 @@ void UserInterface::cuttingEvent()
 
 	_choiceStrategy->setEnabled(request.cut_mode == MANUAL ? false : true);
 	_plane->setEnabled(request.cut_mode == MANUAL ? false : true);
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false);
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false);
 	_nextChoice->setEnabled(request.cut_mode == MANUAL ? false : true);
 	_prev->setEnabled(request.cut_mode == MANUAL ? false : true);
 }
@@ -202,7 +205,7 @@ void UserInterface::undoEvent()
 
 	_choiceStrategy->setEnabled(true);
 	_plane->setEnabled(true);
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
 	_nextChoice->setEnabled(true);
 	_prev->setEnabled(true);
 }
@@ -219,7 +222,7 @@ void UserInterface::acceptEvent()
 
 	_choiceStrategy->setEnabled(true);
 	_plane->setEnabled(true);
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
 	_nextChoice->setEnabled(true);
 	_prev->setEnabled(true);
 }
@@ -229,7 +232,7 @@ void UserInterface::restartEvent()
 	request = Request(RESTART, ChoiceMode(_choiceStrategy->currentData().toInt()));
 
 	_n->setText("1"); 
-	_xn->setText("0"); _yn->setText("0"); _zn->setText("1");
+	_xn->setText("1"); _yn->setText("0"); _zn->setText("0");
 
 	_choiceStrategy->setEnabled(true);
 	_prev->setEnabled(true);
@@ -239,7 +242,7 @@ void UserInterface::restartEvent()
 	_accept->setEnabled(false);
 	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
 	_cutting->setEnabled(true);
 
 	_nextNOk->setEnabled(false);
@@ -253,11 +256,27 @@ void UserInterface::typeaccept_handler()
 
 void UserInterface::newplane_event()
 {
+	if (!_xn->text().toFloat() && !_yn->text().toFloat() && !_zn->text().toFloat()) // (0,0,0) normális
+	{
+		if ( _xn->isModified() ) _xn->undo();
+		if ( _yn->isModified() ) _yn->undo();
+		if ( _zn->isModified() ) _zn->undo();
+
+		ErrorShow("Invalid normal ! (dont use (0,0,0))\n");	//ujra lefut tole a newplaneevent fv.
+
+		return;
+	}
+
 	request.eventtype = NEWPLANE;
+
+	_xn->setModified(false);
+	_yn->setModified(false);
+	_zn->setModified(false);
 
 	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
 	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
 }
+
 void UserInterface::newprior_event()
 {
 	request.eventtype = NEWSTRATEGY;
@@ -265,18 +284,20 @@ void UserInterface::newprior_event()
 
 
 }
+
 void UserInterface::newcutmode_event()
 {
 	request.eventtype = NEWCUTTINGMODE;
 	request.cut_mode = CuttingMode(_plane->currentData().toInt());
 
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
 	coords->setVisible(request.cut_mode == MANUAL ? true : false);
 	norms->setVisible(request.cut_mode == MANUAL ? true : false);
 
 	_nextNOk->setEnabled(request.cut_mode == MANUAL ?  false : true);
 	_n->setEnabled(request.cut_mode == MANUAL ?  false : true);
 }
+
 void UserInterface::newdisplay()
 {
 	request.eventtype = NEWDISPLAY;
@@ -288,21 +309,28 @@ void UserInterface::prevAtomEvent()
 {
 	request.eventtype = PREVATOM;
 }
+
 void UserInterface::nextAtomEvent()
 {
 	request.eventtype = NEXTATOM;
 }
+
 void UserInterface::nextPlaneEvent()
 {
 	request.eventtype = RECALCULATING;
 }
+
 void UserInterface::nextNCutEvent()
 {
 	request.eventtype = MORESTEPS;
 	request.CountsOfCutting = _n->text().toInt();
 }
 
-/*TODO : aktualizalni*/
+void UserInterface::exportEvent()
+{
+	request.eventtype = EXPORT;
+}
+
 void UserInterface::infoEvent()
 {
 	_info->setVisible(true);
@@ -313,6 +341,7 @@ void UserInterface::infoEvent()
 	_undo->setVisible(false);
 	_accept->setVisible(false);
 	_restart->setVisible(false);
+	_export->setVisible(false);
 	_acceptTypes->setVisible(false);
 
 	_strategy->setVisible(false);
@@ -322,8 +351,10 @@ void UserInterface::infoEvent()
 
 	_moreInfo->setVisible(false);
 
-
+	_fourierGroups->setVisible(false);
+	_displayType->setVisible(false);
 }
+
 void UserInterface::backToMenu()
 {
 	_info->setVisible(false);
@@ -335,6 +366,7 @@ void UserInterface::backToMenu()
 	_undo->setVisible(true);
 	_accept->setVisible(true);
 	_restart->setVisible(true);
+	_export->setVisible(true);
 	_acceptTypes->setVisible(true);
 
 	_strategy->setVisible(true);
@@ -343,8 +375,10 @@ void UserInterface::backToMenu()
 	_n->setVisible(true);
 
 	_moreInfo->setVisible(true);
-}
 
+	_fourierGroups->setVisible(true);
+	_displayType->setVisible(true);
+}
 
 Request UserInterface::GetRequest() 
 {
@@ -364,7 +398,8 @@ Request UserInterface::GetRequest()
 		//_choiceStrategy->setCurrentIndex(0);
 		_plane->setCurrentIndex(0);
 		_acceptTypes->setCurrentIndex(0);
-		_xf->setText("0"); _yf->setText("0"); _zf->setText("26");
+		_fourierGroups->setCurrentIndex(0);
+		_xf->setText("0"); _yf->setText("0"); _zf->setText("0");
 	}
 	return result;
 }
@@ -408,7 +443,7 @@ void UserInterface::SetButtonsProperties()
 
 	_accept->setEnabled(false);
 	_undo->setEnabled(false);
-	_nextPlane->setEnabled(request.cut_mode > 5 ? true : false); //HA RANDOM
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
 
 	_back->setVisible(false);
 
@@ -416,6 +451,7 @@ void UserInterface::SetButtonsProperties()
 	_undo->setStyleSheet("background-color: #bcee68;");
 	_accept->setStyleSheet("background-color: #bcee68;");
 	_restart->setStyleSheet("background-color: #bcee68;");
+	_export->setStyleSheet("background-color: #bcee68;");
 	_moreInfo->setStyleSheet("background-color: #bcee68;");
 	_back->setStyleSheet("background-color: #bcee68;");
 	_nextChoice->setStyleSheet("background-color: #bcee68;");
@@ -513,6 +549,7 @@ void UserInterface::CreateHead()
 
 	_info->setVisible(false);
 }
+
 void UserInterface::CreateButtonsGroup()
 {
 	QHBoxLayout *upperButtons = new QHBoxLayout();
@@ -619,9 +656,11 @@ void UserInterface::CreatePlaneDetails()
 	strategiesGroup->addLayout(plane_details);
 
 }
+
 void UserInterface::CreateBottom()
 {
 	bottom->addWidget(_restart, 0, Qt::AlignBottom | Qt::AlignLeft);
+	bottom->addWidget(_export, 0, Qt::AlignBottom | Qt::AlignCenter);
 	bottom->addWidget(_moreInfo, 0, Qt::AlignBottom | Qt::AlignRight);
 	bottom->addWidget(_back, 0, Qt::AlignRight);
 }
@@ -642,15 +681,14 @@ void UserInterface::AddItemsToDropMenu()
 	//	Vágó sík :
 
 	_plane->addItem("Manualis", 0);
-	_plane->addItem("Optimalis lap alatt fekvo", 1);
-	_plane->addItem("Osszes pontra illesztett", 2);
-	_plane->addItem("Optimalis feluletre illesztett", 3);
-	_plane->addItem("Globalis hibara optimalis(? )", 4);
-	_plane->addItem("Atmerovel megegyezo iranyu, sulyponton atmeno", 5);
-	_plane->addItem("Veletlen", 6);
-	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 7);
-	_plane->addItem("Veletlen feluletre illesztett", 8);
-	_plane->addItem("Veletlen lap alatt fekvo", 9);
+	_plane->addItem("Osszes pontra illesztett", 1);
+	_plane->addItem("Atmerovel megegyezo iranyu, sulyponton atmeno", 2);
+	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 3);
+	_plane->addItem("Veletlen feluletre illesztett", 4);
+	_plane->addItem("Veletlen lap alatt fekvo", 5);
+	//	_plane->addItem("Optimalis lap alatt fekvo", 1);
+	//	_plane->addItem("Optimalis feluletre illesztett", 3);
+	//	_plane->addItem("Globalis hibara optimalis(? )", 4);
 
 	_fourierGroups->addItem("Elo atomok", 0);
 	_fourierGroups->addItem("Relevans atomok", 1);

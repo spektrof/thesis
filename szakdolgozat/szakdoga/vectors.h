@@ -54,6 +54,10 @@ namespace approx{
 		Vector2 operator * (T num) const{ return Vector2(x*num, y*num); }
 		Vector2 operator / (T num) const{ return Vector2(x/num, y/num); }
 		
+		Vector2 operator -() const {
+			return Vector2(x*-1, y*-1);
+		}
+
 		//hossz szamitas 2-es norma szerint
 		T length() const { return sqrt(x*x+y*y); }
 		
@@ -121,6 +125,10 @@ namespace approx{
 			return Vector3(x/num, y/num, z/num);
 		}
 
+		Vector3 operator -() const {
+			return Vector3(x*-1, y*-1, z*-1);
+		}
+
 		//2-es norma szerinti hossz
 		T length() const { return sqrt(x*x+y*y+z*z); }
 
@@ -146,7 +154,7 @@ namespace approx{
 		return vec*num;
 	}
 
-	template <class T> Vector3<T> operator* (T num,const Vector3<T>& vec){
+	template <class T> Vector3<T> operator* (T num, const Vector3<T>& vec){
 		return vec*num;
 	}
 	
@@ -166,9 +174,30 @@ namespace approx{
 						  u.x*v.y-u.y*v.x);
 	}
 
+	//pontosan akkor igaz, ha a megadott vektorok ccw sorrendben vannak felsorolva
 	template <class T> bool ccw(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c){
 		Vector2<T> u = c - b, v = a - b;
 		return u.x*v.y - u.y*v.x > 0;
+	}
+
+	//kiszamolja a v1 es v2 altal bezart szog sinusat
+	template <class T> T sin(const Vector3<T>& v1, const Vector3<T>& v2) {
+		return cross(v1, v2).length() / (v1.length() * v2.length());
+	}
+
+	//kiszamolja az a-b es c-b altal bezart szog sinusat
+	template <class T> T sin(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c) {
+		return sin(a - b, c - b);
+	}
+
+	//kiszamolja a v1 es v2 altal bezart szog cosinusat
+	template <class T> T cos(const Vector3<T>& v1, const Vector3<T>& v2) {
+		return dot(v1, v2) / (v1.length() *v2.length());
+	}
+
+	//kiszamolja az a-b es c-b altal bezart szog cosinusat
+	template <class T> T cos(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c) {
+		return cos(a - b, c - b);
 	}
 
 	//konkret float es double skalarok feletti vektor tipusok

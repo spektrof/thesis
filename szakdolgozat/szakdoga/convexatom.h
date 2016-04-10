@@ -10,6 +10,7 @@
 
 #include <utility>
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <map>
 #include <set>
@@ -48,6 +49,17 @@ namespace approx{
 
 		std::vector<std::shared_ptr<SurfacePoly>> f_poly;
 		const Body<T>* target;
+
+		static std::pair<int, int> decide_pair(const std::pair<int, int>& p1, const std::pair<int, int>& p2) {
+			if (p1.first == p1.first)
+				return std::pair<int, int>{p1.second, p2.second};
+			if (p2.second == p1.second)
+				return std::pair<int, int>(p1.first, p2.first);
+			if (p1.first == p2.second)
+				return std::pair<int, int>(p1.second, p2.first);
+			else
+				return std::pair<int, int>(p1.first, p2.second);
+		}
 
 	public:
 
@@ -95,6 +107,7 @@ namespace approx{
 				int ind_in_pos_atom;
 				int neg_face_ind;
 				int pos_face_ind;
+				int pt_ind1, pt_ind2;
 			};
 			
 			std::map<int, FaceSplit> cut_map; //hozzarendeli az elvagott lapokhoz a keletkezett fel lapokat
@@ -126,9 +139,14 @@ namespace approx{
 					_faces->push_back(cut.negative); //a kapott lapokat szortirozom az uj sokszogekbe
 					_faces->push_back(cut.positive); 
 					faces_added += 2; //2 uj lap kerult a taroloba
-					pos_faces.push_back(_faces->size() - 1);
-					neg_faces.push_back(_faces->size() - 2);
-					cut_map[indicies(i)] = {(int)neg_faces.size()-1,(int)pos_faces.size()-1,neg_faces.back(),pos_faces.back()};
+					pos_faces.push_back((int)_faces->size() - 1);
+					neg_faces.push_back((int)_faces->size() - 2);
+					cut_map[indicies(i)] = {(int)neg_faces.size()-1,
+											(int)pos_faces.size()-1,
+											neg_faces.back(),
+											pos_faces.back(),
+											cut.pt_inds.front(),
+											cut.pt_inds.back()};
 					pt_ids.push_back(cut.pt_inds.front());
 					pt_ids.push_back(cut.pt_inds.back());
 					avg_pt += vc[pt_ids[pt_ids.size() - 1]];
@@ -181,8 +199,6 @@ namespace approx{
 					return atan2(x1, y1) < atan2(x2, y2);
 				});
 
-
-
 				//a rendezett pontokbol minden masodik egyedi bekerul a sokszogre
 				std::vector<int> new_fc{pt_ids[0]};
 				for (int i = 2; i < (int)pt_ids.size(); i += 2){
@@ -194,8 +210,8 @@ namespace approx{
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
-				n_cut_f = _faces->size() - 2;
-				p_cut_f = _faces->size() - 1;
+				n_cut_f = (int)_faces->size() - 2;
+				p_cut_f = (int)_faces->size() - 1;
 				neg_faces.push_back(n_cut_f);
 				pos_faces.push_back(p_cut_f);
 				//a vetuleteket is clippelni kell
@@ -279,16 +295,45 @@ namespace approx{
 		}
 
 		//a taroloban adott indexel rendelkezo lapot ebben az atomban lecserelem a taroloban adott indexszel rendelkezo lapokra
-		void replace_face_with(int real_ind, int rep_ind1, int rep_ind2, const PolyPtr& p1, const PolyPtr& p2) {
-			int ind = std::find(indicies().begin(), indicies().end(), real_ind) - indicies().begin();
+		void replace_face_with(int real_ind, int rep_ind1, int rep_ind2, const PolyPtr& p1, const PolyPtr& p2,int cutpt1,int cutpt2) {
+			//megkeresem melyik lapot kell elfeleznem a masik kettovel
+			int ind = (int)(std::find(indicies().begin(), indicies().end(), real_ind) - indicies().begin());
 			indicies()[ind] = rep_ind1;
 			f_poly[ind] = p1;
 			indicies().push_back(rep_ind2);
 			f_poly.push_back(p2);
+			//majd a tobbi lapon vegrehajtom a kello modositasokat hogy a szomszedsagi viszonyok ne seruljenek
+			std::pair<int, int> neigh11 = (*_faces)[rep_ind1].neighbours_of(cutpt1),
+								neigh21 = (*_faces)[rep_ind2].neighbours_of(cutpt1),
+								neigh12 = (*_faces)[rep_ind1].neighbours_of(cutpt2),
+								neigh22 = (*_faces)[rep_ind2].neighbours_of(cutpt2);
+			//meghatarozom melyik pontok koze kell beszurni
+			std::pair<int, int> pair1 = decide_pair(neigh11,neigh21);
+			std::pair<int, int> pair2 = decide_pair(neigh12, neigh22);
+			bool in1 = false, in2 = false;
+			int n=size()-1;
+			for (int i = 0; i < n && !(in1 && in2); ++i) {
+				if (i != ind) {
+					if (!in1) {
+						in1 = faces(i).insert_index(pair1.first, pair1.second, cutpt1);
+						if(!in1 && !in2) faces(i).insert_index(pair2.first, pair2.second, cutpt2);
+					}
+					else if (!in2) in2 = faces(i).insert_index(pair2.first, pair2.second, cutpt2);
+				}
+			}
+ 		}
+
+		//aleiro lapok sulypontjainak atlaga, nem egyenlo a sulyponttal
+		Vector3<T> avg_point() const {
+			Vector3<T> c;
+			for (const Face<T>& f : *this) {
+				c += f.centroid();
+			}
+			return c / static_cast<T>(size());
 		}
 
 		int bad_normal_ind() const {
-			Vector3<T> cent = centroid();
+			Vector3<T> cent = avg_point();//centroid();
 			int i = 0;
 			for (const Face<T>& f : *this) {
 				if (dot(f.normal(), cent - f.points(0)) > 0)

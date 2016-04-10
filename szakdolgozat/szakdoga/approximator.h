@@ -64,7 +64,9 @@ namespace approx {
 		//A megadott fajlbol akarunk betolteni.
 		//A masodik parameter a korulvevo befogo kocka lapjainak tavolsaga a testtol,
 		//a harmadik opcionalis parameter arra valo, ha betoltesnel korrekciot kivanunk vegezni a testen.
-		bool set_target(const std::string& filename, T _border,T merging_epsilon=0) {
+		//Amennyiben a negyedik parameternek pozitiv erteke van, az approximalt testet egy origo kozepu,
+		//adott elhosszusagu kockaba transzformalja
+		bool set_target(const std::string& filename, T _border,T merging_epsilon=0, T cube = -1) {
 			border = _border;
 			tb = std::make_unique<TargetBody<T>>();
 			if (!(ObjectLoader<T>::load_obj(filename, *tb, merging_epsilon) && tb->body().size())) {
@@ -72,18 +74,26 @@ namespace approx {
 				app.release();
 				return false;
 			}
+			if (cube > 0) {
+				tb->transform_to_origo(cube);
+			}
 			app = std::make_unique<Approximation<T>>(tb.get(),border);
 			return true;
 		}
 
 		//adott celtestet, adott tavolsagu befogo kockaval kezve akarunk kozeliteni
-		bool set_target(std::unique_ptr<TargetBody<T>>&& target,T _border) {
+		//Amennyiben a harmadik parameternek pozitiv erteke van, az approximalt testet egy origo kozepu,
+		//adott elhosszusagu kockaba transzformalja
+		bool set_target(std::unique_ptr<TargetBody<T>>&& target,T _border, T cube = -1) {
 			border = _border;
 			tb = std::move(target);
 			if (!(tb && tb->body().size())) {
 				tb.release();
 				app.release();
 				return false;
+			}
+			if (cube > 0) {
+				tb->transform_to_origo(cube);
 			}
 			app = std::make_unique<Approximation<T>>(tb.get(), border);
 			return true;
@@ -132,7 +142,7 @@ namespace approx {
 			for (int x : b2.indicies) {
 				b1.indicies.push_back(x+n);
 			}
-			b1.index_ranges.push_back(b1.indicies.size());
+			b1.index_ranges.push_back((int)b1.indicies.size());
 			return b1;
 		}
 
