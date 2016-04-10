@@ -9,8 +9,9 @@ Használati útmutató:
   Ezt megismételhetjük restart segítségével.  
                                 
 TODO:
-  - További stratégia
   - Shader fejlesztés doksi alapján
+  - remains some tiny feature which should solve
+  - Speedtest on huge target
       
 -------------------------------------------------------------------------------------
 
