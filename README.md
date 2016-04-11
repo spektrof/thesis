@@ -10,15 +10,15 @@ Használati útmutató:
                                 
 TODO:
   - Shader fejlesztés doksi alapján
-  - remains some tiny feature which should solve
   - Speedtest on huge target
       
 -------------------------------------------------------------------------------------
 
 Funkcióbillentyűk:
-  - t : átlátszóság ki-be kapcsolása
   - p : 3D és 2D nézeti kapcsoló
-  - i : egyéb információk lekérése konzolra
   - wasd + mouse left press : kamera mozgatása
   - nyilak : fény mozgatása
+  - o : (csak 2D ben) positive és negatív vetület közötti kapcsoló
+  - numpad +/- : (csak 2D ben) vetülek közötti iteráció (lapok)
+  - l : console logger ki/be kapcsolás
 
