@@ -1,3 +1,4 @@
+#include "Utility.h"
 #include "CameraAndLight.h"
 
 Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t)
@@ -48,6 +49,8 @@ void Camera::Add(const glm::vec3& unit)
 }
 void Camera::Sub(const glm::vec3& unit)
 {
+	if (Is2DView() && eye.y - unit.y < 10) return;
+
 	eye -= unit;
 	at -= unit;
 }

@@ -10,21 +10,6 @@
 
 Visualization::Visualization(void)
 {
-	_2DvaoID = 0;
-	_2DvboID = 0;
-
-	_3DvaoID = 0;
-	_3DvboID = 0;
-	_3Dindex = 0;
-
-	plane_vaoid = 0;
-	plane_vboid = 0;
-	plane_index = 0;
-
-	_target_vaoID = 0;
-	_target_vboID = 0;
-	_target_indexID = 0;
-	
 	program2D_ID = 0;
 	program3D_ID = 0;
 
@@ -54,12 +39,13 @@ bool Visualization::Init()
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 
-	ObjectCreator::CreateCuttingPlane(plane_vaoid,plane_vboid,plane_index,50, CuttingPlaneFreq);	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
+	ObjectCreator::CreateCuttingPlane(planeIds.VaoId, planeIds.VboId, planeIds.IndexId, 50, CuttingPlaneFreq);	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
 	 
 	Add2DShaders();
 	Add3DShaders();
 	AddShaderUniformLocations();
-
+	CreateXAndY();
+	CreateXAndYPoints();
 	LOG("---------------- INIT DONE ------------------\n"
 			"---------------------------------------------\n");
 
@@ -80,20 +66,17 @@ bool Visualization::EngineInit()
 	data = app.atom_drawinfo();
 	targetdata = app.target_drawinfo();
 
-	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
-	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,_target_vaoID,_target_vboID, _target_indexID);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
+	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
 	
 	lastUse.push_back(0);
 	prior.SetLastUse(&lastUse);
 
-	CalculateDisplayVectorsByFourier(NEGATIVE);
+	CalculateDisplayVectorsByFourier();
 	display = &liveAtoms;
 
 	GetPriorResult();
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-
-	/*------------------------------------*/
-	//std::vector< std::vector<int> > adj_mtx = Utility::GetAdjacencyMatrix2(&(app.target().face_container()));		//lassu
 
 	return true;
 }
@@ -105,55 +88,57 @@ void Visualization::Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
+	switch (request.eventtype)
+	{
+	case ACCEPT:
+		AcceptCutting();
+		break;
+	case CUTTING:
+		GetResult();
+		break;
+	case UNDO:
+		GetUndo();
+		break;
+	case NEWPLANE:
+		SetNewPlane();
+		break;
+	case NEWSTRATEGY:
+		SetNewStrategy();
+		break;
+	case NEWCUTTINGMODE:
+		SetNewCuttingMode();
+		break;
+	case NEWDISPLAY:
+		SetNewDisplayMode();
+		break;
+	case RESTART:
+		if (c.Is2DView()) c.SwitchCameraView();
+		GetRestart();
+		break;
+	case NEXTATOM:
+		NextAtom();
+		break;
+	case PREVATOM:
+		PrevAtom();
+		break;
+	case RECALCULATING:
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case MORESTEPS:
+		for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
+		break;
+	case EXPORT:
+		break;
+	default:
+		break;
+	}
+
 	if (c.Is2DView())	// true when _2D
 	{
 		glUseProgram(program2D_ID);
 		
-		switch (request.eventtype)
-		{
-			case ACCEPT:
-				AcceptCutting();
-				break;
-			case CUTTING:
-				GetResult();
-				break;
-			case UNDO:
-				GetUndo();
-				break;
-			case NEWPLANE:
-				SetNewPlane();
-				break;
-			case NEWSTRATEGY:
-				SetNewStrategy();
-				break;
-			case NEWCUTTINGMODE:
-				SetNewCuttingMode();
-				break;
-			case NEWDISPLAY:
-				SetNewDisplayMode();
-				break;
-			case RESTART:
-				c.SwitchCameraView();
-				GetRestart();
-				break;
-			case NEXTATOM:
-				NextAtom();
-				break;
-			case PREVATOM:
-				PrevAtom();
-				break;
-			case RECALCULATING:
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-				break;
-			case MORESTEPS:
-				for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
-				break;
-			case EXPORT:
-				break;
-			default:
-				break;
-		}
-
+		DrawXAndY();
+		DrawXAndYPoints();
 		Draw2D();
 	}
 	else // _3D
@@ -164,51 +149,6 @@ void Visualization::Render()
 		glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
 		glUniform1i(View, c.GetView());
 
-		switch (request.eventtype)
-		{
-			case ACCEPT:
-				AcceptCutting();
-				break;
-			case CUTTING:
-				GetResult();
-				break;
-			case UNDO:
-				GetUndo();
-				break;
-			case NEWPLANE:
-				SetNewPlane();
-				break;	
-			case NEWSTRATEGY:
-				SetNewStrategy();
-				break;
-			case NEWCUTTINGMODE:
-				SetNewCuttingMode();
-				break;
-			case NEWDISPLAY:
-				SetNewDisplayMode();
-				break;
-			case RESTART:
-				GetRestart();
-				break;
-			case NEXTATOM:
-				NextAtom();
-				break;
-			case PREVATOM:
-				PrevAtom();
-				break;
-			case RECALCULATING:
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-				break;
-			case MORESTEPS:
-				for (int i = 0; i < request.CountsOfCutting; ++i)	{	GetResult();	}
-				break;
-			case EXPORT:
-				break;
-			default:
-				break;
-		}
-
-
 		DrawCuttingPlane(Utility::GetTranslate(centr,_planenormal,distance),Utility::GetRotateFromNorm(_planenormal));
 						
 		DrawTargetBody();
@@ -216,16 +156,6 @@ void Visualization::Render()
 		glEnable(GL_BLEND);
 		glDepthMask(GL_FALSE);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		glm::mat4 matWorld = glm::mat4(1);
-		glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
-
-		glm::mat4 mvp = m_matProj * m_matView * matWorld;
-
-		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-		glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-		glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
-	
 
 		for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it)
 		{
@@ -270,12 +200,12 @@ void Visualization::AcceptCutting()
 
 
 	data = app.atom_drawinfo();
-	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 	LastUseChanging(request.type);
 
 	prior.erase(ActiveIndex);
-	CalculateDisplayVectorsByFourier(request.type);
+	CalculateDisplayVectorsByFourier();
 
 	if (request.choice == UNTOUCHED)	{	prior.SetLastUse(&lastUse);	}	// N log( N )-es rendezes van benne -> nem szeretnenk mindig lefuttatni csak mikor kell
 
@@ -325,7 +255,7 @@ void Visualization::GetResult()
 		<< "\n\t\t pont - ( " << request.plane_coord.x << " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n");
 
 	_MergeDataContainer(data, app.cut_drawinfo());
-	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 }
 
@@ -340,7 +270,7 @@ void Visualization::GetUndo()
 	app.container().last_cut_result().undo();
 
 	data = app.atom_drawinfo();
-	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 	liveAtoms.erase(NumberOfAtoms);
 	_2D_Line1Ids_N.clear();
@@ -367,13 +297,13 @@ void Visualization::GetRestart()
 	PlaneCalculator->SetActive(ActiveAtom);
 
 	data = app.atom_drawinfo();
-	ObjectCreator::Create3DObject(data.points, data.indicies, _3DvaoID, _3DvboID, _3Dindex);
+	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 	prior.clear();
 
 	liveAtoms.clear();
 	relevantAtoms.clear();
-	CalculateDisplayVectorsByFourier(NEGATIVE);
+	CalculateDisplayVectorsByFourier();
 	display = &liveAtoms;
 
 	lastUse.clear();
@@ -447,7 +377,7 @@ void Visualization::SetNewStrategy()
 				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALPARAMETER\n");
 				break;
-			case OPTIMALATMERO:
+			case OPTIMALDIAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetOptimalAndDiameter);
 				prior.clear();
 				for (GLuint i = 0;i < NumberOfAtoms;++i) { prior.insert(i, &app.container().atoms(i)); }
@@ -486,22 +416,22 @@ void Visualization::SetNewCuttingMode()
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMNORMALCENTROID\n");
 		break;
-	case ATMEROSULYP:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterSulyp);
+	case DIAMETERCENTROID:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterCentroid);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : ATMEROREMEROLEGESSULYP\n");
 		break;
-	case RANDOMLAPALATT:
+	case RANDOMUNDERFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomUnderFace);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMLAPALATT\n");
 		break;
-	case MINDENPONTRAILLESZTETT:
+	case MATCHEDEACHPOINT:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : MINDENPONTRAILLESZTETT\n");
 		break;
-	case RANDOMFELULETILLESZT:
+	case MATCHEDRANDOMSURFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMFELULETILLESZT\n");
@@ -588,16 +518,14 @@ void Visualization::Add3DShaders()
 
 	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
 
-
 }
 
 /*Uniform változók bekötése a shaderekhez*/
 void Visualization::AddShaderUniformLocations()
 {
 	m_loc_mvp = glGetUniformLocation(program3D_ID, "MVP");
-	m_loc_world = glGetUniformLocation(program3D_ID, "world");
-	m_loc_worldIT = glGetUniformLocation(program3D_ID, "worldIT");
 	eyePos = glGetUniformLocation(program3D_ID, "EyePosition");
+	world = glGetUniformLocation(program3D_ID, "World");
 	Lights = glGetUniformLocation(program3D_ID, "LightDirection");
 	View = glGetUniformLocation(program3D_ID, "View");
 	Opacity = glGetUniformLocation(program3D_ID, "opacity");
@@ -633,7 +561,12 @@ void Visualization::Draw3D(const int& which, const bool& backdropping, glm::mat4
 	*/
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
-	glBindVertexArray(_3DvaoID);
+	glBindVertexArray(_3dIds.VaoId);
+
+	glm::mat4 matWorld = trans * rot * scal;
+	glm::mat4 mvp = m_matProj * m_matView * matWorld;
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	float _opacity;
 	if (IsItActive(which)) { SetActiveAtomProperties(_opacity); }
@@ -664,8 +597,6 @@ void Visualization::Get2DDrawInfo()
 	//****************************************************************************
 	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
 
-	std::vector<glm::vec2> points;
-
 	Active2DIndex = 0;
 
 	_2D_Line1Ids_N.clear();
@@ -677,7 +608,6 @@ void Visualization::Get2DDrawInfo()
 
 	for (int i = 0; i < _2Ddata.size(); ++i)
 	{
-		points.clear();
 		size_t sizeOfRanges = _2Ddata[i].ranges.size();
 
 		//***********************************************
@@ -688,7 +618,6 @@ void Visualization::Get2DDrawInfo()
 		float maxx, maxy;
 		float minx = maxx = point.x, miny = maxy = point.y;
 		glm::vec2 eye = point;
-		points.push_back(point);
 
 		for (int j = start + 1; j < end;++j)
 		{
@@ -700,35 +629,28 @@ void Visualization::Get2DDrawInfo()
 			maxy = point.y > maxy ? point.y : maxy;
 
 			eye += point;
-			points.push_back(point);
 		}
 
-		_2D_TriIds_N.push_back(IdsAndVertC((int)points.size(), glm::vec3(eye.x / points.size(), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y / points.size())));
+		_2D_TriIds_N.push_back(IdsAndVertC(end-start, glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y /( end - start))));
 
-		ObjectCreator::Create2DObject(points, _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
+		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end), _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
 		//***********************************************
 
 		for (int j = 1; j < sizeOfRanges - 1; ++j)
 		{
-			points.clear();
-
 			start = _2Ddata[i].ranges[j];
 			end = _2Ddata[i].ranges[j + 1];
-
-			for (int j = start; j < end;++j)
-			{
-				points.push_back(_2Ddata[i].points[j]);
-			}
+			std::vector<glm::vec2> points = std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end);
 			points.push_back(_2Ddata[i].points[start]);
 
 			switch (_2Ddata[i].outer[j])
 			{
 			case 0:
-				_2D_Line1Ids_N[i].push_back(IdsAndVertC((int)points.size()));
+				_2D_Line1Ids_N[i].push_back(IdsAndVertC(end - start + 1));
 				ObjectCreator::Create2DObject(points, _2D_Line1Ids_N[i].back().VaoId, _2D_Line1Ids_N[i].back().VboId);
 				break;
 			case 1:
-				_2D_Line2Ids_N[i].push_back(IdsAndVertC((int)points.size()));
+				_2D_Line2Ids_N[i].push_back(IdsAndVertC(end - start + 1));
 				ObjectCreator::Create2DObject(points, _2D_Line2Ids_N[i].back().VaoId, _2D_Line2Ids_N[i].back().VboId);
 				break;
 			}
@@ -751,7 +673,6 @@ void Visualization::Get2DDrawInfo()
 
 	for (int i = 0; i < _2Ddata.size(); ++i)
 	{
-		points.clear();
 		size_t sizeOfRanges = _2Ddata[i].ranges.size();
 
 		//***********************************************
@@ -762,7 +683,6 @@ void Visualization::Get2DDrawInfo()
 		float maxx, maxy;
 		float minx = maxx = point.x, miny = maxy = point.y;
 		glm::vec2 eye = point;
-		points.push_back(point);
 
 		for (int j = start + 1; j < end;++j)
 		{
@@ -773,42 +693,40 @@ void Visualization::Get2DDrawInfo()
 			maxx = point.x > maxx ? point.x : maxx;
 			maxy = point.y > maxy ? point.y : maxy;
 
-			eye += point;
-			points.push_back(point);
+			eye += _2Ddata[i].points[j];
 		}
 
-		_2D_TriIds_P.push_back(IdsAndVertC((int)points.size(), glm::vec3(eye.x / points.size(), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y / points.size())));
+		_2D_TriIds_P.push_back(IdsAndVertC((end - start), glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y / (end - start))));
 
-		ObjectCreator::Create2DObject(points, _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
+		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin()+start, _2Ddata[i].points.begin()+end), _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
 		//***********************************************
 
 		for (int j = 1; j < sizeOfRanges - 1; ++j)
 		{
-			points.clear();
-
 			start = _2Ddata[i].ranges[j];
 			end = _2Ddata[i].ranges[j + 1];
 
-			for (int j = start; j < end;++j)
-			{
-				points.push_back(_2Ddata[i].points[j]);
-			}
+			std::vector<glm::vec2> points = std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end);
 			points.push_back(_2Ddata[i].points[start]);
 
 			switch (_2Ddata[i].outer[j])
 			{
 			case 0:
-				_2D_Line1Ids_P[i].push_back(IdsAndVertC((int)points.size()));
+				_2D_Line1Ids_P[i].push_back(IdsAndVertC(end - start + 1));
 				ObjectCreator::Create2DObject(points, _2D_Line1Ids_P[i].back().VaoId, _2D_Line1Ids_P[i].back().VboId);
 				break;
 			case 1:
-				_2D_Line2Ids_P[i].push_back(IdsAndVertC((int)points.size()));
+				_2D_Line2Ids_P[i].push_back(IdsAndVertC(end - start + 1));
 				ObjectCreator::Create2DObject(points, _2D_Line2Ids_P[i].back().VaoId, _2D_Line2Ids_P[i].back().VboId);
 				break;
 			}
 
 		}
 	}
+
+	ActiveIndex = 0;
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[ActiveIndex].eye);
+
 }
 
 /*2D-s metszet vetületek rajzolása*/
@@ -836,6 +754,7 @@ void Visualization::Draw2D(/*const int& NumbersOfVertices, */glm::mat4& scal, gl
 		glBindVertexArray(tmp.VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 		glDrawArrays(GL_LINE_STRIP,
 			0,
@@ -853,6 +772,7 @@ void Visualization::Draw2D(/*const int& NumbersOfVertices, */glm::mat4& scal, gl
 		glBindVertexArray(tmp.VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 		glDrawArrays(GL_LINE_STRIP,
 			0,
@@ -868,6 +788,7 @@ void Visualization::Draw2D(/*const int& NumbersOfVertices, */glm::mat4& scal, gl
 	glBindVertexArray(tmp.VaoId);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	glDrawArrays(GL_TRIANGLE_FAN,
 		0,
@@ -879,16 +800,12 @@ void Visualization::DrawTargetBody()
 {
 	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
 
-	glBindVertexArray(_target_vaoID);
+	glBindVertexArray(targetIds.VaoId);
 
 	glm::mat4 matWorld = glm::mat4(1.0f);
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
-
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
+	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	glUniform1f(Opacity, 1.0f);
 	SetTargetAtomProperties();
@@ -907,16 +824,13 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 	glPolygonMode(GL_FRONT, CuttingPlaneWireType ? GL_LINE : GL_FILL);	
 
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 matWorldIT = glm::transpose(glm::inverse(matWorld));
-
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 
-	glBindVertexArray(plane_vaoid);
+	glBindVertexArray(planeIds.VaoId);
 
 	SetPlaneProperties();
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(m_loc_world, 1, GL_FALSE, &(matWorld[0][0]));
-	glUniformMatrix4fv(m_loc_worldIT, 1, GL_FALSE, &(matWorldIT[0][0]));
+	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	glDrawElements(GL_TRIANGLES,		
 		3 * 2 * CuttingPlaneFreq * CuttingPlaneFreq,		
@@ -927,7 +841,7 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 /*Fourier együttható szerinti csoportba kerülés
 	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható
 	relevansAtom = releváns atomok: FOURIERCOEFFICIENT (0.5) -nél nagyobb fourier egy.ú atomok*/
-void Visualization::CalculateDisplayVectorsByFourier(const TypeOfAccept& ta)
+void Visualization::CalculateDisplayVectorsByFourier()
 {
 	/* ActiveAtom negativ fele ; NumberOfAtoms-1 positive fele both esetén*/
 	float fourier = app.container().atoms(ActiveAtom).fourier();
@@ -938,13 +852,13 @@ void Visualization::CalculateDisplayVectorsByFourier(const TypeOfAccept& ta)
 	   Ahhoz hogy lassuk berakjuk az elo atomok koze mindket reszt, viszont annak ki kell kerulnie (a negativ mindenkepp ki fog)
 	   DE ha BOTH-t tartjuk meg akkor a NumberOfAtoms valtozni fog -> alkalmazkodunk (kodismetles helyett ezt valasztottam)
 	*/
-	liveAtoms.erase(ta == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms); // EF a vágásnak
-	relevantAtoms.erase(ta == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms);	//Van közös rész, de újabb vágás esetén már nem biztos hogy releváns lesz -> need this
+	liveAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms); // EF a vágásnak
+	relevantAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms);	//Van közös rész, de újabb vágás esetén már nem biztos hogy releváns lesz -> need this
 
 
 	if ( std::abs(fourier) > EPSILONFOURIER && std::abs(fourier-1.0f) > EPSILONFOURIER)
 	{
-		switch (ta)
+		switch (request.type)
 		{
 			case BOTH:
 				prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
@@ -964,12 +878,12 @@ void Visualization::CalculateDisplayVectorsByFourier(const TypeOfAccept& ta)
 		relevantAtoms.insert(ActiveAtom);
 	}
 
-	if (ta == NEGATIVE) return;
+	if (request.type == NEGATIVE) return;
 
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
 	if (std::abs(fourier) > EPSILONFOURIER && std::abs(fourier - 1.0f) > EPSILONFOURIER)
 	{
-		switch (ta)
+		switch (request.type)
 		{
 		case BOTH:
 			prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
@@ -1011,13 +925,12 @@ void Visualization::GetPriorResult()
 	std::vector<Utility::PriorResult> result = prior.GetOrder();
 	priorQue = prior.GetPriorIndexes();
 
-	ActiveIndex = 0;
 	ActiveAtom = priorQue.size() > 0 ? priorQue[ActiveIndex] : 0;
 
 	PlaneCalculator->SetActive(ActiveAtom);
 
 	if (logger) {
-		std::for_each(result.begin(), result.end(), Utility::writer());
+		std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << a.id << " " << a.value << "\n"; });
 		std::cout << "\n";
 	}
 
@@ -1210,7 +1123,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		if (logger)
 		{
 			std::vector<Utility::PriorResult> result = prior.GetOrder();
-			std::for_each(result.begin(), result.end(), Utility::writer());
+			std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << a.id << " " << a.value << "\n"; });
 			std::cout << "\n";
 		}
 		break;
@@ -1297,7 +1210,7 @@ void Visualization::Update()
 TODO: aktualizálni!*/
 void Visualization::Clean()
 {
-	glDeleteBuffers(1, &plane_vaoid);
+	/*glDeleteBuffers(1, &plane_vaoid);
 	glDeleteBuffers(1, &plane_index);
 	glDeleteVertexArrays(1, &plane_vboid);
 
@@ -1306,7 +1219,7 @@ void Visualization::Clean()
 
 	glDeleteBuffers(1, &_3DvaoID);
 	glDeleteBuffers(1, &_3Dindex);
-	glDeleteVertexArrays(1, &_3DvboID);
+	glDeleteVertexArrays(1, &_3DvboID);*/
 
 	glDeleteProgram(program3D_ID);
 
@@ -1318,4 +1231,90 @@ void Visualization::Resize(int _w, int _h)
 	glViewport(0, 0, _w, _h);
 	// nyilasszog, ablakmeret nezeti arany, kozeli és tavoli vagosik
 	m_matProj = glm::perspective(45.0f, _w / (float)_h, 0.01f, 1000.0f);
+}
+
+
+void Visualization::CreateXAndY()
+{
+	std::vector<glm::vec3> vertexes;
+
+	vertexes.push_back(glm::vec3(-100,0, 0));
+	vertexes.push_back(glm::vec3(0,0, 0));
+	vertexes.push_back(glm::vec3(100, 0, 0));
+	vertexes.push_back(glm::vec3(0, 0, 0));
+	vertexes.push_back(glm::vec3(0, 0, 100));
+	vertexes.push_back(glm::vec3(0, 0, 0));
+	vertexes.push_back(glm::vec3(0, 0, -100));
+
+	glGenVertexArrays(1, &LineVaoID);
+	glGenBuffers(1, &LineVboID);
+
+	glBindVertexArray(LineVaoID);
+	glBindBuffer(GL_ARRAY_BUFFER, LineVboID);
+
+	glBufferData(GL_ARRAY_BUFFER, vertexes.size() * sizeof(glm::vec3), &vertexes[0], GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);	//pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+
+	glBindVertexArray(0);	//vao leszedése
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
+}
+
+
+void Visualization::CreateXAndYPoints()
+{
+	std::vector<glm::vec3> vertexes;
+
+	for (int i = 0; i < 200;++i)
+	{
+		vertexes.push_back(glm::vec3(i - 100, 0,0));
+		vertexes.push_back(glm::vec3(0,0, i - 100));
+	}
+
+	glGenVertexArrays(1, &LinePointsVaoID);
+	glGenBuffers(1, &LinePointsVboID);
+
+	glBindVertexArray(LinePointsVaoID);
+	glBindBuffer(GL_ARRAY_BUFFER, LinePointsVboID);
+
+	glBufferData(GL_ARRAY_BUFFER, vertexes.size() * sizeof(glm::vec3), &vertexes[0], GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);	//pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+
+	glBindVertexArray(0);	//vao leszedése
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);	//vbo leszedése
+}
+
+void Visualization::DrawXAndY()
+{
+	glBindVertexArray(LineVaoID);
+
+	glm::mat4 mvp = m_matProj * m_matView;
+
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+
+	glLineWidth(0.5f);
+	glUniform3f(color2D, 1, 0, 0);
+
+	glDrawArrays(GL_LINE_STRIP, 0, 7);
+
+}
+
+void Visualization::DrawXAndYPoints()
+{
+	glBindVertexArray(LinePointsVaoID);
+
+	glm::mat4 mvp = m_matProj * m_matView;
+
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
+
+	glPointSize(2.0f);
+	glUniform3f(color2D, 1, 1, 0);
+
+	glDrawArrays(GL_POINTS, 0, 400);
+
 }

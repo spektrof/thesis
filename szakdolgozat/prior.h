@@ -5,7 +5,6 @@
 	A strategiahoz tartozo atomrendezest ez az osztaly vegzi el. Innen kerdezzuk le az aktualis sorrendet.
 */
 
-#include "Utils/Utility.h"
 #include "szakdoga\approximator.h"
 
 template <typename T, template<typename> class V>

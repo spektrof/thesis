@@ -56,24 +56,42 @@ public:
 
 	void Resize(int, int);
 
+	struct IdsAndVertC
+	{
+		int count;
+		glm::vec3 eye;
+		GLuint VaoId;
+		GLuint VboId;
+		GLuint IndexId;
+		IdsAndVertC(const int c = 0, const glm::vec3& e = glm::vec3(0, 0, 0), const GLuint vao = 0, const GLuint vbo = 0, const GLuint i = 0) : VaoId(vao), VboId(vbo), IndexId(i), count(c), eye(e) {}
+	};
+	
 protected:
-	/*	TODO list
-		Blender : doksi
-		
-		4.optimizing: pl lehetne mindig Plane típust visszaadni planegettersben?
-		n+n. 3D indexeket is átírni esetleg egy IdsAndVertC -ba
-
+	/*	TODO list*/
+	/*
 		n+1) Projection matrix: perspective vs ortho -> camera optimizing
+		DeleteBuffersek hívása
+		Vissza az MVP kell!!! (síkot tologatom)
 
 		Apró bugok frissítés gyanánt:
 		Vagj 10 et veletlennel es a 10.nek a pozitiv vetuletei nem kozepre kerulnek, miert?
 				Test: 9 et vagok siman es aztan 1 et debuggal - majd szamolok hanyadik alakzat majd megnezem hogy az e a kamera amit szamoltam stb
 		Apró kis TODOk:
-		GLUTILSbol atrakni a fv t a utilitybe
-		CalculateDisplayVectorsByFourier paramétere?
-		gluniform - word & wordit mtx ok - persp. ? (felöltelni 1x vagy minden draw3d ben)
-		ENUM nevek angolra!
+	
+	*//*	Blender : doksi*/
+	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
+				+ World : esetleg mikor fényt számolok akkor számít
+				http://www.kickjs.org/example/shader_editor/shader_editor.html#
+				http://on-demand.gputechconf.com/gtc/2014/presentations/S4385-order-independent-transparency-opengl.pdf
 	*/
+	GLuint vaoID, vboID;
+	GLuint LineVaoID, LineVboID;
+	GLuint LinePointsVaoID, LinePointsVboID;
+
+	void CreateXAndY();
+	void DrawXAndY();
+	void CreateXAndYPoints();
+	void DrawXAndYPoints();
 	//-----------------------------------------
 	// ENGINE
 	bool EngineInit();
@@ -108,7 +126,7 @@ protected:
 	std::set<int> liveAtoms;
 	std::set<int> relevantAtoms;
 
-	void CalculateDisplayVectorsByFourier(const TypeOfAccept& ta);
+	void CalculateDisplayVectorsByFourier();
 
 	//----------------------------------------
 	// EVENTS
@@ -168,22 +186,11 @@ protected:
 	GLuint program2D_ID;
 	GLuint program3D_ID;
 
-	GLuint _3DvaoID, _2DvaoID, plane_vaoid;
-	GLuint _target_vaoID, _target_vboID, _target_indexID;
-	GLuint _3DvboID,_2DvboID, plane_vboid;
-	GLuint _3Dindex,plane_index;
+	IdsAndVertC _3dIds, planeIds, targetIds;
 
 	/* 2D ID-s */
 	void Get2DDrawInfo();
 	int Active2DIndex;
-	struct IdsAndVertC
-	{
-		int count;
-		glm::vec3 eye;
-		GLuint VaoId;
-		GLuint VboId;
-		IdsAndVertC(const int c = 0, const glm::vec3& e = glm::vec3(0, 0, 0), const GLuint vao = 0, const GLuint vbo = 0) : VaoId(vao), VboId(vbo),count(c), eye(e) {}
-	};
 
 	std::vector<IdsAndVertC>* _2DTri = new std::vector<IdsAndVertC>();
 	std::vector<std::vector<IdsAndVertC>>* _2DLine1 = new std::vector<std::vector<IdsAndVertC>>();
@@ -200,8 +207,7 @@ protected:
 	// IDs of shader variables
 	GLuint m_loc_mvp;
 	GLuint m_loc_mvp2;
-	GLuint m_loc_world;
-	GLuint m_loc_worldIT;
+	GLuint world;
 
 	GLuint eyePos;
 	GLuint Lights;

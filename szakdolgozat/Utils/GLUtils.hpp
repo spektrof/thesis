@@ -1,16 +1,11 @@
 #pragma once
 
-/*	TODO: atrakni a utilsba!!!
-*/
-
 #include <stdio.h>
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <vector>
 
 #include <GL/glew.h>
-
 
 GLuint loadShader(GLenum _shaderType, const char* _fileName)
 {

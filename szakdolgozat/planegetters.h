@@ -6,8 +6,6 @@
 	Minden sikvalaszto fuggveny itt talalhato.
 */
 
-#include "Utils\Utility.h"
-
 #include <random>
 
 template <typename V>
@@ -20,11 +18,15 @@ class PlaneGetterFunctions
 
 	std::random_device rd;	//random generator
 
-	/*TODO: tenyleg vektor kell setbol??*/
-	
+	struct LuMatricies
+	{
+		glm::mat3 L, U;
+		LuMatricies(const glm::mat3& l, const glm::mat3& u) : L(l), U(u) {}
+	};
+
 	Utility::PlaneResult PlanarFittingOn3dPoints(std::set<approx::Vector3<float>, approx::DifferentVector3<float>> tmp);
-	Utility::LuMatricies GetLuDecomposition(glm::mat3*);
-	glm::vec3 GetSolutionOfLER(const Utility::LuMatricies*, const glm::vec3*);
+	LuMatricies GetLuDecomposition(glm::mat3*);
+	glm::vec3 GetSolutionOfLER(const LuMatricies*, const glm::vec3*);
 
 public:
 
@@ -61,7 +63,7 @@ public:
 		return res;
 	}
 
-	Utility::PlaneResult DiameterSulyp()
+	Utility::PlaneResult DiameterCentroid()
 	{
 		approx::Vector3<float> norm = data->atoms(Active).diameter();
 		norm.normalize();
@@ -84,10 +86,15 @@ public:
 		Utility::PlaneResult res(plane.normal(), plane.example_point());
 		return res;
 	}
-
+	/*Test: hard noise ; 0,0,4.5 - 0,0,1 */
 	Utility::PlaneResult RandomSurface()
 	{
 		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
+		std::vector<int> tmp = data->atoms(Active).face_indicies_inside();
+
+		std::vector<int> ids;
+		ids.resize(*(std::max_element(tmp.begin(),tmp.end()))+1);
+		for (std::vector<int>::iterator it = tmp.begin(); it != tmp.end(); ++it) { ids[*it] = 1; }
 
 		/*Random oldal kiválasztása + szomszédsági mátrix -> pontok halmaza -> pontokra síkillesztés*/
 		int randomFace = rd() % faces.size();
@@ -96,8 +103,9 @@ public:
 		std::set<int> active;
 
 		active.clear();
+		active.insert(tmp[randomFace]);
 		used.resize(adj_mtx->size());
-		active.insert(randomFace);
+		used[tmp[randomFace]] = 1;
 
 		/*Faces stretch*/
 		while (active.size() > 0)
@@ -107,10 +115,11 @@ public:
 
 			for (int i = 0;i < 3;++i)
 			{
-				if (!used[(*adj_mtx)[index][i]])	// HA 0 -> igaz (nem volt még)
+				const int adj = (*adj_mtx)[index][i];
+				if ( !used[adj] && adj < ids.size() && ids[adj] )	// HA 0 -> igaz (nem volt még)
 				{
-					active.insert((*adj_mtx)[index][i]);
-					used[(*adj_mtx)[index][i]] = 1;
+					active.insert(adj);
+					used[adj] = 1;
 				}
 			}
 		}
@@ -120,7 +129,7 @@ public:
 
 		for (size_t i = 0; i < faces.size();++i)
 		{
-			if (!used[i]) continue;	// Nem tagja a felületnek
+			if (!used[tmp[i]]) continue;	// Nem tagja a felületnek
 
 			for (int j = 0; j < 3; ++j)
 			{
@@ -136,6 +145,7 @@ public:
 	Utility::PlaneResult AllPointsFitting()	
 	{
 		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
+		std::vector<int> ids = data->atoms(Active).face_indicies_inside();
 
 		std::set<approx::Vector3<float>, approx::DifferentVector3<float>> vertexes;
 		vertexes.clear();
@@ -212,7 +222,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(std::set<a
 
 	//glm::mat3 test = glm::mat3(glm::vec3(1, 4, -3), glm::vec3(-2, 8, 5), glm::vec3(3, 4, 7));
 	//LuMatricies result = GetLuDecomposition(&test);
-	Utility::LuMatricies result = GetLuDecomposition(&LER_left);
+	LuMatricies result = GetLuDecomposition(&LER_left);
 
 	/*Fifth step: Get our x = (A , B , C)*/
 	glm::vec3 x = GetSolutionOfLER(&result, &LER_right);
@@ -230,7 +240,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(std::set<a
 Bemenete: A felbontani kívánt mátrix
 Kiemnete: L és U mátrixok	*/
 template <typename V>
-Utility::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A)
+typename PlaneGetterFunctions<V>::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A)
 {
 	glm::mat3 L = glm::mat3(1.0f);
 	glm::mat3 U = *A;
@@ -253,12 +263,12 @@ Utility::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A)
 
 	glm::mat3 check = U * L;
 
-	return Utility::LuMatricies(L, U);
+	return LuMatricies(L, U);
 }
 
 /* A = LU után & b vektor segítségével megoldja a LERT*/
 template <typename V>
-glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const Utility::LuMatricies* LU, const glm::vec3* b)
+glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatricies* LU, const glm::vec3* b)
 {
 	glm::vec3 x, y;
 

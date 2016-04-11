@@ -6,7 +6,6 @@
 	Segitsegukkel mozgathatjuk kamerankat es a fenyforrasunkat.
 */
 #include "glm/glm.hpp"
-#include "Utility.h"
 
 class Camera
 {
