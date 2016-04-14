@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_UserInterface_t {
-	QByteArrayData data[18];
-	char stringdata0[230];
+	QByteArrayData data[19];
+	char stringdata0[242];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -46,10 +46,11 @@ static const qt_meta_stringdata_UserInterface_t qt_meta_stringdata_UserInterface
 		QT_MOC_LITERAL(14, 195, 10), // "backToMenu"
 		QT_MOC_LITERAL(15, 206, 10), // "newdisplay"
 		QT_MOC_LITERAL(16, 217, 11), // "exportEvent"
-		QT_MOC_LITERAL(17, 229, 0) // ""
+		QT_MOC_LITERAL(17, 229, 11), // "importEvent"
+		QT_MOC_LITERAL(18, 241, 0) // ""
 	},
 	"UserInterface\0prevAtomEvent\0nextAtomEvent\0nextPlaneEvent\0newprior_event\0newcutmode_event\0newplane_event\0cuttingEvent\0undoEvent\0acceptEvent\0typeaccept_handler\0"
-	"nextNCutEvent\0restartEvent\0infoEvent\0backToMenu\0newdisplay\0exportEvent\0"
+	"nextNCutEvent\0restartEvent\0infoEvent\0backToMenu\0newdisplay\0exportEvent\0importEvent\0"
 };
 
 #undef QT_MOC_LITERAL
@@ -60,7 +61,7 @@ static const uint qt_meta_data_UserInterface[] = {
 	7,       // revision
 	0,       // classname
 	0,    0, // classinfo
-	16,   14, // methods
+	17,   14, // methods
 	0,    0, // properties
 	0,    0, // enums/sets
 	0,    0, // constructors
@@ -84,8 +85,25 @@ static const uint qt_meta_data_UserInterface[] = {
 	14,    0,   19,    2, 0x08 /* Private */,
 	15,    0,   19,    2, 0x08 /* Private */,
 	16,    0,   19,    2, 0x08 /* Private */,
+	17,    0,   19,    2, 0x08 /* Private */,
 
 	// slots: parameters
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
+	QMetaType::Void,
 	QMetaType::Void,
 
 	0        // eod
@@ -113,6 +131,7 @@ void UserInterface::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
 			case 13: _t->backToMenu();			  break;
 			case 14: _t->newdisplay();			  break;
 			case 15: _t->exportEvent();			  break;
+			case 16: _t->importEvent();			  break;
 			default:;			
 			}			
 	}					

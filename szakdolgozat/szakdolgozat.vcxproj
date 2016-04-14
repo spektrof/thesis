@@ -220,6 +220,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;QT_DLL;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>C:\OGLPack\include;C:\Qt\5.5.1\qtbase\include\QtCore;C:\Qt\5.5.1\qtbase\include;C:\Qt\5.5.1\qtbase\include\QtWidgets;C:\Qt\5.5.1\qtbase\include\QtGui;.\GeneratedFiles\Debug;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -233,40 +234,46 @@
   <ItemGroup>
     <ClCompile Include="..\GeneratedFiles\Debug\moc_userinterface.cpp" />
     <ClCompile Include="..\GeneratedFiles\qrc_userinterface.cpp" />
-    <ClCompile Include="szakdoga\stdafx.cpp" />
     <ClCompile Include="UI\userinterface.cpp" />
     <ClCompile Include="Utils\CameraAndLight.cpp" />
     <ClCompile Include="Utils\ObjectCreator.cpp" />
     <ClCompile Include="Utils\Utility.cpp" />
-    <ClCompile Include="Visualization\MyApp.cpp" />
+    <ClCompile Include="Visualization\vis.cpp" />
     <ClInclude Include="..\GeneratedFiles\ui_userinterface.h" />
     <ClCompile Include="main.cpp" />
+    <ClInclude Include="Engine\approximation.h" />
+    <ClInclude Include="Engine\approximator.h" />
+    <ClInclude Include="Engine\body.h" />
+    <ClInclude Include="Engine\conversion.h" />
+    <ClInclude Include="Engine\convexatom.h" />
+    <ClInclude Include="Engine\diffvec.h" />
+    <ClInclude Include="Engine\face.h" />
+    <ClInclude Include="Engine\geoios.h" />
+    <ClInclude Include="Engine\indexiterator.h" />
+    <ClInclude Include="Engine\planes.h" />
+    <ClInclude Include="Engine\poly2.h" />
+    <ClInclude Include="Engine\polygraph.h" />
+    <ClInclude Include="Engine\targetbody.h" />
+    <ClInclude Include="Engine\vectors.h" />
     <ClInclude Include="logger\logger.h" />
     <ClInclude Include="planegetters.h" />
     <ClInclude Include="prior.h" />
     <ClInclude Include="priorityfunctions.h" />
-    <ClInclude Include="szakdoga\approximation.h" />
-    <ClInclude Include="szakdoga\body.h" />
+    <ClInclude Include="Strategy\planegetters.h" />
+    <ClInclude Include="Strategy\prior.h" />
+    <ClInclude Include="Strategy\priorityfunctions.h" />
+    <ClInclude Include="szakdoga\approximator.h" />
     <ClInclude Include="szakdoga\conversion.h" />
-    <ClInclude Include="szakdoga\convexatom.h" />
-    <ClInclude Include="szakdoga\face.h" />
-    <ClInclude Include="szakdoga\geoios.h" />
-    <ClInclude Include="szakdoga\indexiterator.h" />
-    <ClInclude Include="szakdoga\objrepair.h" />
-    <ClInclude Include="szakdoga\planes.h" />
-    <ClInclude Include="szakdoga\poly2.h" />
-    <ClInclude Include="szakdoga\polygraph.h" />
-    <ClInclude Include="szakdoga\stdafx.h" />
-    <ClInclude Include="szakdoga\targetbody.h" />
-    <ClInclude Include="szakdoga\targetver.h" />
-    <ClInclude Include="szakdoga\vectors.h" />
+    <ClInclude Include="szakdoga\diffvec.h" />
     <ClInclude Include="UI\request.h" />
     <ClInclude Include="UI\userinterface.hpp" />
     <ClInclude Include="Utils\CameraAndLight.h" />
     <ClInclude Include="Utils\GLUtils.hpp" />
     <ClInclude Include="Utils\ObjectCreator.h" />
+    <ClInclude Include="Utils\objio.h" />
+    <ClInclude Include="Utils\objrepair.h" />
     <ClInclude Include="Utils\Utility.h" />
-    <ClInclude Include="Visualization\MyApp.h" />
+    <ClInclude Include="Visualization\vis.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\frag_2d.frag" />

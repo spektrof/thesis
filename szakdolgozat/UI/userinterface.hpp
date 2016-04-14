@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QGroupBox>
 #include <QLineEdit>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include "../../GeneratedFiles/ui_userinterface.h"
@@ -59,6 +60,7 @@ private slots:
 	void backToMenu();
 	void newdisplay();
 	void exportEvent();
+	void importEvent();
 	
 private:
 	QWidget *window;
@@ -88,6 +90,7 @@ private:
 
 	QPushButton* _restart;
 	QPushButton* _export;
+	QPushButton* _import;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
 

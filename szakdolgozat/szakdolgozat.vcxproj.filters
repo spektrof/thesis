@@ -34,21 +34,6 @@
     <Filter Include="Visualization">
       <UniqueIdentifier>{11e910c1-949e-42d1-8193-df75837b9e79}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Group1_Mate">
-      <UniqueIdentifier>{fc9ae394-08e3-416e-b812-752d2955f42f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Group2_Mate">
-      <UniqueIdentifier>{f57dd4ac-990f-40db-87b0-ff01aa157179}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Group3_Mate">
-      <UniqueIdentifier>{4af0e7b1-9c06-4a13-a12d-bd2f38b4421a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="OtherIncludesEtc_Mate">
-      <UniqueIdentifier>{f1c01195-fd99-48a5-8ab6-acf73f0e9059}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Group5_Mate">
-      <UniqueIdentifier>{526b4a9e-f558-487e-b8de-f64213bf5fe5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Conversion_Mate">
       <UniqueIdentifier>{c1c5d12d-867f-4415-9945-7a720c260eb4}</UniqueIdentifier>
     </Filter>
@@ -57,6 +42,12 @@
     </Filter>
     <Filter Include="Logger">
       <UniqueIdentifier>{5941a021-f821-46ab-a528-68618581d796}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{249775b8-8eb2-4f2b-94b8-fa153450048c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Strategy">
+      <UniqueIdentifier>{2d3474a6-93e8-4122-9f63-7fe8f9b2771c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -72,12 +63,6 @@
     <ClCompile Include="UI\userinterface.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="Visualization\MyApp.cpp">
-      <Filter>Visualization</Filter>
-    </ClCompile>
-    <ClCompile Include="szakdoga\stdafx.cpp">
-      <Filter>OtherIncludesEtc_Mate</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\CameraAndLight.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -87,13 +72,13 @@
     <ClCompile Include="Utils\Utility.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Visualization\vis.cpp">
+      <Filter>Visualization</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\GeneratedFiles\ui_userinterface.h">
       <Filter>GeneratedFiles</Filter>
-    </ClInclude>
-    <ClInclude Include="Visualization\MyApp.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils\GLUtils.hpp">
       <Filter>Utils</Filter>
@@ -101,50 +86,8 @@
     <ClInclude Include="UI\request.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="szakdoga\targetbody.h">
-      <Filter>Group5_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\targetver.h">
-      <Filter>Group5_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\vectors.h">
-      <Filter>Group5_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\stdafx.h">
-      <Filter>OtherIncludesEtc_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\poly2.h">
-      <Filter>Group1_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\polygraph.h">
-      <Filter>Group1_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\planes.h">
-      <Filter>Group1_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\objrepair.h">
-      <Filter>Group1_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\body.h">
-      <Filter>Group2_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\face.h">
-      <Filter>Group2_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\approximation.h">
-      <Filter>Group2_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\geoios.h">
-      <Filter>Group3_Mate</Filter>
-    </ClInclude>
     <ClInclude Include="szakdoga\conversion.h">
       <Filter>Conversion_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\convexatom.h">
-      <Filter>Group2_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\indexiterator.h">
-      <Filter>Group2_Mate</Filter>
     </ClInclude>
     <ClInclude Include="prior.h">
       <Filter>Source Files</Filter>
@@ -169,6 +112,72 @@
     </ClInclude>
     <ClInclude Include="UI\userinterface.hpp">
       <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="szakdoga\diffvec.h">
+      <Filter>Conversion_Mate</Filter>
+    </ClInclude>
+    <ClInclude Include="szakdoga\approximator.h">
+      <Filter>Conversion_Mate</Filter>
+    </ClInclude>
+    <ClInclude Include="Strategy\planegetters.h">
+      <Filter>Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="Strategy\prior.h">
+      <Filter>Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="Strategy\priorityfunctions.h">
+      <Filter>Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\approximation.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\approximator.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\body.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\conversion.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\convexatom.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\diffvec.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\face.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\geoios.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\indexiterator.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\planes.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\poly2.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\polygraph.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\targetbody.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\vectors.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\objio.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\objrepair.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Visualization\vis.h">
+      <Filter>Visualization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

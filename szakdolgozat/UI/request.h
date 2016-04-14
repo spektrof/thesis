@@ -5,7 +5,7 @@
 	A felhasznaloi felulet es a approximalast vegzo program kozotti kommunikaciohoz szukseges keres.
 */
 
-#include "../szakdoga/approximator.h"
+#include "../Engine/approximator.h"
 
 enum ToDo{
 	NONE,
@@ -22,6 +22,7 @@ enum ToDo{
 	RECALCULATING,
 	MORESTEPS,
 	EXPORT,
+	IMPORT,
 };
 
 enum ChoiceMode {
@@ -72,8 +73,9 @@ struct Request {
 	Coord plane_norm;
 
 	ushort CountsOfCutting;
-	 
+	std::string filename;
+
 	Request(const ToDo t = ToDo::NONE, const ChoiceMode ch = ChoiceMode(0), const CuttingMode cu = CuttingMode(0),
-		    const TypeOfAccept a = TypeOfAccept(0), const Display d = Display(0), const Coord p = Coord(0,0,0), const Coord n = Coord(1,0,0), const ushort c = 1)
-		: eventtype(t), choice(ch), cut_mode(cu), type(a), disp(d), plane_coord(p), plane_norm(n), CountsOfCutting(c) { }
+		    const TypeOfAccept a = TypeOfAccept(0), const Display d = Display(0), const Coord p = Coord(0,0,0), const Coord n = Coord(1,0,0), const ushort c = 1, std::string f = "")
+		: eventtype(t), choice(ch), cut_mode(cu), type(a), disp(d), plane_coord(p), plane_norm(n), CountsOfCutting(c), filename(f) { }
 };

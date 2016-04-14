@@ -47,6 +47,7 @@ UserInterface::UserInterface(QWidget *parent)
 
 	_restart = new QPushButton("Restart", this);
 	_export = new QPushButton("Export", this);
+	_import = new QPushButton("Import", this);
 	_moreInfo = new QPushButton("More Info", this);
 	_back = new QPushButton("Back", this);
 
@@ -68,6 +69,17 @@ UserInterface::UserInterface(QWidget *parent)
 
 UserInterface::~UserInterface()
 {
+	delete head;
+	delete choiceGroup;
+	delete cutGroup;
+	delete plane_details;
+	delete strategiesGroup;
+	delete acceptGroup;
+	delete buttonsGroup;
+	delete moreStepsGorup;
+	delete fourierGorup;
+	delete bottom;
+
 	delete _label;
 	delete _info;
 
@@ -106,11 +118,13 @@ UserInterface::~UserInterface()
 
 	delete _restart;
 	delete _export;
+	delete _import;
 	delete _moreInfo;
 	delete _back;
 
 	delete window;
 	delete _mainLayout;
+
 }
 
 void UserInterface::Init() 
@@ -168,6 +182,7 @@ void UserInterface::Init()
 
 	connect(_restart, SIGNAL(clicked()), this, SLOT(restartEvent()));
 	connect(_export, SIGNAL(clicked()), this, SLOT(exportEvent()));
+	connect(_import, SIGNAL(clicked()), this, SLOT(importEvent()));
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
 	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
 
@@ -281,8 +296,6 @@ void UserInterface::newprior_event()
 {
 	request.eventtype = NEWSTRATEGY;
 	request.choice = ChoiceMode(_choiceStrategy->currentData().toInt());
-
-
 }
 
 void UserInterface::newcutmode_event()
@@ -331,6 +344,13 @@ void UserInterface::exportEvent()
 	request.eventtype = EXPORT;
 }
 
+void UserInterface::importEvent()
+{
+	request.eventtype = IMPORT;
+	
+	request.filename = QInputDialog::getText(0, "File opening", "Obj name:").toLatin1().data() ;
+}
+
 void UserInterface::infoEvent()
 {
 	_info->setVisible(true);
@@ -342,6 +362,7 @@ void UserInterface::infoEvent()
 	_accept->setVisible(false);
 	_restart->setVisible(false);
 	_export->setVisible(false);
+	_import->setVisible(false);
 	_acceptTypes->setVisible(false);
 
 	_strategy->setVisible(false);
@@ -367,6 +388,7 @@ void UserInterface::backToMenu()
 	_accept->setVisible(true);
 	_restart->setVisible(true);
 	_export->setVisible(true);
+	_import->setVisible(true);
 	_acceptTypes->setVisible(true);
 
 	_strategy->setVisible(true);
@@ -452,6 +474,7 @@ void UserInterface::SetButtonsProperties()
 	_accept->setStyleSheet("background-color: #bcee68;");
 	_restart->setStyleSheet("background-color: #bcee68;");
 	_export->setStyleSheet("background-color: #bcee68;");
+	_import->setStyleSheet("background-color: #bcee68;");
 	_moreInfo->setStyleSheet("background-color: #bcee68;");
 	_back->setStyleSheet("background-color: #bcee68;");
 	_nextChoice->setStyleSheet("background-color: #bcee68;");
@@ -552,7 +575,7 @@ void UserInterface::CreateHead()
 
 void UserInterface::CreateButtonsGroup()
 {
-	QHBoxLayout *upperButtons = new QHBoxLayout();
+	std::unique_ptr<QHBoxLayout> upperButtons(new QHBoxLayout());
 
 	upperButtons->addWidget(_cutting, 0, Qt::AlignBottom );
 	upperButtons->addWidget(_undo, 0, Qt::AlignBottom);
@@ -560,10 +583,9 @@ void UserInterface::CreateButtonsGroup()
 	acceptGroup->addWidget(_acceptTypes, 0, Qt::AlignBottom);
 	acceptGroup->addWidget(_accept, 0, Qt::AlignBottom);
 
-	buttonsGroup->addLayout(upperButtons);
+	buttonsGroup->addLayout(upperButtons.release());
 	buttonsGroup->addLayout(acceptGroup);
-	//buttonsGroup->setAlignment(Qt::AlignBottom | Qt::AlignCenter);
-
+	
 }
 
 void UserInterface::CreateStrategiesGroup()
@@ -581,9 +603,6 @@ void UserInterface::CreateStrategiesGroup()
 
 	strategiesGroup->addLayout(choiceGroup);
 	strategiesGroup->addLayout(cutGroup);
-
-	//strategiesGroup->setAlignment(choiceGroup, Qt::AlignTop);
-	//strategiesGroup->setAlignment(cutGroup, Qt::AlignTop);
 
 	_strategy->setLayout(strategiesGroup);
 }
@@ -612,14 +631,14 @@ void UserInterface::CreateFourierGroup()
 
 void UserInterface::CreatePlaneDetails()
 {
-	QHBoxLayout *planegroup = new QHBoxLayout();
-	QHBoxLayout *left = new QHBoxLayout();
-	QHBoxLayout *right = new QHBoxLayout();
+	std::unique_ptr<QHBoxLayout> planegroup(new QHBoxLayout());
+	std::unique_ptr<QHBoxLayout> left(new QHBoxLayout());
+	std::unique_ptr<QHBoxLayout> right(new QHBoxLayout());
 
-	QVBoxLayout *coordnames = new QVBoxLayout();
-	QVBoxLayout *coordnames2 = new QVBoxLayout();
-	QVBoxLayout *coorddata = new QVBoxLayout();
-	QVBoxLayout *normaldata = new QVBoxLayout();
+	std::unique_ptr<QVBoxLayout> coordnames(new QVBoxLayout());
+	std::unique_ptr<QVBoxLayout> coordnames2(new QVBoxLayout());
+	std::unique_ptr<QVBoxLayout> coorddata(new QVBoxLayout());
+	std::unique_ptr<QVBoxLayout> normaldata(new QVBoxLayout());
 
 	coordnames->addWidget(_x, 0, Qt::AlignCenter);
 	coordnames->addWidget(_y, 0, Qt::AlignCenter);
@@ -637,14 +656,14 @@ void UserInterface::CreatePlaneDetails()
 	normaldata->addWidget(_yn, 0, Qt::AlignCenter);
 	normaldata->addWidget(_zn, 0, Qt::AlignCenter);
 
-	left->addLayout(coordnames);
-	left->addLayout(coorddata);
-	coords->setLayout(left);
+	left->addLayout(coordnames.release());
+	left->addLayout(coorddata.release());
+	coords->setLayout(left.release());
 	coords->setFixedSize(125, 100);
 
-	right->addLayout(coordnames2);
-	right->addLayout(normaldata);
-	norms->setLayout(right);
+	right->addLayout(coordnames2.release());
+	right->addLayout(normaldata.release());
+	norms->setLayout(right.release());
 	norms->setFixedSize(125, 100);
 
 	plane_details->addWidget(coords);
@@ -660,6 +679,7 @@ void UserInterface::CreatePlaneDetails()
 void UserInterface::CreateBottom()
 {
 	bottom->addWidget(_restart, 0, Qt::AlignBottom | Qt::AlignLeft);
+	bottom->addWidget(_import, 0, Qt::AlignBottom | Qt::AlignCenter);
 	bottom->addWidget(_export, 0, Qt::AlignBottom | Qt::AlignCenter);
 	bottom->addWidget(_moreInfo, 0, Qt::AlignBottom | Qt::AlignRight);
 	bottom->addWidget(_back, 0, Qt::AlignRight);
@@ -686,9 +706,6 @@ void UserInterface::AddItemsToDropMenu()
 	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 3);
 	_plane->addItem("Veletlen feluletre illesztett", 4);
 	_plane->addItem("Veletlen lap alatt fekvo", 5);
-	//	_plane->addItem("Optimalis lap alatt fekvo", 1);
-	//	_plane->addItem("Optimalis feluletre illesztett", 3);
-	//	_plane->addItem("Globalis hibara optimalis(? )", 4);
 
 	_fourierGroups->addItem("Elo atomok", 0);
 	_fourierGroups->addItem("Relevans atomok", 1);
@@ -696,7 +713,7 @@ void UserInterface::AddItemsToDropMenu()
 
 void UserInterface::RequestWrongCuttingErrorResolve()
 {
-	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok | QMessageBox::Help);
+	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok);
 
 	_accept->setEnabled(false);
 	_acceptTypes->setEnabled(false);
@@ -706,5 +723,5 @@ void UserInterface::RequestWrongCuttingErrorResolve()
 
 void UserInterface::ErrorShow(const char* text)
 {
-	QMessageBox::information(this, tr("ERROR"), tr(text), QMessageBox::Ok | QMessageBox::Help);
+	QMessageBox::information(this, tr("ERROR"), tr(text), QMessageBox::Ok);
 }

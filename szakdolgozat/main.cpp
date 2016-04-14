@@ -6,7 +6,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "Visualization/MyApp.h"
+#include "Visualization/vis.h"
 
 int main(int argc, char* args[])
 {
