@@ -10,7 +10,8 @@ Használati útmutató:
                                 
 TODO:
   - Shader fejlesztés doksi alapján
-  - Speedtest on huge target
+  - Finding leaks
+  - MatchPlaning "bug"
       
 -------------------------------------------------------------------------------------
 
