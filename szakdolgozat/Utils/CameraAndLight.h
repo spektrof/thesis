@@ -35,7 +35,7 @@ public:
 protected:
 
 	void SetCamera2DValues(const glm::vec3&);
-	void SetCamera3DInitialValues();
+	void SetCamera3DValues();
 
 	bool is_left_pressed = false;	// camera moving
 
@@ -72,6 +72,6 @@ protected:
 	glm::vec3 FenyIrany;
 private:
 
-	float omega = 4.0f, theta = 2.0f;
+	float omega, theta;
 	glm::vec3 lunit; //fényegység
 };

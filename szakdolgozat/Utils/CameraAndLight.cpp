@@ -19,7 +19,7 @@ void Camera::SwitchCameraView(const glm::vec3& v)
 	}
 	else
 	{ //3D
-		SetCamera3DInitialValues();
+		SetCamera3DValues();
 	}
 }
 void Camera::SetCamera2DValues(const glm::vec3& v)
@@ -28,7 +28,7 @@ void Camera::SetCamera2DValues(const glm::vec3& v)
 	up = glm::vec3(1, 0, 0);
 	SetCamera(v);
 }
-void Camera::SetCamera3DInitialValues()
+void Camera::SetCamera3DValues()
 {
 	omega = 4.0f; theta = 2.0f; 
 	cunit = Utility::DescartesToPolar(omega, theta);

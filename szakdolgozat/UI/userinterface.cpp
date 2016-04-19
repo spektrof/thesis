@@ -42,7 +42,7 @@ UserInterface::UserInterface(QWidget *parent)
 	_nextNOk = new QPushButton("OK", this);
 	_n = new QLineEdit("1",this);
 
-	_displayType = new QLabel("Megj. atomok fourier egyutthato alapjan:",this);
+	_displayType = new QLabel("Display mode:",this);
 	_fourierGroups = new QComboBox();
 
 	_restart = new QPushButton("Restart", this);
@@ -445,9 +445,9 @@ void UserInterface::SetLabelProperties()
 
 	_displayType->setFont(QFont("Courier New", 10, QFont::Bold));
 	_displayType->setMaximumHeight(25);
+	_displayType->setStyleSheet("margin-left : 80px;");
 
 	_nextText->setFont(QFont("Courier New", 10, QFont::Bold));
-	_nextText->setAlignment(Qt::AlignCenter);
 	_nextText->setMaximumHeight(25);
 	_nextText->setStyleSheet("margin-left : 100px;");
 
@@ -491,7 +491,7 @@ void UserInterface::SetDropDownProperties()
 	_choiceStrategy->setFixedSize(150, 20);
 	_plane->setFixedSize(220,20);
 	_acceptTypes->setFixedSize(80, 30);
-	_fourierGroups->setFixedSize(120, 20);
+	_fourierGroups->setFixedSize(110, 20);
 
 	_choiceStrategy->setEditable(true);
 	_plane->setEditable(true);
@@ -613,7 +613,7 @@ void UserInterface::CreateMoreStepsGroup()
 	moreStepsGorup->addWidget(_n);
 	moreStepsGorup->addWidget(_nextNOk);
 
-	moreStepsGorup->setAlignment(Qt::AlignTrailing | Qt::AlignTrailing);
+	moreStepsGorup->setAlignment(Qt::AlignTrailing);
 	moreStepsGorup->addStretch(1);
 
 	_nextNOk->setEnabled(request.cut_mode == MANUAL ? false : true);
@@ -625,7 +625,7 @@ void UserInterface::CreateFourierGroup()
 	fourierGorup->addWidget(_displayType);
 	fourierGorup->addWidget(_fourierGroups);
 
-	fourierGorup->setAlignment(Qt::AlignTrailing | Qt::AlignTrailing);
+	fourierGorup->setAlignment(Qt::AlignTrailing);
 	fourierGorup->addStretch(1);
 }
 
@@ -691,24 +691,22 @@ void UserInterface::AddItemsToDropMenu()
 	_acceptTypes->addItem("POSITIVE", 1);
 	_acceptTypes->addItem("BOTH", 2);
 	
-	_choiceStrategy->addItem("Legnagyobb terfogatu", 0);
-	_choiceStrategy->addItem("Legnagyobb atmeroju", 1);
-	_choiceStrategy->addItem("Legregebb ideje erintetlen", 2);
-	_choiceStrategy->addItem("Optimalis(parameteres)", 3);
-	_choiceStrategy->addItem("Optimalis + atmero", 4);
-	_choiceStrategy->addItem("Optimalis + terfogat", 5);
+	_choiceStrategy->addItem("Largest volume", 0);
+	_choiceStrategy->addItem("Largest diameter", 1);
+	_choiceStrategy->addItem("Longest time intact", 2);
+	_choiceStrategy->addItem("Optimal", 3);
+	_choiceStrategy->addItem("Optimal and diameter", 4);
+	_choiceStrategy->addItem("Optimal and volume", 5);
 
-	//	Vágó sík :
+	_plane->addItem("Manual", 0);
+	_plane->addItem("Matched on all point", 1);
+	_plane->addItem("Diameter normal through centroid", 2);
+	_plane->addItem("Random normal through centroid", 3);
+	_plane->addItem("Matched on random surface", 4);
+	_plane->addItem("Random face under", 5);
 
-	_plane->addItem("Manualis", 0);
-	_plane->addItem("Osszes pontra illesztett", 1);
-	_plane->addItem("Atmerovel megegyezo iranyu, sulyponton atmeno", 2);
-	_plane->addItem("Veletlen normalisu, sulyponton atmeno", 3);
-	_plane->addItem("Veletlen feluletre illesztett", 4);
-	_plane->addItem("Veletlen lap alatt fekvo", 5);
-
-	_fourierGroups->addItem("Elo atomok", 0);
-	_fourierGroups->addItem("Relevans atomok", 1);
+	_fourierGroups->addItem("Live atoms", 0);
+	_fourierGroups->addItem("Relevant atoms", 1);
 }
 
 void UserInterface::RequestWrongCuttingErrorResolve()

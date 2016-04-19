@@ -29,6 +29,7 @@ public:
 	{
 		m_getterFunc = getterFunc;
 	}
+	~PriorityQue() {}
 
 	/*Beszuro rendezes*/
 	void insert(const int& _id, const T* atom)
@@ -88,7 +89,6 @@ public:
 	{
 		PriorityFunctions->SetLastUse(lu);
 		
-		/*TODO: */
 		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)
 		{
 			it->value = (PriorityFunctions->*m_getterFunc)(NULL, it->id);

@@ -69,14 +69,36 @@ public:
 protected:
 	/*	TODO list*/
 	/*
-		UI: sima pointereket átírni unique_ptr re!
+		Kedd: 
+			Engine class , nem biztos hogy mindent le kell tárolni csak a legszükségessebeket!
+			Plane class, az összes plane tulajdonság (centroidtól vett táv stb), síkgeneráló fv pointer stb
+			Atom tul, prioritás fv, és minden más
+			Visual : active atom, minden ami a rajzoláshoz kell, idk draw fv ek, stb
+			+ doksi
+		Szerda:
+			ui doksi + ui átírás
+				UI: sima pointereket átírni unique_ptr re!
+			n+1) Projection matrix: perspective vs ortho -> camera optimizing
+			Setlastuse -> átváltásnál nem insertelek csak setlastuse
+		Csütörtök
+			-
+		Péntek:
+			képek + újraolvasás + pontosítás
+			elküldeni Gábornak
+		Szombat:
+			Kommentelés
+			Leakek keresése: VMI szemetel - MI????
+				- minden pointert töröljünk majd hozzuk létre ami olyan (osztályon belül is - destruktorok)
+		Vasárnap:
+			Doksi olvasás + frissítés
+			
 		síkill
 
-		n+1) Projection matrix: perspective vs ortho -> camera optimizing
-		Apró bugok frissítés gyanánt:
-			VMI szemetel - MI????
-		Apró kis TODOk:
+		BUG:
 
+		Apró bugok frissítés gyanánt:
+		
+		Apró kis TODOk:
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
 				+ World : esetleg mikor fényt számolok akkor számít
@@ -130,7 +152,9 @@ protected:
 	void SetNewCuttingMode();
 	void SetNewDisplayMode();
 	void ImportNewTarget();
-
+	void NextAtom();
+	void PrevAtom();
+	
 	void CutChecker();
 
 	//-----------------------------------------
@@ -151,8 +175,7 @@ protected:
 
 	void LastUseChanging(const TypeOfAccept&);
 
-	void NextAtom();
-	void PrevAtom();
+
 
 	//------------------------------------------
 	// UI

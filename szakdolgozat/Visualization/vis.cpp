@@ -13,12 +13,14 @@ Visualization::Visualization(void)
 	program2D_ID = 0;
 	program3D_ID = 0;
 
-	NumberOfAtoms = 1;
-
 	CuttingPlaneFreq = 12;
 
-	filename = "Targets/torus.obj";
+	filename = "Targets/gummybear.obj";
 	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
+
+	_2DTri = &_2D_TriIds_N;
+	_2DLine1 = &_2D_Line1Ids_N;
+	_2DLine2 = &_2D_Line2Ids_N;
 }
 
 Visualization::~Visualization(void)
@@ -61,6 +63,7 @@ bool Visualization::EngineInit()
 		return false;
 	}
 
+	NumberOfAtoms = 1;
 	ActiveAtom = 0;
 	ActiveIndex = 0;
 
@@ -1155,6 +1158,38 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
+	case SDLK_1:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_2:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting2);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_3:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting3);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_4:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting4);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_5:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_6:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface2);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_7:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface3);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
+	case SDLK_8:
+		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface4);
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
 	case SDLK_p:	// change projections
 		Active2DIndex = 0;
 		c.SwitchCameraView(_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1));

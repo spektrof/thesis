@@ -34,9 +34,6 @@
     <Filter Include="Visualization">
       <UniqueIdentifier>{11e910c1-949e-42d1-8193-df75837b9e79}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Conversion_Mate">
-      <UniqueIdentifier>{c1c5d12d-867f-4415-9945-7a720c260eb4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Test">
       <UniqueIdentifier>{73d2fc08-ae27-49bb-bc62-054b0dbe28a6}</UniqueIdentifier>
     </Filter>
@@ -86,12 +83,6 @@
     <ClInclude Include="UI\request.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="szakdoga\conversion.h">
-      <Filter>Conversion_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="prior.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\CameraAndLight.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -101,23 +92,11 @@
     <ClInclude Include="Utils\Utility.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="priorityfunctions.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="logger\logger.h">
       <Filter>Logger</Filter>
     </ClInclude>
-    <ClInclude Include="planegetters.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="UI\userinterface.hpp">
       <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\diffvec.h">
-      <Filter>Conversion_Mate</Filter>
-    </ClInclude>
-    <ClInclude Include="szakdoga\approximator.h">
-      <Filter>Conversion_Mate</Filter>
     </ClInclude>
     <ClInclude Include="Strategy\planegetters.h">
       <Filter>Strategy</Filter>
