@@ -34,7 +34,7 @@ namespace approx{
 				path.pop_back();
 			}
 			else{
-				std::vector<Vector2<T>>::iterator it = find(path.begin(), path.end()-1,pt);
+				typename std::vector<Vector2<T>>::iterator it = find(path.begin(), path.end()-1,pt);
 				//korre talaltam
 				if (it != path.end()-1 && it != path.end()-2){ 
 					Polygon2<T> tmp(it, path.end());

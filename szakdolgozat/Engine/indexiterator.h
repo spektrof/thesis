@@ -14,11 +14,11 @@
 namespace approx{
 
 	template <class T> class ConstIndexIterator : std::iterator < std::random_access_iterator_tag, const T, int > {
-		const std::vector<T>* vecs;
+		const std::vector<T>* data;
 		const std::vector<int>* inds;
 		size_t pos;
 	public:
-		ConstIndexIterator(const std::vector<T>* v, const std::vector<int>* i, size_t p) : vecs(v), inds(i), pos(p){}
+		ConstIndexIterator(const std::vector<T>* v, const std::vector<int>* i, size_t p) : data(v), inds(i), pos(p){}
 		typedef std::random_access_iterator_tag iterator_category;
 		typedef typename std::iterator<std::random_access_iterator_tag, const Vector3<T>, int>::value_type value_type;
 		typedef typename std::iterator<std::random_access_iterator_tag, const Vector3<T>, int>::difference_type difference_type;
@@ -32,7 +32,7 @@ namespace approx{
 			return *this;
 		}
 		ConstIndexIterator operator ++(int){
-			IndexIterator t = *this;
+			ConstIndexIterator t = *this;
 			++pos;
 			return t;
 		}
@@ -41,7 +41,7 @@ namespace approx{
 			return *this;
 		}
 		ConstIndexIterator operator --(int){
-			IndexIterator t = *this;
+			ConstIndexIterator t = *this;
 			--pos;
 			return t;
 		}
@@ -54,25 +54,25 @@ namespace approx{
 			return *this;
 		}
 		ConstIndexIterator operator +(difference_type cnt) const {
-			return IndexIterator(vecs, inds, pos + cnt);
+			return ConstIndexIterator(data, inds, pos + cnt);
 		}
 		ConstIndexIterator operator -(difference_type cnt) const {
-			return IndexIterator(vecs, inds, pos - cnt);
+			return ConstIndexIterator(data, inds, pos - cnt);
 		}
 		difference_type operator -(const ConstIndexIterator& other) const {
 			return pos - other.pos;
 		}
 		bool operator !=(const ConstIndexIterator& other) const {
-			return other.pos != pos || vecs != other.vecs || inds != other.inds;
+			return other.pos != pos || data != other.data || inds != other.inds;
 		}
 		const T& operator * () const {
-			return vecs->operator[](inds->operator[](pos));
+			return data->operator[](inds->operator[](pos));
 		}
 		const T* operator -> () const {
-			return &(vecs->operator[](inds->operator[](pos)));
+			return &(data->operator[](inds->operator[](pos)));
 		}
 		const T& operator [] (difference_type ind) const {
-			return vecs->operator[](inds->operator[](pos + ind));
+			return data->operator[](inds->operator[](pos + ind));
 		}
 
 		bool operator < (const ConstIndexIterator& other) const {
@@ -81,11 +81,11 @@ namespace approx{
 	};
 
 	template <class T> class IndexIterator : std::iterator < std::random_access_iterator_tag, T, int > {
-		std::vector<T>* vecs;
+		std::vector<T>* data;
 		const std::vector<int>* inds;
 		size_t pos;
 	public:
-		IndexIterator(std::vector<T>* v, const std::vector<int>* i, size_t p) : vecs(v), inds(i), pos(p){}
+		IndexIterator(std::vector<T>* v, const std::vector<int>* i, size_t p) : data(v), inds(i), pos(p){}
 		typedef std::random_access_iterator_tag iterator_category;
 		typedef typename std::iterator<std::random_access_iterator_tag, const Vector3<T>, int>::value_type value_type;
 		typedef typename std::iterator<std::random_access_iterator_tag, const Vector3<T>, int>::difference_type difference_type;
@@ -121,25 +121,25 @@ namespace approx{
 			return *this;
 		}
 		IndexIterator operator +(difference_type cnt) const {
-			return IndexIterator(vecs, inds, pos + cnt);
+			return IndexIterator(data, inds, pos + cnt);
 		}
 		IndexIterator operator -(difference_type cnt) const {
-			return IndexIterator(vecs, inds, pos - cnt);
+			return IndexIterator(data, inds, pos - cnt);
 		}
 		difference_type operator -(const IndexIterator& other) const {
 			return pos - other.pos;
 		}
 		bool operator !=(const IndexIterator& other) const {
-			return other.pos != pos || vecs != other.vecs || inds != other.inds;
+			return other.pos != pos || data != other.data || inds != other.inds;
 		}
 		T& operator * (){
-			return vecs->operator[](inds->operator[](pos));
+			return data->operator[](inds->operator[](pos));
 		}
 		T* operator -> (){
-			return &(vecs->operator[](inds->operator[](pos)));
+			return &(data->operator[](inds->operator[](pos)));
 		}
 		T& operator [] (difference_type ind){
-			return vecs->operator[](inds->operator[](pos + ind));
+			return data->operator[](inds->operator[](pos + ind));
 		}
 
 		bool operator < (const IndexIterator& other) const {

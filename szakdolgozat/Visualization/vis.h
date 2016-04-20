@@ -79,7 +79,6 @@ protected:
 			ui doksi + ui átírás
 				UI: sima pointereket átírni unique_ptr re!
 			n+1) Projection matrix: perspective vs ortho -> camera optimizing
-			Setlastuse -> átváltásnál nem insertelek csak setlastuse
 		Csütörtök
 			-
 		Péntek:
@@ -99,6 +98,8 @@ protected:
 		Apró bugok frissítés gyanánt:
 		
 		Apró kis TODOk:
+			draw3d, opacity be a setpropba
+		
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
 				+ World : esetleg mikor fényt számolok akkor számít

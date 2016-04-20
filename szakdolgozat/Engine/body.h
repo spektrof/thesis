@@ -97,7 +97,7 @@ namespace approx{
 			Vector3<T> center(0, 0, 0);
 			for (const Face<T>& f : *this) {
 				Vector3<T> a = f.points(0);
-				for (int i = 2; i < f.size(); ++i) { //a lapokat haromszogelem szamitashoz, mivel igy konnyu a keplet
+				for (int i = 2; i < (int)f.size(); ++i) { //a lapokat haromszogelem szamitashoz, mivel igy konnyu a keplet
 					Vector3<T> b = f.points(i - 1),
 						c = f.points(i);
 					Vector3<T> n = f.normal() * cross(b - a, c - a).length();

@@ -16,6 +16,7 @@
 
 namespace approx{
 
+	//adott tavolsagon belul osszevono javito tipus.
 	template <class T> class RepairVector{
 		std::vector<Vector3<T>> vecs; //a konkret vektorok
 		std::vector<int> ind_map; //egyes indexeket atiranyito lekepezo vektor
@@ -40,7 +41,7 @@ namespace approx{
 
 		//az adott indexrol eldonti valojaban hanyadik elemre mutat
 		int transform_index(int ind) const {
-			return ind_map[id];
+			return ind_map[ind];
 		}
 
 		//a megadott indexsorozatra elvegzi az indextranszformaciot

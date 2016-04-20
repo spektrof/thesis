@@ -11,7 +11,11 @@
 #include <algorithm>
 #include "targetbody.h"
 #include "approximation.h"
+
+#ifndef APPROX_NO_CONVERSION
 #include "conversion.h"
+#endif 
+
 #include "../Utils/objio.h"
 #include "diffvec.h"
 
@@ -54,7 +58,8 @@ namespace approx {
 		//pontosan akkor ad igazat, ha a folyamat megkezdheto
 		bool restart() {
 			if (!(tb && tb->body().size())) return false;
-			app = std::make_unique<Approximation<T>>(tb.get(), border);
+			//app = std::make_unique<Approximation<T>>(tb.get(), border); //C++14tol
+			app = std::unique_ptr<Approximation<T>>(new Approximation<T>(tb.get(), border));
 			return true;
 		}
 		
@@ -69,7 +74,8 @@ namespace approx {
 		//adott elhosszusagu kockaba transzformalja
 		bool set_target(const std::string& filename, T _border,T merging_epsilon=0, T cube = -1) {
 			border = _border;
-			tb = std::make_unique<TargetBody<T>>();
+			//tb = std::make_unique<TargetBody<T>>(); //C++14tol
+			tb = std::unique_ptr<TargetBody<T>>(new TargetBody<T>());
 			if (!(ObjectLoader<T>::load_obj(filename, *tb, merging_epsilon) && tb->body().size())) {
 				tb.release();
 				app.release();
@@ -78,7 +84,8 @@ namespace approx {
 			if (cube > 0) {
 				tb->transform_to_origo(cube);
 			}
-			app = std::make_unique<Approximation<T>>(tb.get(),border);
+			//app = std::make_unique<Approximation<T>>(tb.get(),border);
+			app = std::unique_ptr<Approximation<T>>(new Approximation<T>(tb.get(), border));
 			return true;
 		}
 
@@ -96,7 +103,8 @@ namespace approx {
 			if (cube > 0) {
 				tb->transform_to_origo(cube);
 			}
-			app = std::make_unique<Approximation<T>>(tb.get(), border);
+			//app = std::make_unique<Approximation<T>>(tb.get(), border); //C++14tol
+			app = std::unique_ptr<Approximation<T>>(new Approximation<T>(tb.get(), border));
 			return true;
 		}
 
@@ -117,6 +125,8 @@ namespace approx {
 		//================================================================================
 		//Rajzolashoz
 		//================================================================================
+
+#ifndef APPROX_NO_CONVERSION
 
 		//az osszes atom vertex adata rajzolasra kesz formatumban
 		BodyList atom_drawinfo() const {
@@ -151,7 +161,7 @@ namespace approx {
 		std::vector<PolyFace2D> atom2dfaces(int ind) const {
 			return drawinfo2d(app->atoms(ind));
 		}
-
+#endif
 	};
 
 }

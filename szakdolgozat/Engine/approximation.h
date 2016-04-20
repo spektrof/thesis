@@ -290,13 +290,20 @@ namespace approx{
 			starting_atom(_border);
 		}
 
-		Approximation(const Approximation& a) : target(app.target), vertices(app.vertices), normals(app.normals){
-			faces.clear();
-			_atoms.clear();
+		Approximation(const Approximation& app) : target(app.target), vertices(app.vertices), normals(app.normals){
 			for (const Face<T>& f : app.faces) {
 				faces.push_back(f.migrate_to(&vertices, &normals));
 			}
-			for (const AtomType<T>& a : app._atoms) {
+			for (const AtomType& a : app._atoms) {
+				_atoms.push_back(a.migrate_to(&faces));
+			}
+		}
+
+		Approximation(Approximation&& app) : target(std::move(app.target)), vertices(std::move(app.vertices)), normals(std::move(app.normals)) {
+			for (const Face<T>& f : app.faces) {
+				faces.push_back(f.migrate_to(&vertices, &normals));
+			}
+			for (const AtomType& a : app._atoms) {
 				_atoms.push_back(a.migrate_to(&faces));
 			}
 		}
@@ -311,7 +318,7 @@ namespace approx{
 			for (const Face<T>& f : app.faces){
 				faces.push_back(f.migrate_to(&vertices, &normals));
 			}
-			for (const AtomType<T>& a : app._atoms){
+			for (const AtomType& a : app._atoms){
 				_atoms.push_back(a.migrate_to(&faces));
 			}
 			return *this;
@@ -328,7 +335,7 @@ namespace approx{
 			for (Face<T>&& f : app.faces){
 				faces.push_back(f.migrate_to(&vertices, &normals));
 			}
-			for (AtomType<T>&& a : app._atoms){
+			for (AtomType&& a : app._atoms){
 				_atoms.push_back(a.migrate_to(&faces));
 			}
 			return *this;
@@ -542,6 +549,7 @@ namespace approx{
 		void final_transform() {
 			Vector3<T> t = target->inverse_transform();
 			T scl = target->inverse_scale();
+			scl = scl > 0 ? scl : 1;
 			for (Vector3<T>& v : vertices) {
 				v = (v*scl) + t;
 			}

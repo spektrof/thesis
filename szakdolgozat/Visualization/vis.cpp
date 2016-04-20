@@ -5,8 +5,9 @@
 
 #define CuttingPlaneWireType 1
 #define _3DWireType 0
-#define FOURIERCOEFFICIENT 0.5
+#define FOURIERCOEFFICIENT 0.5f
 #define EPSILONFOURIER 0.0001f
+#define INTERSECTIONEPSILON  0.001f
 
 Visualization::Visualization(void)
 {
@@ -210,15 +211,18 @@ void Visualization::AcceptCutting()
 	{ 
 		case BOTH:
 			if (!app.container().last_cut_result().choose_both()) { ui.ErrorShow("ERROR BOTH\nThe cut is dopped!"); return; }
+			if (logger) std::cout << "Megtartom: BOTH\n";
 
 			NumberOfAtoms++;
 			break;
 		case POSITIVE:
 			if (!app.container().last_cut_result().choose_positive()) { ui.ErrorShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
+			if (logger) std::cout << "Megtartom: POSITIVE\n";
 
 			break;
 		case NEGATIVE:
 			if (!app.container().last_cut_result().choose_negative()) { ui.ErrorShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
+			if (logger) std::cout << "Megtartom: NEGATIVE\n";
 
 			break;
 	}
@@ -231,10 +235,12 @@ void Visualization::AcceptCutting()
 
 	LastUseChanging(request.type);
 
+	if (request.choice == UNTOUCHED)	{	
+		prior.SetLastUse(&lastUse);
+	}	// N log( N )-es rendezes van benne -> nem szeretnenk mindig lefuttatni csak mikor kell
+
 	prior.erase(ActiveIndex);
 	CalculateDisplayVectorsByFourier();
-
-	if (request.choice == UNTOUCHED)	{	prior.SetLastUse(&lastUse);	}	// N log( N )-es rendezes van benne -> nem szeretnenk mindig lefuttatni csak mikor kell
 
 	GetPriorResult();
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -908,62 +914,27 @@ void Visualization::CalculateDisplayVectorsByFourier()
 {	//underface be is az epszilont ehez hangolni
 	/* ActiveAtom negativ fele ; NumberOfAtoms-1 positive fele both esetén*/
 	float fourier = app.container().atoms(ActiveAtom).fourier();
-	if (logger) { std::cout << "Fourier of Negative Atom: " << fourier << "\n"; }
-
-	liveAtoms.erase(ActiveAtom); // EF a vágásnak
-	relevantAtoms.erase(ActiveAtom);
-
-	/* MANUALNAL lesz erdekeltsege, ha nem manual akkor ilyen nincs is
-	   Ahhoz hogy lassuk berakjuk az elo atomok koze mindket reszt, viszont annak ki kell kerulnie (a negativ mindenkepp ki fog)
-	   DE ha BOTH-t tartjuk meg akkor a NumberOfAtoms valtozni fog -> alkalmazkodunk (kodismetles helyett ezt valasztottam)
-	*/
-	liveAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms); // EF a vágásnak
-	relevantAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms);	//Van közös rész, de újabb vágás esetén már nem biztos hogy releváns lesz -> need this
-
+	if (logger) { std::cout << "Fourier of First Atom: " << fourier << "\n"; }
 
 	if ( std::abs(fourier) > EPSILONFOURIER && std::abs(fourier-1.0f) > EPSILONFOURIER)
 	{
-		switch (request.type)
-		{
-			case BOTH:
-				prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
-				liveAtoms.insert(ActiveAtom);
-				break;
-			case NEGATIVE:
-				prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
-				liveAtoms.insert(ActiveAtom);
-				break;
-			case POSITIVE:
-				/*Eltunik ez a resz*/
-				break;
-		}
+		prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
+		liveAtoms.insert(ActiveAtom);
 	}
 	if (fourier > FOURIERCOEFFICIENT)
 	{
 		relevantAtoms.insert(ActiveAtom);
 	}
 
-	if (request.type == NEGATIVE) return;
+	if (request.type != BOTH) return;
 
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
-	if (logger) { std::cout << "Fourier of Positive Atom: " << fourier << "\n"; }
+	if (logger) { std::cout << "Fourier of Second Atom: " << fourier << "\n"; }
 
 	if (std::abs(fourier) > EPSILONFOURIER && std::abs(fourier - 1.0f) > EPSILONFOURIER)
 	{
-		switch (request.type)
-		{
-		case BOTH:
-			prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
-			liveAtoms.insert(NumberOfAtoms - 1);
-			break;
-		case NEGATIVE:
-			/*Eltunik ez a resz*/
-			break;
-		case POSITIVE:
-			prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
-			liveAtoms.insert(ActiveAtom);
-			break;
-		}
+		prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
+		liveAtoms.insert(NumberOfAtoms - 1);
 	}
 	if (fourier > FOURIERCOEFFICIENT)
 	{
@@ -976,8 +947,8 @@ Vágás után lecheckoljuk van e metszete az egyes részeknek a céltesttel
 Epszilon: 0.001					*/
 void Visualization::CutChecker()
 {
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() > 0.001;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() > 0.001;
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() > INTERSECTIONEPSILON;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() > INTERSECTIONEPSILON;
 
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
 	else if (IntersectionWithNegative) request.type = NEGATIVE;
@@ -1019,6 +990,16 @@ void Visualization::LastUseChanging(const TypeOfAccept& ta)
 {
 	for (size_t i = 0; i < lastUse.size();++i) lastUse[i]++;
 
+	liveAtoms.erase(ActiveAtom); // EF a vágásnak
+	relevantAtoms.erase(ActiveAtom);
+
+	/* MANUALNAL lesz erdekeltsege, ha nem manual akkor ilyen nincs is
+	Ahhoz hogy lassuk berakjuk az elo atomok koze mindket reszt, viszont annak ki kell kerulnie (a negativ mindenkepp ki fog)
+	DE ha BOTH-t tartjuk meg akkor a NumberOfAtoms valtozni fog -> alkalmazkodunk (kodismetles helyett ezt valasztottam)
+	*/
+	liveAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms); // EF a vágásnak
+	relevantAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms);	//Van közös rész, de újabb vágás esetén már nem biztos hogy releváns lesz -> need this
+	
 	switch (ta)
 	{
 		case BOTH:
@@ -1026,8 +1007,7 @@ void Visualization::LastUseChanging(const TypeOfAccept& ta)
 			lastUse.push_back(0);
 			break;
 		case POSITIVE:
-			lastUse.erase(lastUse.begin() + ActiveAtom);
-			lastUse.push_back(0);
+			lastUse[ActiveAtom] = 0;
 			break;
 		case NEGATIVE:
 			lastUse[ActiveAtom] = 0;

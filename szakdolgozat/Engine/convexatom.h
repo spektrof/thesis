@@ -22,6 +22,9 @@ namespace approx{
 	//parameterezheto barmely Vector3-al kompatibilis skalar tipussal, melyre direkt,
 	//vagy implicit konverzioval ertelmezve van az atan2 fuggveny
 	template <class T> class ConvexAtom : public Body < T > {
+		
+		using Body<T>::inds;
+		using Body<T>::_faces;
 
 		struct Less{ //rendezesi muvelet a map tipussal valo hasznalathoz
 			bool operator ()(const Vector3<T>& a,const Vector3<T>& b) const{
@@ -62,8 +65,20 @@ namespace approx{
 		}
 
 	public:
+		//lookup miatt
+		using Body<T>::migrate_to;
+		using Body<T>::size;
+		using Body<T>::indicies;
+		using Body<T>::faces;
+		using Body<T>::begin;
+		using Body<T>::end;
+		using Body<T>::volume;
+		using Body<T>::centroid;
+		using Body<T>::diameter;
+		typedef typename Body<T>::ConstFaceIterator ConstFaceIterator;
+	    typedef typename Body<T>::FaceIterator FaceIterator;
 
-		ConvexAtom(std::vector<Face<T>>* f, const std::vector<int>& i,const Body<T>* targ): Body<T>(f,i), target(targ){
+		ConvexAtom(std::vector<Face<T>>* f, const std::vector<int>& ids,const Body<T>* targ): Body<T>(f,ids), target(targ){
 			f_poly.reserve(size());
 			for (int i = 0; i < size(); ++i) f_poly.push_back(std::make_shared<SurfacePoly>(faces(i).to_plane()));
 		}
@@ -133,9 +148,8 @@ namespace approx{
 			std::map<int, typename CutResult::FaceSplit> cut_map; //hozzarendeli az elvagott lapokhoz a keletkezett fel lapokat
 			std::vector<Vector3<T>>& vc = *faces(0).vertex_container(); //rovid hozzaveres a vertexekhez
 			std::map<Vector3<T>, int,Less> ptbuffer;
-			std::pair<Vector3<T>, Vector3<T>> base = p.ortho2d();
 			for (int i = 0; i < size();++i){ //vegegiteralok minden lapon es elvagom oket a sikkal, kezelve a hamis vagasokat
-				Face<T>::CutResult cut = faces(i).cut_by(p,ptbuffer);
+				typename Face<T>::CutResult cut = faces(i).cut_by(p,ptbuffer);
 				if (cut.pt_inds.size() < cut.positive.size() && cut.pt_inds.size() < cut.negative.size()){ //valodi vagas tortent, mindket oldalon valid sokszog all
 					pos_poly.push_back(std::make_shared<SurfacePoly>(f_poly[i]->plane));
 					neg_poly.push_back(std::make_shared<SurfacePoly>(f_poly[i]->plane));
@@ -159,13 +173,13 @@ namespace approx{
 					Line<T> line = f_poly[i]->plane.intersection_line(p);
 					for (const std::pair<Polygon2<T>,bool>& poly : f_poly[i]->poly) { //vegigiteralom az ideeso vetuleteket
 						if (poly.first.size() > 2) {
-							typename Polygon2<T>::CutResult cut = poly.first.cut_by(line); //elvagom a vetuletet
+							typename Polygon2<T>::CutResult cut2d = poly.first.cut_by(line); //elvagom a vetuletet
 																						//ha a vagas adott oldali eredmenye valodi sokszog akkor felveszem az adott oldalra
-							if (cut.positive.size() >= 3) {
-								pos_poly.back()->poly.emplace_back(cut.positive, poly.second);
+							if (cut2d.positive.size() >= 3) {
+								pos_poly.back()->poly.emplace_back(cut2d.positive, poly.second);
 							}
-							if (cut.negative.size() >= 3) {
-								neg_poly.back()->poly.emplace_back(cut.negative, poly.second);
+							if (cut2d.negative.size() >= 3) {
+								neg_poly.back()->poly.emplace_back(cut2d.negative, poly.second);
 							}
 
 						}

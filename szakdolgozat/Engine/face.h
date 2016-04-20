@@ -66,31 +66,31 @@ namespace approx{
 
 		//konstrukror mely szamolja es beilleszti a normalist
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* _normals, bool ccw = true) :
-			vecs(vertices), inds(ids), normals(_normals) {
+			vecs(vertices), normals(_normals), inds(ids) {
 			calc_normal(ccw);
 		}
 		//konstrukror mely szamolja es beilleszti a normalist, de mozgatast hasznal a megadott pont indexekre
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals)
-			: vecs(vertices), inds(ids), normals(_normals) { calc_normal(); }
+			: vecs(vertices), normals(_normals), inds(ids) { calc_normal(); }
 		//megadott normalvektort felhasznalo konstruktor
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* normals, int n_id)
-			: vecs(vertices), inds(ids), normals(normals), normal_id(n_id) {}
+			: vecs(vertices), normals(normals), inds(ids), normal_id(n_id) {}
 		//megadott normalvektort felhasznalo konstruktor, mozgatja a megadott pontindex vektort
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* normals, int n_id)
-			: vecs(vertices), inds(ids), normals(normals), normal_id(n_id) {}
+			: vecs(vertices), normals(normals), inds(ids), normal_id(n_id) {}
 		//megadott de beszurando normalist hasznalo konstruktor
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()) {
+			: vecs(vertices), normals(_normals), inds(ids), normal_id(normals->size()) {
 			normals->push_back(normal);
 		}
 		//megadott de beszurando normalist hasznalo konstruktor a pontok mozgatasaval
 		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals, const Vector3<T>& normal)
-			: vecs(vertices), inds(ids), normals(_normals), normal_id(normals->size()) {
+			: vecs(vertices), normals(_normals), inds(ids), normal_id(normals->size()) {
 			normals->push_back(normal);
 		}
 		//iteratorokkal mukodo konstruktor, az iteratorok az indexeket adjak meg
 		template <class Iter> Face(std::vector< Vector3<T> >* vertices, Iter fst, Iter lst, std::vector< Vector3<T> >* _normals, int n_id) :
-			vecs(vertices), inds(fst, lst), normals(_normals), normal_id(n_id) {}
+			vecs(vertices), normals(_normals), inds(fst, lst), normal_id(n_id) {}
 
 		//masolo konstruktor, linearis a pontok szamaban
 		Face(const Face&) = default;
@@ -212,7 +212,6 @@ namespace approx{
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i) {
 				sign2 = p.classify_point(points((i + 1) % n));
-				float sign = sign1*sign2;
 				if (sign1 < 0) { //negativ oldalhoz tartozik
 					neg.push_back(inds[i]);
 					if (sign2 > 0) { //a kovetkezo pont pozitiv, kozottuk vagni kell
@@ -261,7 +260,6 @@ namespace approx{
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i) {
 				sign2 = p.classify_point(points((i + 1) % n));
-				float sign = sign1*sign2;
 				if (sign1 < 0) {
 					neg.push_back(inds[i]);
 					if (sign2 > 0) {
@@ -321,7 +319,6 @@ namespace approx{
 			int pts_added = 0;
 			for (int i = 0; i < n; ++i) {
 				sign2 = p.classify_point(points((i + 1) % n));
-				float sign = sign1*sign2;
 				target_vecs->push_back(points(i));
 				++pts_added;
 				if (sign1 < 0) {

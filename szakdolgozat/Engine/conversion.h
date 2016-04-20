@@ -66,7 +66,6 @@ namespace approx {
 	template <class T> BodyList drawinfo(const Body<T>& body) {
 		BodyList res;
 		const std::vector<Vector3<T>>& vs = *body.faces(0).vertex_container();
-		const std::vector<Vector3<T>>& ns = *body.faces(0).normal_container();
 		res.points.reserve(vs.size());
 		for (const Vector3<T>& p : vs) {
 			res.points.push_back(convert(p));
@@ -76,9 +75,9 @@ namespace approx {
 			if (f.size()) {
 				int prev = f.is_ccw() ? 1 : 0;
 				for (int i = 2; i < (int)f.size(); ++i) { //ccw-be sorolom es ugy veszem hogy kinn tudjak majd a normalist szamolni
-					res.indicies.push_back(f.indicies(0));
-					res.indicies.push_back(f.indicies(i - prev));
-					res.indicies.push_back(f.indicies(i - 1 + prev));
+					res.indicies.push_back((Index)f.indicies(0));
+					res.indicies.push_back((Index)f.indicies(i - prev));
+					res.indicies.push_back((Index)f.indicies(i - 1 + prev));
 				}
 			}
 		}
@@ -92,7 +91,6 @@ namespace approx {
 		BodyList res;
 		const Body<T>& b = *first;
 		const std::vector<Vector3<T>>& vs = *b.faces(0).vertex_container();
-		const std::vector<Vector3<T>>& ns = *b.faces(0).normal_container();
 		res.points.reserve(vs.size());
 		for (const Vector3<T>& p : vs) {
 			res.points.push_back(convert(p));
@@ -104,9 +102,9 @@ namespace approx {
 				if (f.size()) {
 					int prev = f.is_ccw() ? 1 : 0;
 					for (int i = 2; i < (int)f.size(); ++i) {
-						res.indicies.push_back(f.indicies(0));
-						res.indicies.push_back(f.indicies(i - prev));
-						res.indicies.push_back(f.indicies(i - 1 + prev));
+						res.indicies.push_back((Index)f.indicies(0));
+						res.indicies.push_back((Index)f.indicies(i - prev));
+						res.indicies.push_back((Index)f.indicies(i - 1 + prev));
 						res.index_ranges.back() += 3;
 					}
 				}
