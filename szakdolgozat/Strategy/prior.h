@@ -94,7 +94,7 @@ public:
 			it->value = (PriorityFunctions->*m_getterFunc)(NULL, it->id);
 		}
 
-		std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
+	//	std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
 	}
 
 };

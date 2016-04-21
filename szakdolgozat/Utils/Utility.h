@@ -26,7 +26,7 @@ namespace Utility
 	glm::mat4 GetTranslate(const approx::Vector3<float>&, const glm::vec3&, const float&);
 	glm::mat4 GetRotateFromNorm(const glm::vec3&);
 
-	glm::vec3 DescartesToPolar(float, float );
+	glm::vec3 DescartesToPolar(float, float, float);
 
 	/*---------------------------*/
 

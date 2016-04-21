@@ -10,7 +10,6 @@ out vec4 _color;
 //színtér tul.
 uniform vec3 LightDirection;	//Fenyirany
 uniform vec3 EyePosition;	//Kamera poz, szempoz
-uniform int View;	//2D vagy 3D
 
 uniform float opacity = 1.0f;
 
@@ -41,13 +40,13 @@ void main()
 
 	//------------------------------------------
 	//fragment végso színe
-	_color =   View == 1 ? vec4(vec3(1,0,0), 1) :
-			 // Ambient : simulates indirect lighting
+	_color = vec4(
+			// Ambient : simulates indirect lighting
 			 MaterialAmbientColor +
 			 // Diffuse : "color" of the object
 			 MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
 			 // Specular : reflective highlight, like a mirror
-			 MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance); ;
-	
-	_color.a = opacity;
+			 MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance)
+			 //Opacity
+			 , opacity) ;
 }

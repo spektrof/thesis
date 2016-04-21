@@ -1,11 +1,13 @@
 #include "Utility.h"
 #include "CameraAndLight.h"
 
-Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t)
-	: eye(e),up(u),omega(o),theta(t)
+Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t, const int& r)
+	: eye(e),up(u),omega(o),theta(t),radius(r)
 {
-	cunit = Utility::DescartesToPolar(omega, theta);
-	at = eye + cunit;
+	zunit = Utility::DescartesToPolar(omega, theta, radius);
+	at = eye + zunit;
+	vunit = glm::vec3(0, 1, 0);
+	hunit = glm::normalize(glm::cross(up, zunit));
 
 	ViewPoint = _3D;
 }
@@ -24,17 +26,22 @@ void Camera::SwitchCameraView(const glm::vec3& v)
 }
 void Camera::SetCamera2DValues(const glm::vec3& v)
 {
-	cunit = glm::vec3(1, 0, 0);
+	zunit = glm::vec3(0, -1, 0);
+	hunit = glm::vec3(0, 0, -1);
+	vunit = glm::vec3(1, 0, 0);;
 	up = glm::vec3(1, 0, 0);
 	SetCamera(v);
 }
 void Camera::SetCamera3DValues()
 {
 	omega = 4.0f; theta = 2.0f; 
-	cunit = Utility::DescartesToPolar(omega, theta);
+	zunit = Utility::DescartesToPolar(omega, theta, radius);
+
 	eye = glm::vec3(65, 50, 90);
 	up = glm::vec3(0, 1, 0);
-	at = eye + cunit;
+	at = eye + zunit;
+	vunit = glm::vec3(0, 1, 0);
+	hunit = glm::normalize(glm::cross(up, zunit));
 }
 
 void Camera::SetCamera(const glm::vec3& v)
@@ -64,26 +71,35 @@ void Camera::MouseMove(SDL_MouseMotionEvent& mouse)
 		theta += mouse.yrel / 100.0f;
 
 		theta = glm::clamp(theta, 0.1f, 3.0f);
+	
+		zunit = Utility::DescartesToPolar(omega, theta, radius);
+		hunit = glm::normalize(glm::cross(up, zunit));
 
-		cunit = Utility::DescartesToPolar(omega, theta);
-		at = eye + cunit;
+		at = eye + zunit;
 	}
 }
 
 // ---------------------------------------------------------
 
-Light::Light(const glm::vec3& fi, const float& o, const float& t)
-	: FenyIrany(fi),omega(o),theta(t)
+Light::Light(const int& c, const int& r, const int& o, const int& t)
+	: cunit(c),radius(r)
 {
-	lunit = Utility::DescartesToPolar(-omega, theta);
-	FenyIrany += lunit;
+	omega = ((o) % cunit) * (float)((float)1 / (float)cunit);
+	theta = ((t) % cunit) * (float)((float)1 / (float)cunit);
+
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, 10);
+
 }
 
-void Light::Add(const glm::vec3& unit)
+void Light::AddTo(float* unit)
 {
-	FenyIrany += unit;
+	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;
+
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, radius);
 }
-void Light::Sub(const glm::vec3& unit)
+void Light::SubFrom(float* unit)
 {
-	FenyIrany -= unit;
+	*unit = float((int)std::round((*unit) * cunit - 1 + cunit) % cunit) / (float)cunit;
+
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, radius);
 }

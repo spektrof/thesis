@@ -4,14 +4,15 @@ UserInterface::UserInterface(QWidget *parent)
 	: QWidget(parent)
 {
 	window = new QWidget();
-	_mainLayout = new QVBoxLayout();
+
+	_mainLayout = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
 	_label = new QLabel("Welcome", this);
 	_info = new QLabel("Hey, Im imformation about this ui", this);
 
 	_choice = new QLabel("Choice", this);
 	_cut = new QLabel("Cut", this);
 
-	_strategy = new QGroupBox(tr("Strategies"),this);
+	_strategy = new QGroupBox(tr("Strategies"), this);
 	norms = new QGroupBox(tr("Normals"));
 	coords = new QGroupBox(tr("Coords"));
 
@@ -40,9 +41,9 @@ UserInterface::UserInterface(QWidget *parent)
 
 	_nextText = new QLabel("Next n steps", this);
 	_nextNOk = new QPushButton("OK", this);
-	_n = new QLineEdit("1",this);
+	_n = new QLineEdit("1", this);
 
-	_displayType = new QLabel("Display mode:",this);
+	_displayType = new QLabel("Display mode:", this);
 	_fourierGroups = new QComboBox();
 
 	_restart = new QPushButton("Restart", this);
@@ -53,33 +54,22 @@ UserInterface::UserInterface(QWidget *parent)
 
 	AddItemsToDropMenu();
 
-	head = new QVBoxLayout;
-	strategiesGroup = new QVBoxLayout;
-	choiceGroup = new QHBoxLayout;
-	cutGroup = new QHBoxLayout;
-	buttonsGroup = new QVBoxLayout;
-    plane_details = new QHBoxLayout;
-	acceptGroup = new QHBoxLayout;
-	moreStepsGorup = new QHBoxLayout;
-	fourierGorup = new QHBoxLayout;
-	bottom = new QHBoxLayout;
+	head = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
+	strategiesGroup = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
+	choiceGroup = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	cutGroup = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	buttonsGroup = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
+	plane_details = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	acceptGroup = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	moreStepsGorup = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	fourierGorup = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
+	bottom = std::unique_ptr<QHBoxLayout>(new QHBoxLayout());
 
 	Init();
 }
 
 UserInterface::~UserInterface()
 {
-	delete head;
-	delete choiceGroup;
-	delete cutGroup;
-	delete plane_details;
-	delete strategiesGroup;
-	delete acceptGroup;
-	delete buttonsGroup;
-	delete moreStepsGorup;
-	delete fourierGorup;
-	delete bottom;
-
 	delete _label;
 	delete _info;
 
@@ -116,6 +106,9 @@ UserInterface::~UserInterface()
 	delete _nextNOk;
 	delete _n;
 
+	delete _displayType;
+	delete _fourierGroups;
+
 	delete _restart;
 	delete _export;
 	delete _import;
@@ -123,11 +116,9 @@ UserInterface::~UserInterface()
 	delete _back;
 
 	delete window;
-	delete _mainLayout;
-
 }
 
-void UserInterface::Init() 
+void UserInterface::Init()
 {
 	window->setStyleSheet("background-color: #7ac5cd;");
 	window->setFixedSize(400, 400);
@@ -137,10 +128,6 @@ void UserInterface::Init()
 	SetButtonsProperties();
 	SetInputLineProperties();
 	//---------------------------------------
-	QVBoxLayout *mainLayout = new QVBoxLayout;
-
-	//------------------------------------------
-
 	CreateHead();
 	CreateStrategiesGroup();
 	CreatePlaneDetails();
@@ -150,12 +137,12 @@ void UserInterface::Init()
 	CreateBottom();
 
 	//-----------------------------------------	
-	mainLayout->addLayout(head);
-	mainLayout->addWidget(_strategy);
-	mainLayout->addLayout(buttonsGroup);
-	mainLayout->addLayout(moreStepsGorup);
-	mainLayout->addLayout(fourierGorup);
-	mainLayout->addLayout(bottom);
+	_mainLayout->addLayout(head.release());
+	_mainLayout->addWidget(_strategy);
+	_mainLayout->addLayout(buttonsGroup.release());
+	_mainLayout->addLayout(moreStepsGorup.release());
+	_mainLayout->addLayout(fourierGorup.release());
+	_mainLayout->addLayout(bottom.release());
 
 	//_----------------------------------------- connects
 
@@ -189,14 +176,14 @@ void UserInterface::Init()
 
 	//-------------------------------------------
 
-	window->setLayout(mainLayout);
+	window->setLayout(_mainLayout.release());
 	window->show();
 }
 
 void UserInterface::cuttingEvent()
 {
 	request.eventtype = CUTTING;
-	
+
 	_undo->setEnabled(request.cut_mode == MANUAL ? true : false);
 	_acceptTypes->setEnabled(request.cut_mode == MANUAL ? true : false);
 	_accept->setEnabled(request.cut_mode == MANUAL ? true : false);
@@ -246,7 +233,7 @@ void UserInterface::restartEvent()
 {
 	request = Request(RESTART, ChoiceMode(_choiceStrategy->currentData().toInt()));
 
-	_n->setText("1"); 
+	_n->setText("1");
 	_xn->setText("1"); _yn->setText("0"); _zn->setText("0");
 
 	_choiceStrategy->setEnabled(true);
@@ -273,9 +260,9 @@ void UserInterface::newplane_event()
 {
 	if (!_xn->text().toFloat() && !_yn->text().toFloat() && !_zn->text().toFloat()) // (0,0,0) normális
 	{
-		if ( _xn->isModified() ) _xn->undo();
-		if ( _yn->isModified() ) _yn->undo();
-		if ( _zn->isModified() ) _zn->undo();
+		if (_xn->isModified()) _xn->undo();
+		if (_yn->isModified()) _yn->undo();
+		if (_zn->isModified()) _zn->undo();
 
 		ErrorShow("Invalid normal ! (dont use (0,0,0))\n");	//ujra lefut tole a newplaneevent fv.
 
@@ -307,8 +294,8 @@ void UserInterface::newcutmode_event()
 	coords->setVisible(request.cut_mode == MANUAL ? true : false);
 	norms->setVisible(request.cut_mode == MANUAL ? true : false);
 
-	_nextNOk->setEnabled(request.cut_mode == MANUAL ?  false : true);
-	_n->setEnabled(request.cut_mode == MANUAL ?  false : true);
+	_nextNOk->setEnabled(request.cut_mode == MANUAL ? false : true);
+	_n->setEnabled(request.cut_mode == MANUAL ? false : true);
 }
 
 void UserInterface::newdisplay()
@@ -347,8 +334,8 @@ void UserInterface::exportEvent()
 void UserInterface::importEvent()
 {
 	request.eventtype = IMPORT;
-	
-	request.filename = QInputDialog::getText(0, "File opening", "Obj name:").toLatin1().data() ;
+
+	request.filename = QInputDialog::getText(0, "File opening", "Obj name:").toLatin1().data();
 }
 
 void UserInterface::infoEvent()
@@ -402,18 +389,18 @@ void UserInterface::backToMenu()
 	_displayType->setVisible(true);
 }
 
-Request UserInterface::GetRequest() 
+Request UserInterface::GetRequest()
 {
 	if (request.eventtype == NONE) return request;
-	
-	Request result(request); 
+
+	Request result(request);
 
 	ResetRequest();
 	if (result.eventtype == ACCEPT)
 	{
 		request.type = NEGATIVE;
 		_acceptTypes->setCurrentIndex(0);
-	
+
 	}
 	else if (result.eventtype == RESTART)	//restarttal osszefuggo valtozasok
 	{
@@ -426,7 +413,7 @@ Request UserInterface::GetRequest()
 	return result;
 }
 
-void UserInterface::ResetRequest() 
+void UserInterface::ResetRequest()
 {
 	request.eventtype = NONE;
 }
@@ -452,7 +439,7 @@ void UserInterface::SetLabelProperties()
 	_nextText->setStyleSheet("margin-left : 100px;");
 
 }
-void UserInterface::SetButtonsProperties() 
+void UserInterface::SetButtonsProperties()
 {
 	_cutting->setFixedSize(80, 30);
 	_undo->setFixedSize(80, 30);
@@ -489,7 +476,7 @@ void UserInterface::SetButtonsProperties()
 void UserInterface::SetDropDownProperties()
 {
 	_choiceStrategy->setFixedSize(150, 20);
-	_plane->setFixedSize(220,20);
+	_plane->setFixedSize(220, 20);
 	_acceptTypes->setFixedSize(80, 30);
 	_fourierGroups->setFixedSize(110, 20);
 
@@ -577,15 +564,15 @@ void UserInterface::CreateButtonsGroup()
 {
 	std::unique_ptr<QHBoxLayout> upperButtons(new QHBoxLayout());
 
-	upperButtons->addWidget(_cutting, 0, Qt::AlignBottom );
+	upperButtons->addWidget(_cutting, 0, Qt::AlignBottom);
 	upperButtons->addWidget(_undo, 0, Qt::AlignBottom);
-	
+
 	acceptGroup->addWidget(_acceptTypes, 0, Qt::AlignBottom);
 	acceptGroup->addWidget(_accept, 0, Qt::AlignBottom);
 
 	buttonsGroup->addLayout(upperButtons.release());
-	buttonsGroup->addLayout(acceptGroup);
-	
+	buttonsGroup->addLayout(acceptGroup.release());
+
 }
 
 void UserInterface::CreateStrategiesGroup()
@@ -601,10 +588,9 @@ void UserInterface::CreateStrategiesGroup()
 	cutGroup->addWidget(_plane, 0, Qt::AlignLeft);
 	cutGroup->addWidget(_nextPlane, 0, Qt::AlignLeft);
 
-	strategiesGroup->addLayout(choiceGroup);
-	strategiesGroup->addLayout(cutGroup);
+	strategiesGroup->addLayout(choiceGroup.release());
+	strategiesGroup->addLayout(cutGroup.release());
 
-	_strategy->setLayout(strategiesGroup);
 }
 
 void UserInterface::CreateMoreStepsGroup()
@@ -672,8 +658,8 @@ void UserInterface::CreatePlaneDetails()
 	coords->setVisible(request.cut_mode == MANUAL ? true : false);
 	norms->setVisible(request.cut_mode == MANUAL ? true : false);
 
-	strategiesGroup->addLayout(plane_details);
-
+	strategiesGroup->addLayout(plane_details.release());
+	_strategy->setLayout(strategiesGroup.release());
 }
 
 void UserInterface::CreateBottom()
@@ -690,7 +676,7 @@ void UserInterface::AddItemsToDropMenu()
 	_acceptTypes->addItem("NEGATIVE", 0);
 	_acceptTypes->addItem("POSITIVE", 1);
 	_acceptTypes->addItem("BOTH", 2);
-	
+
 	_choiceStrategy->addItem("Largest volume", 0);
 	_choiceStrategy->addItem("Largest diameter", 1);
 	_choiceStrategy->addItem("Longest time intact", 2);
@@ -711,7 +697,7 @@ void UserInterface::AddItemsToDropMenu()
 
 void UserInterface::RequestWrongCuttingErrorResolve()
 {
-	QMessageBox::warning(this, tr("WRONG CUT"),tr("U ARE STUPID!"), QMessageBox::Ok);
+	QMessageBox::warning(this, tr("WRONG CUT"), tr("U ARE STUPID!"), QMessageBox::Ok);
 
 	_accept->setEnabled(false);
 	_acceptTypes->setEnabled(false);

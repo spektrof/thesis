@@ -173,8 +173,7 @@ void Visualization::Render()
 
 		glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye()));
 		glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
-		glUniform1i(View, c.GetView());
-
+	
 		DrawCuttingPlane(Utility::GetTranslate(centr,_planenormal,distance),Utility::GetRotateFromNorm(_planenormal));
 						
 		DrawTargetBody();
@@ -591,7 +590,6 @@ void Visualization::AddShaderUniformLocations()
 	eyePos = glGetUniformLocation(program3D_ID, "EyePosition");
 	world = glGetUniformLocation(program3D_ID, "World");
 	Lights = glGetUniformLocation(program3D_ID, "LightDirection");
-	View = glGetUniformLocation(program3D_ID, "View");
 	Opacity = glGetUniformLocation(program3D_ID, "opacity");
 	DifCol = glGetUniformLocation(program3D_ID, "MaterialDiffuseColor");
 	SpecCol = glGetUniformLocation(program3D_ID, "MaterialSpecularColor");
@@ -1181,22 +1179,22 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		c.Sub(c.GetVertUnit());
 		break;
 	case SDLK_a:
-		c.Add(c.GetCameraUnit());
+		c.Add(c.GetHorUnit());
 		break;
 	case SDLK_d:
-		c.Sub(c.GetCameraUnit());
+		c.Sub(c.GetHorUnit());
 		break;
 	case SDLK_DOWN:	//feny
-		l.Sub(c.GetVertUnit());
+		l.AddTo(l.GetTheta());
 		break;
 	case SDLK_UP:
-		l.Add(c.GetVertUnit());
+		l.SubFrom(l.GetTheta());
 		break;
 	case SDLK_LEFT:
-		l.Sub(l.GetLightUnit(c.GetUp()));
+		l.AddTo(l.GetOmega());
 		break;
 	case SDLK_RIGHT:
-		l.Add(l.GetLightUnit(c.GetUp()));
+		l.SubFrom(l.GetOmega());
 		break;
 	case SDLK_l:	//logger
 		logger = !logger;

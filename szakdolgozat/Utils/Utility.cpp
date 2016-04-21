@@ -1,8 +1,8 @@
 #include "Utility.h"
 
-glm::vec3 Utility::DescartesToPolar(float omega, float theta)
+glm::vec3 Utility::DescartesToPolar(float omega, float theta, float r)
 {
-	return glm::vec3(cosf(omega)*sinf(theta), cosf(theta), sinf(omega)*sinf(theta));
+	return glm::vec3(r * cosf(omega)*sinf(theta),r * cosf(theta),r * sinf(omega)*sinf(theta));
 }
 
 glm::mat4 Utility::GetTranslate(const approx::Vector3<float>& centroid, const glm::vec3& normal, const float& distance)

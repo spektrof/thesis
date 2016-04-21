@@ -10,7 +10,7 @@
 class Camera
 {
 public:
-	 Camera(const glm::vec3& = glm::vec3(65, 50, 90), const glm::vec3& = glm::vec3(0, 1, 0), const float& = 4.0f, const float& = 2.0f);
+	 Camera(const glm::vec3& = glm::vec3(65, 50, 90), const glm::vec3& = glm::vec3(0, 1, 0), const float& = 4.0f, const float& = 2.0f, const int& r = 1);
 	~Camera() {  }
 
 	void SetIsLeftPressed(const bool& val) { is_left_pressed = val; }
@@ -19,12 +19,12 @@ public:
 	glm::vec3 GetEye() const { return eye; }
 	glm::vec3 GetUp() const { return up; }
 	glm::vec3 GetAt() const { return at; }
-	glm::vec3 GetVertUnit() const { return cunit; }
-	glm::vec3 GetZoomUnit() const { return Is2DView() ? glm::vec3(0, 1, 0) : cunit;	}
+	glm::vec3 GetVertUnit() const { return Is2DView() ? vunit : zunit; }	//lehessen folfele menni vagy ne? (engem már zavar ha folfele megyunk xD )
+	glm::vec3 GetZoomUnit() const { return zunit; }
 	float GetView() const { return (float)ViewPoint; }
 	bool Is2DView() const { return ViewPoint == _2D; }
 
-	glm::vec3 GetCameraUnit() const { return Is2DView() ? glm::vec3(0, 0, -1) : glm::normalize(glm::cross(up, cunit)); }
+	glm::vec3 GetHorUnit() const { return hunit; }
 
 	void SwitchCameraView(const glm::vec3& = glm::vec3(1,2,1));
 	void Add(const glm::vec3&);
@@ -45,8 +45,9 @@ protected:
 
 
 private:
-	float omega, theta;
-	glm::vec3 cunit;	//kameraegység
+	float omega, theta;				//forgatashoz, a gomb ket szoge
+	glm::vec3 zunit,vunit,hunit;	//kameraegységek
+	int radius;						//mozgasi egyseg
 
 	enum ViewPos {
 		_3D, 
@@ -58,20 +59,22 @@ private:
 class Light
 {
 public:
-	Light(const glm::vec3& = glm::vec3(1, -1, 1), const float& = 4.0f, const float& = 2.0f);
+	Light(const int& c = 100, const int& r = 10, const int& = 33, const int& = 61);
 	~Light() {  }
 
 	glm::vec3 GetLightDir() const { return FenyIrany; }
-	glm::vec3 GetLightUnit(const glm::vec3& up) const { return glm::normalize(glm::cross(up, lunit));}
-	glm::vec3 GetVertUnit() const { return lunit; }
+	//glm::vec3 GetLightUnit(const glm::vec3& up) const { return glm::normalize(glm::cross(up, lunit));}
+	//glm::vec3 GetVertUnit() const { return lunit; }
+	float* GetOmega() { return &omega; }
+	float* GetTheta() { return &theta; }
 
-	void Add(const glm::vec3&);
-	void Sub(const glm::vec3&);
+	void AddTo(float* unit);
+	void SubFrom(float* unit);
 
 protected:
 	glm::vec3 FenyIrany;
-private:
-
 	float omega, theta;
-	glm::vec3 lunit; //fényegység
+
+private:
+	int radius,cunit;	//circle unit
 };

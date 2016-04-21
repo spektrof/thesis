@@ -1,8 +1,7 @@
 ﻿#pragma once
 
 /*	Keszitette: Lukacs Peter
-
-	Felhasznaloi felulet az approximalo programhoz
+Felhasznaloi felulet az approximalo programhoz
 */
 #include <QtWidgets/QWidget>
 #include <QPushButton>
@@ -43,7 +42,7 @@ protected:
 	void CreateFourierGroup();
 	void CreateBottom();
 
-private slots:
+	private slots:
 	void prevAtomEvent();
 	void nextAtomEvent();
 	void nextPlaneEvent();
@@ -61,12 +60,13 @@ private slots:
 	void newdisplay();
 	void exportEvent();
 	void importEvent();
-	
+
 private:
 	QWidget *window;
-	QVBoxLayout* _mainLayout;
 
-	QLabel * _label, *_info;
+	std::unique_ptr<QVBoxLayout> _mainLayout;
+
+	QLabel* _label, * _info;
 	QGroupBox *_strategy, *norms, *coords;
 
 	QLabel *_choice, *_cut;
@@ -94,20 +94,20 @@ private:
 	QPushButton* _moreInfo;
 	QPushButton* _back;
 
-	QVBoxLayout *head;
+	std::unique_ptr<QVBoxLayout> head;
 
-	QVBoxLayout *strategiesGroup;
-	QHBoxLayout *choiceGroup;
-	QHBoxLayout *cutGroup;
-	QHBoxLayout *plane_details;
-	
-	QVBoxLayout *buttonsGroup;
-	QHBoxLayout *acceptGroup;
+	std::unique_ptr<QVBoxLayout> strategiesGroup;
+	std::unique_ptr<QHBoxLayout> choiceGroup;
+	std::unique_ptr<QHBoxLayout> cutGroup;
+	std::unique_ptr<QHBoxLayout> plane_details;
 
-	QHBoxLayout *moreStepsGorup;
-	QHBoxLayout *fourierGorup;
+	std::unique_ptr<QVBoxLayout> buttonsGroup;
+	std::unique_ptr<QHBoxLayout> acceptGroup;
 
-	QHBoxLayout *bottom;
+	std::unique_ptr<QHBoxLayout> moreStepsGorup;
+	std::unique_ptr<QHBoxLayout> fourierGorup;
+
+	std::unique_ptr<QHBoxLayout> bottom;
 
 	Request request;
 };

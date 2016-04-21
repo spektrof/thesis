@@ -70,17 +70,9 @@ protected:
 	/*	TODO list*/
 	/*
 		Kedd: 
-			Engine class , nem biztos hogy mindent le kell tárolni csak a legszükségessebeket!
-			Plane class, az összes plane tulajdonság (centroidtól vett táv stb), síkgeneráló fv pointer stb
-			Atom tul, prioritás fv, és minden más
-			Visual : active atom, minden ami a rajzoláshoz kell, idk draw fv ek, stb
-			+ doksi
 		Szerda:
-			ui doksi + ui átírás
-				UI: sima pointereket átírni unique_ptr re!
-			n+1) Projection matrix: perspective vs ortho -> camera optimizing
 		Csütörtök
-			-
+			+ DOKSI
 		Péntek:
 			képek + újraolvasás + pontosítás
 			elküldeni Gábornak
@@ -103,6 +95,7 @@ protected:
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
 				+ World : esetleg mikor fényt számolok akkor számít
+				+ fény is mozog ha kamerával mozgunk!
 				http://www.kickjs.org/example/shader_editor/shader_editor.html#
 				http://on-demand.gputechconf.com/gtc/2014/presentations/S4385-order-independent-transparency-opengl.pdf
 	*/
@@ -227,7 +220,6 @@ protected:
 
 	GLuint eyePos;
 	GLuint Lights;
-	GLuint View;
 	GLuint Opacity;
 	GLuint DifCol;
 	GLuint SpecCol;
