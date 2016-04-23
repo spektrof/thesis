@@ -104,9 +104,6 @@ int main(int argc, char* args[])
 					quit = ev.key.keysym.sym == SDLK_ESCAPE;
 					app.KeyboardDown(ev.key);
 					break;
-				case SDL_KEYUP:
-					app.KeyboardUp(ev.key);
-					break;
 				case SDL_MOUSEBUTTONDOWN:
 					app.MouseDown(ev.button);
 					break;

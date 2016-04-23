@@ -72,11 +72,11 @@ namespace approx {
 		//a harmadik opcionalis parameter arra valo, ha betoltesnel korrekciot kivanunk vegezni a testen.
 		//Amennyiben a negyedik parameternek pozitiv erteke van, az approximalt testet egy origo kozepu,
 		//adott elhosszusagu kockaba transzformalja
-		bool set_target(const std::string& filename, T _border,T merging_epsilon=0, T cube = -1) {
+		bool set_target(const std::string& filename, T _border,T merging_epsilon=0, T cube = -1, bool triangulate=true) {
 			border = _border;
 			//tb = std::make_unique<TargetBody<T>>(); //C++14tol
 			tb = std::unique_ptr<TargetBody<T>>(new TargetBody<T>());
-			if (!(ObjectLoader<T>::load_obj(filename, *tb, merging_epsilon) && tb->body().size())) {
+			if (!(ObjectLoader<T>::load_obj(filename, *tb, merging_epsilon,triangulate) && tb->body().size())) {
 				tb.release();
 				app.release();
 				return false;

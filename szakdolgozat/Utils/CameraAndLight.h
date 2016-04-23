@@ -10,7 +10,7 @@
 class Camera
 {
 public:
-	 Camera(const glm::vec3& = glm::vec3(65, 50, 90), const glm::vec3& = glm::vec3(0, 1, 0), const float& = 4.0f, const float& = 2.0f, const int& r = 1);
+	 Camera(const glm::vec3& = glm::vec3(65, 50, 90), const glm::vec3& = glm::vec3(0, 1, 0), const float& = 4.0f, const float& = 2.0f, const float& r = 1.0f);
 	~Camera() {  }
 
 	void SetIsLeftPressed(const bool& val) { is_left_pressed = val; }
@@ -47,7 +47,7 @@ protected:
 private:
 	float omega, theta;				//forgatashoz, a gomb ket szoge
 	glm::vec3 zunit,vunit,hunit;	//kameraegységek
-	int radius;						//mozgasi egyseg
+	float radius;						//mozgasi egyseg
 
 	enum ViewPos {
 		_3D, 
@@ -59,7 +59,7 @@ private:
 class Light
 {
 public:
-	Light(const int& c = 100, const int& r = 10, const int& = 33, const int& = 61);
+	Light(const int& c = 100, const float& r = 10.0f, const int& = 33, const int& = 61);
 	~Light() {  }
 
 	glm::vec3 GetLightDir() const { return FenyIrany; }
@@ -76,5 +76,6 @@ protected:
 	float omega, theta;
 
 private:
-	int radius,cunit;	//circle unit
+	int cunit;	//circle unit
+	float radius;
 };

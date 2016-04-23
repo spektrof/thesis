@@ -63,8 +63,7 @@ public:
 
 	Utility::PlaneResult RandomNormalCentroid()
 	{
-		Utility::PlaneResult res(approx::Vector3<float>((float)rd(), (float)rd(), (float)rd()), data->atoms(Active).centroid());
-
+		Utility::PlaneResult res(approx::Vector3<float>( (int)(rd()%11) -5 , (int)(rd() % 11) - 5, (int)(rd() % 11) - 5), data->atoms(Active).centroid());
 		return res;
 	}
 

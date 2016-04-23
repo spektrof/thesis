@@ -1,7 +1,7 @@
 #include "Utility.h"
 #include "CameraAndLight.h"
 
-Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t, const int& r)
+Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t, const float& r)
 	: eye(e),up(u),omega(o),theta(t),radius(r)
 {
 	zunit = Utility::DescartesToPolar(omega, theta, radius);
@@ -81,13 +81,13 @@ void Camera::MouseMove(SDL_MouseMotionEvent& mouse)
 
 // ---------------------------------------------------------
 
-Light::Light(const int& c, const int& r, const int& o, const int& t)
+Light::Light(const int& c, const float& r, const int& o, const int& t)
 	: cunit(c),radius(r)
 {
 	omega = ((o) % cunit) * (float)((float)1 / (float)cunit);
 	theta = ((t) % cunit) * (float)((float)1 / (float)cunit);
 
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, 10);
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 
 }
 
@@ -95,11 +95,11 @@ void Light::AddTo(float* unit)
 {
 	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;
 
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, radius);
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }
 void Light::SubFrom(float* unit)
 {
 	*unit = float((int)std::round((*unit) * cunit - 1 + cunit) % cunit) / (float)cunit;
 
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * M_PI, theta * 2 * M_PI, radius);
+	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }

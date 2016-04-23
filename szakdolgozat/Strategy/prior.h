@@ -10,7 +10,7 @@
 template <typename T, template<typename> class V>
 class PriorityQue
 {
-	V<T>* PriorityFunctions = new V<T>();
+	V<T>* PriorityFunctions;
 	typedef float (V<T>::*GETTER)(const T*,const int&) const;
 
 	GETTER m_getterFunc;
@@ -27,9 +27,10 @@ class PriorityQue
 public:
 	PriorityQue(GETTER getterFunc)
 	{
+		PriorityFunctions = new V<T>();
 		m_getterFunc = getterFunc;
 	}
-	~PriorityQue() {}
+	~PriorityQue() { delete PriorityFunctions;  }
 
 	/*Beszuro rendezes*/
 	void insert(const int& _id, const T* atom)
@@ -57,7 +58,6 @@ public:
 		m_getterFunc = getterfunc;
 	}
 
-	/*TODO: priorresult & Data viszonya*/
 	std::vector<Utility::PriorResult> GetOrder() const
 	{
 		std::vector<Utility::PriorResult> result;

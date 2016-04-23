@@ -126,7 +126,7 @@ namespace approx{
 			inds.push_back(vmap[v]);
 		}
 		int transform_index(int ind) const { return inds[ind]; }
-		int size()const { return vecs.size(); }
+		int size()const { return inds.size(); }
 		Vector3<T> operator[](int ind) const {
 			return vecs[inds[ind]];
 		}

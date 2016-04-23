@@ -48,7 +48,6 @@ public:
 	void Render();
 
 	void KeyboardDown(SDL_KeyboardEvent&);
-	void KeyboardUp(SDL_KeyboardEvent&);
 	void MouseMove(SDL_MouseMotionEvent&);
 	void MouseDown(SDL_MouseButtonEvent&);
 	void MouseUp(SDL_MouseButtonEvent&);
@@ -72,26 +71,33 @@ protected:
 		Kedd: 
 		Szerda:
 		Csütörtök
-			+ DOKSI
 		Péntek:
 			képek + újraolvasás + pontosítás
 			elküldeni Gábornak
 		Szombat:
 			Kommentelés
-			Leakek keresése: VMI szemetel - MI????
-				- minden pointert töröljünk majd hozzuk létre ami olyan (osztályon belül is - destruktorok)
 		Vasárnap:
 			Doksi olvasás + frissítés
 			
-		síkill
-
+		
+		LastUse - pointert állítunk, pl konstruktorban - utána már csak frissítés legyen
+		Szomszédsági mátrixot nem kell tárolni, csak 1x feltölteni konstruktorban és kész
+		
+		LEAK:
+		/*
+			importálás ->engineinit() : pl torus test váltakozása esetén testnél nem ugrik vissza a memória
+			1000 vágás utáni restart: +0,5 mb
+			sok strategy váltás = +0,1 mb
+		*/
+	/*
 		BUG:
 
 		Apró bugok frissítés gyanánt:
 		
 		Apró kis TODOk:
-			draw3d, opacity be a setpropba
-		
+			GOMB: ortho es perspektiv nezeti valtasra (3D ben)
+			szomszédsági mátrixot elég a planegettersben tárolni, nem pointerrel!
+
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
 				+ World : esetleg mikor fényt számolok akkor számít
@@ -162,8 +168,8 @@ protected:
 
 	void GetPriorResult();
 
-	void SetActiveAtomProperties(float&);
-	void SetAtomProperties(float&);
+	void SetActiveAtomProperties();
+	void SetAtomProperties();
 	void SetTargetAtomProperties();
 	void SetPlaneProperties();
 

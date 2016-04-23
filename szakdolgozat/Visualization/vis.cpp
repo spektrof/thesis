@@ -3,8 +3,6 @@
 
 #include <GL/GLU.h>
 
-#define CuttingPlaneWireType 1
-#define _3DWireType 0
 #define FOURIERCOEFFICIENT 0.5f
 #define EPSILONFOURIER 0.0001f
 #define INTERSECTIONEPSILON  0.001f
@@ -79,8 +77,9 @@ bool Visualization::EngineInit()
 	data = app.atom_drawinfo();
 	targetdata = app.target_drawinfo();
 
+	Release2DIds();
 	CleanIdBufferForReuse(_3dIds);
-	//CleanIdBufferForReuse(targetIds);
+	CleanIdBufferForReuse(targetIds);
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
 	
@@ -206,6 +205,17 @@ void Visualization::AcceptCutting()
 		Aktualizáljuk fourier egy. alapján az élő és releváns atomjainkat
 		Lekérjük az aktuális prior sorrendet + vágósíkot
 		Log			*/
+	if (logger)
+	{
+		LOG2("Atom id vagas elott: " << ActiveAtom << "\n");
+		for (int i = data.index_ranges[ActiveAtom]; i < data.index_ranges[ActiveAtom+1];++i)
+		{
+			LOG2(data.points[data.indicies[i]].x << " " << data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z << "\n");
+		}
+		LOG2("\nVolume: " << app.container().atoms(ActiveAtom ).volume() << "\n");
+		LOG2("Fourier: " << app.container().atoms(ActiveAtom ).fourier() << "\n");
+		LOG2("Centroid: " << app.container().atoms(ActiveAtom ).centroid() << "\n");
+	}
 	switch (request.type)
 	{ 
 		case BOTH:
@@ -228,6 +238,17 @@ void Visualization::AcceptCutting()
 
 
 	data = app.atom_drawinfo();
+	if (logger)
+	{
+		LOG2("Atom id vagas utan: " << NumberOfAtoms - 1 << "\n");
+		for (int i = data.index_ranges[NumberOfAtoms - 1]; i < data.index_ranges[NumberOfAtoms];++i)
+		{
+			LOG2( data.points[data.indicies[i]].x << " " <<data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z<< "\n");
+		}
+		LOG2("\nVolume: " << app.container().atoms(NumberOfAtoms - 1).volume() << "\n");
+		LOG2("Fourier: " << app.container().atoms(NumberOfAtoms - 1).fourier() << "\n");
+		LOG2("Centroid: "<< app.container().atoms(NumberOfAtoms - 1).centroid() << "\n");
+	}
 
 	CleanIdBufferForReuse(_3dIds);
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
@@ -312,12 +333,7 @@ void Visualization::GetUndo()
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 	liveAtoms.erase(NumberOfAtoms);
-	_2D_Line1Ids_N.clear();
-	_2D_Line1Ids_P.clear();
-	_2D_Line2Ids_N.clear();
-	_2D_Line2Ids_P.clear();
-	_2D_TriIds_N.clear();
-	_2D_TriIds_P.clear();
+	Release2DIds();
 
 	LOG("\tUNDO\n");
 }
@@ -621,7 +637,7 @@ void Visualization::Draw3D(const int& which, const bool& backdropping, glm::mat4
 		glCullFace(GL_BACK);
 	}
 	*/
-	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
+	glPolygonMode(GL_FRONT, GL_FILL);
 
 	glBindVertexArray(_3dIds.VaoId);
 
@@ -630,12 +646,10 @@ void Visualization::Draw3D(const int& which, const bool& backdropping, glm::mat4
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
-	float _opacity;
-	if (IsItActive(which)) { SetActiveAtomProperties(_opacity); }
-	else				   { SetAtomProperties(_opacity); }
+	if (IsItActive(which)) { SetActiveAtomProperties(); }
+	else				   { SetAtomProperties(); }
 
-	glUniform1f(Opacity, _opacity);
-
+	
 	int start = data.index_ranges[ which];
 	int end = data.index_ranges[ which +1];
 
@@ -651,6 +665,8 @@ Positive vágási szelet feldolgozása
 */
 void Visualization::Get2DDrawInfo()
 {
+	Release2DIds();
+
 	/*Default: negative rész*/
 	_2DTri = &_2D_TriIds_N;
 	_2DLine1 = &_2D_Line1Ids_N;
@@ -660,10 +676,6 @@ void Visualization::Get2DDrawInfo()
 	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
 
 	Active2DIndex = 0;
-
-	_2D_Line1Ids_N.clear();
-	_2D_Line2Ids_N.clear();
-	_2D_TriIds_N.clear();
 
 	_2D_Line1Ids_N.resize(_2Ddata.size());
 	_2D_Line2Ids_N.resize(_2Ddata.size());
@@ -695,7 +707,6 @@ void Visualization::Get2DDrawInfo()
 
 		_2D_TriIds_N.push_back(IdsAndProp(end-start, glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y /( end - start))));
 
-		CleanIdBufferForReuse(_2D_TriIds_N[i]);
 		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end), _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
 		//***********************************************
 
@@ -710,12 +721,10 @@ void Visualization::Get2DDrawInfo()
 			{
 			case 0:
 				_2D_Line1Ids_N[i].push_back(IdsAndProp(end - start + 1));
-				CleanIdBufferForReuse(_2D_Line1Ids_N[i].back());
 				ObjectCreator::Create2DObject(points, _2D_Line1Ids_N[i].back().VaoId, _2D_Line1Ids_N[i].back().VboId);
 				break;
 			case 1:
 				_2D_Line2Ids_N[i].push_back(IdsAndProp(end - start + 1));
-				CleanIdBufferForReuse(_2D_Line2Ids_N[i].back());
 				ObjectCreator::Create2DObject(points, _2D_Line2Ids_N[i].back().VaoId, _2D_Line2Ids_N[i].back().VboId);
 				break;
 			}
@@ -727,11 +736,6 @@ void Visualization::Get2DDrawInfo()
 	//POSITIVE
 
 	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().positive());
-
-	/* Ezekbol tobb is lehet - kell a resize*/
-	_2D_Line1Ids_P.clear();
-	_2D_Line2Ids_P.clear();
-	_2D_TriIds_P.clear();
 
 	_2D_Line1Ids_P.resize(_2Ddata.size());
 	_2D_Line2Ids_P.resize(_2Ddata.size());
@@ -763,7 +767,6 @@ void Visualization::Get2DDrawInfo()
 
 		_2D_TriIds_P.push_back(IdsAndProp((end - start), glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y / (end - start))));
 
-		CleanIdBufferForReuse(_2D_TriIds_P[i]);
 		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin()+start, _2Ddata[i].points.begin()+end), _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
 		//***********************************************
 
@@ -779,12 +782,10 @@ void Visualization::Get2DDrawInfo()
 			{
 			case 0:
 				_2D_Line1Ids_P[i].push_back(IdsAndProp(end - start + 1));
-				CleanIdBufferForReuse(_2D_Line1Ids_P[i].back());
 				ObjectCreator::Create2DObject(points, _2D_Line1Ids_P[i].back().VaoId, _2D_Line1Ids_P[i].back().VboId);
 				break;
 			case 1:
 				_2D_Line2Ids_P[i].push_back(IdsAndProp(end - start + 1));
-				CleanIdBufferForReuse(_2D_Line2Ids_P[i].back());
 				ObjectCreator::Create2DObject(points, _2D_Line2Ids_P[i].back().VaoId, _2D_Line2Ids_P[i].back().VboId);
 				break;
 			}
@@ -865,7 +866,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 /*Target test rajzolása*/
 void Visualization::DrawTargetBody()
 {
-	glPolygonMode(GL_FRONT, _3DWireType ? GL_LINE : GL_FILL);
+	glPolygonMode(GL_FRONT, GL_FILL);
 
 	glBindVertexArray(targetIds.VaoId);
 
@@ -888,7 +889,7 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 {
 	glDisable(GL_CULL_FACE);
 	glPolygonMode(GL_BACK, GL_LINE);
-	glPolygonMode(GL_FRONT, CuttingPlaneWireType ? GL_LINE : GL_FILL);	
+	glPolygonMode(GL_FRONT, GL_LINE);	
 
 	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
@@ -1136,6 +1137,17 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
+	case SDLK_z:
+		/*for (int i = 0;i < 100;++i)
+		{
+			CleanIdBufferForReuse(_3dIds);
+			ObjectCreator::Create3DObject(data.points,data.indicies,_3dIds.VaoId,_3dIds.VboId,_3dIds.IndexId);
+		} ez így ok*/
+		for (int i = 0;i < 100;++i)
+		{
+			Get2DDrawInfo();
+		}
+		break;
 	case SDLK_1:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -1225,10 +1237,6 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 	}
 }
-void Visualization::KeyboardUp(SDL_KeyboardEvent&)
-{
-
-}
 void Visualization::MouseMove(SDL_MouseMotionEvent& mouse)
 {
 	c.MouseMove(mouse);
@@ -1251,15 +1259,15 @@ void Visualization::MouseWheel(SDL_MouseWheelEvent& wheel)
 	wheel.y > 0 ? (c.Add(c.GetZoomUnit())) : (c.Sub(c.GetZoomUnit()));
 }
 
-void Visualization::SetActiveAtomProperties(float& _opacity)
+void Visualization::SetActiveAtomProperties()
 {
-	_opacity = 0.6f;
+	glUniform1f(Opacity, 0.6f);
 	glUniform3f(DifCol, 1.0f, 0.0f, 0.0f);
 	glUniform3f(SpecCol, 0.6f, 0.5f, 0.2f);
 }
-void Visualization::SetAtomProperties(float& _opacity)
+void Visualization::SetAtomProperties()
 {
-	_opacity = 0.3f;
+	glUniform1f(Opacity, 0.3f);
 	glUniform3f(DifCol, 0.0f, 0.0f, 1.0f);
 	glUniform3f(SpecCol, 0.2f, 0.5f, 0.6f);
 }
