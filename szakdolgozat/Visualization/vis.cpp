@@ -15,7 +15,6 @@ Visualization::Visualization(void)
 	CuttingPlaneFreq = 12;
 
 	logger = false;
-	IsTargetDrawEnabled = true;
 
 	filename = "Targets/gummybear.obj";
 	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
@@ -66,6 +65,8 @@ bool Visualization::EngineInit()
 	NumberOfAtoms = 1;
 	ActiveAtom = 0;
 	ActiveIndex = 0;
+
+	IsTargetDrawEnabled = true;
 
 	if (PlaneCalculator != NULL)
 	{
@@ -189,7 +190,7 @@ void Visualization::Render()
 
 		for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it)
 		{
-			Draw3D(*it ,1);
+			Draw3D(*it);
 		}
 
 		glDepthMask(GL_TRUE);
@@ -203,17 +204,6 @@ void Visualization::Render()
 /* Vagas elfogadasa */
 void Visualization::AcceptCutting()
 {
-	if (logger)
-	{
-		LOG2("Atom id vagas elott: " << ActiveAtom << "\n");
-		for (uint i = data.index_ranges[ActiveAtom]; i < data.index_ranges[ActiveAtom+1];++i)
-		{
-			LOG2(data.points[data.indicies[i]].x << " " << data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z << "\n");
-		}
-		LOG2("\nVolume: " << app.container().atoms(ActiveAtom ).volume() << "\n");
-		LOG2("Fourier: " << app.container().atoms(ActiveAtom ).fourier() << "\n");
-		LOG2("Centroid: " << app.container().atoms(ActiveAtom ).centroid() << "\n");
-	}
 	//az adott resz(ek) elfogadasa
 	switch (request.type)
 	{ 
@@ -237,17 +227,6 @@ void Visualization::AcceptCutting()
 
 	//rajzolasi informaciok lekerese az objektum kesziteshez
 	data = app.atom_drawinfo();
-	if (logger)
-	{
-		LOG2("Atom id vagas utan: " << NumberOfAtoms - 1 << "\n");
-		for (uint i = data.index_ranges[NumberOfAtoms - 1]; i < data.index_ranges[NumberOfAtoms];++i)
-		{
-			LOG2( data.points[data.indicies[i]].x << " " <<data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z<< "\n");
-		}
-		LOG2("\nVolume: " << app.container().atoms(NumberOfAtoms - 1).volume() << "\n");
-		LOG2("Fourier: " << app.container().atoms(NumberOfAtoms - 1).fourier() << "\n");
-		LOG2("Centroid: "<< app.container().atoms(NumberOfAtoms - 1).centroid() << "\n");
-	}
 
 	CleanIdBufferForReuse(_3dIds);
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
@@ -265,7 +244,7 @@ void Visualization::AcceptCutting()
 
 	//eredmeny lekeres + frissites
 	GetPriorResult();
-	RefreshPlaneData(liveAtoms.size() != 0 ? (PlaneCalculator->*PlaneFunction)() : Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0)) );
+	RefreshPlaneData(liveAtoms.size() != 0 ? (PlaneCalculator->*PlaneFunction)() : Utility::PlaneResult() );
 
 	LOG("\tACCEPT :       " << request.type << "\n\n");
 
@@ -446,7 +425,6 @@ void Visualization::SetNewStrategy()
 				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALVOLUME\n");
 				break;
-
 		}
 }
 
@@ -519,6 +497,7 @@ void Visualization::NextAtom()
 void Visualization::PrevAtom()
 { 
 	if (liveAtoms.size() == 0) return;
+
 	ActiveIndex = (ActiveIndex - 1 + (int)liveAtoms.size()) % (int)liveAtoms.size();
 	ActiveAtom = priorQue[ActiveIndex];
 
@@ -549,7 +528,6 @@ void Visualization::ImportNewTarget()
 		{
 			LOG("New file loaded successfully , new file is: " + newfile + "\n");
 			ui.SuccessImport();
-			IsTargetDrawEnabled = true;
 			if (c.Is2DView()) c.SwitchCameraView();
 		}
 		else
@@ -621,7 +599,7 @@ void Visualization::AddShaderUniformLocations()
 }
 
 /*3D-s objektum rajzolasa*/
-void Visualization::Draw3D(const int& which, const bool& backdropping, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
+void Visualization::Draw3D(const int& which, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
 	glPolygonMode(GL_FRONT, GL_FILL);
 
@@ -698,7 +676,7 @@ void Visualization::Get2DDrawInfo()
 		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end), _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
 		//***********************************************
 		//vonalak szetvalasztasa
-		for (int j = 1; j < sizeOfRanges - 1; ++j)
+		for (int j = 1; j < sizeOfRanges - 1; ++j)	//az outereknel is az elso a lape
 		{
 			start = _2Ddata[i].ranges[j];
 			end = _2Ddata[i].ranges[j + 1];
@@ -804,17 +782,16 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glUniform1f(alpha2D, 1.0f);
 
 	//egyik vonaltipus rajzolasa
-	for (int i = 0;  (*_2DLine1).size()!=0 &&  i < (*_2DLine1)[Active2DIndex].size(); ++i)
+	for (std::vector<IdsAndProp>::iterator it = (*_2DLine1)[Active2DIndex].begin(); it != (*_2DLine1)[Active2DIndex].end(); ++it)
 	{
-		tmp = (*_2DLine1)[Active2DIndex][i];
-		glBindVertexArray(tmp.VaoId);
+		glBindVertexArray(it->VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 		glDrawArrays(GL_LINE_STRIP,
 			0,
-			tmp.count);
+			it->count);
 	}
 	
 	//***********************************************************
@@ -823,17 +800,16 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glUniform1f(alpha2D, 1.0f);
 
 	//masik vonaltipus rajzolasa
-	for (int i = 0;  (*_2DLine2).size() != 0 &&  i < (*_2DLine2)[Active2DIndex].size(); ++i)
+	for (std::vector<IdsAndProp>::iterator it = (*_2DLine2)[Active2DIndex].begin(); it != (*_2DLine2)[Active2DIndex].end(); ++it)
 	{
-		tmp = (*_2DLine2)[Active2DIndex][i];
-		glBindVertexArray(tmp.VaoId);
+		glBindVertexArray(it->VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 		glDrawArrays(GL_LINE_STRIP,
 			0,
-			tmp.count);
+			it->count);
 	}
 	
 	//**************************************************
@@ -865,7 +841,6 @@ void Visualization::DrawTargetBody()
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
-	glUniform1f(Opacity, 1.0f);
 	SetTargetAtomProperties();
 
 	glDrawElements(GL_TRIANGLES,
@@ -1011,7 +986,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	int start = data.index_ranges[ActiveAtom];
 	int end = data.index_ranges[ActiveAtom + 1];
 	//Pontok torlese, indexek javitasa
-	std::set<int> DeletedPoints;
+	std::set<uint> DeletedPoints;
 
 	for (int i = start; i < end - 1; ++i)
 	{
@@ -1020,9 +995,9 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 		{
 			if (data.indicies[i] == data.indicies[j]) count++;
 		}
-		for (size_t j = end; j < data.indicies.size(); ++j)
+		for (std::vector<GLuint>::iterator jt = data.indicies.begin() + end; jt != data.indicies.end(); ++jt)
 		{
-			if (data.indicies[i] == data.indicies[j]) count++;
+			if (data.indicies[i] == *jt) count++;
 		}
 
 		auto index = data.indicies[i];
@@ -1033,7 +1008,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	}
 
 	//a torolheto pontok tenyleges torlese, hatulrol kezdve a megfelelo eredmeny elerese miatt
-	for (std::set<int>::reverse_iterator j = DeletedPoints.rbegin(); j != DeletedPoints.rend(); j++)
+	for (std::set<uint>::reverse_iterator j = DeletedPoints.rbegin(); j != DeletedPoints.rend(); j++)
 	{
 		data.points.erase(data.points.begin() + *j);
 		for (std::vector<GLuint>::iterator k = data.indicies.begin(); k != data.indicies.end(); k++)
@@ -1066,9 +1041,9 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	}
 
 	//mar torolve vannak ezek az indexek -> starttol
-	for (size_t i = start; i < data.indicies.size();++i)
+	for (std::vector<GLuint>::iterator it = data.indicies.begin() + start; it != data.indicies.end();++it)
 	{
-		new_indicies.push_back(data.indicies[i]);
+		new_indicies.push_back(*it);
 	}
 
 	for (uint i = cutresult.index_ranges[1]; i < cutresult.index_ranges[2];++i)
@@ -1085,9 +1060,9 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 
 	new_ranges.push_back(cutresult.index_ranges[1] + LastIndexRange);
 
-	for (size_t i = ActiveAtom + 2; i < data.index_ranges.size();++i)
+	for (std::vector<GLuint>::iterator it = data.index_ranges.begin() + ActiveAtom + 2; it != data.index_ranges.end(); ++it)
 	{
-		auto CutRange = data.index_ranges[i] - data.index_ranges[i - 1];
+		auto CutRange = *it - *(it-1);
 		auto last_element = new_ranges[new_ranges.size() - 1];
 		new_ranges.push_back(last_element + CutRange);
 	}
@@ -1114,17 +1089,10 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
-	/*case SDLK_z:	csak leakhez
-		for (int i = 0;i < 100;++i)
-		{
-			CleanIdBufferForReuse(_3dIds);
-			ObjectCreator::Create3DObject(data.points,data.indicies,_3dIds.VaoId,_3dIds.VboId,_3dIds.IndexId);
-		}
-		for (int i = 0;i < 100;++i)
-		{
-			Get2DDrawInfo();
-		}
-		break;*/
+	case SDLK_z:	
+		PlaneCalculator->SwitchInside();
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		break;
 	case SDLK_1:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -1253,6 +1221,7 @@ void Visualization::SetAtomProperties()
 }
 void Visualization::SetTargetAtomProperties()
 {
+	glUniform1f(Opacity, 1.0f);
 	glUniform3f(DifCol, 0.0f, 1.0f, 0.0f);
 	glUniform3f(SpecCol, 0.5f, 0.6f, 0.1f);
 }
@@ -1262,17 +1231,14 @@ void Visualization::SetPlaneProperties()
 	glUniform3f(SpecCol, 0.0f, 0.2f, 0.2f);
 }
 
-
-/*Frissítés:
-Nézeti transzf. mátrix
-UI ról jövő request	*/
+/*Frissites:*/
 void Visualization::Update()
 {
 	m_matView = glm::lookAt(c.GetEye(), c.GetAt(), c.GetUp());
 
 	request = ui.GetRequest();
 }
-/*Clean*/
+/*Tisztitas*/
 void Visualization::Clean()
 {
 	CleanIdBufferForReuse(_3dIds);
@@ -1280,6 +1246,7 @@ void Visualization::Clean()
 	CleanIdBufferForReuse(targetIds);
 	Release2DIds();
 
+	glDeleteProgram(program2D_ID);
 	glDeleteProgram(program3D_ID);
 
 	delete PlaneCalculator;
@@ -1303,46 +1270,48 @@ void Visualization::CleanIdBufferForReuse(const IdsAndProp iap)
 /*Felszabaditja a 2D-s pontokat tarolo indexeket*/
 void Visualization::Release2DIds()
 {
-	for (size_t i = 0; i < _2D_Line1Ids_N.size();++i)
+	for (std::vector < std::vector < IdsAndProp >> ::iterator it = _2D_Line1Ids_N.begin(); it != _2D_Line1Ids_N.end();++it)
 	{
-		for (size_t j = 0; j < _2D_Line1Ids_N[i].size();++j)
+		for (std::vector < IdsAndProp >::iterator jt = it->begin(); jt != it->end() ;++jt)
 		{
-			CleanIdBufferForReuse(_2D_Line1Ids_N[i][j]);
+			CleanIdBufferForReuse(*jt);
 		}
-		_2D_Line1Ids_N[i].clear();
+		it->clear();
 	}
-	for (size_t i = 0; i < _2D_Line1Ids_P.size();++i)
+	for (std::vector < std::vector < IdsAndProp >> ::iterator it = _2D_Line1Ids_P.begin(); it != _2D_Line1Ids_P.end();++it)
 	{
-		for (size_t j = 0; j < _2D_Line1Ids_P[i].size();++j)
+		for (std::vector < IdsAndProp >::iterator jt = it->begin(); jt != it->end();++jt)
 		{
-			CleanIdBufferForReuse(_2D_Line1Ids_P[i][j]);
+			CleanIdBufferForReuse(*jt);
 		}
-		_2D_Line1Ids_P[i].clear();
+		it->clear();
 	}
-	for (size_t i = 0; i < _2D_Line2Ids_N.size();++i)
+	for (std::vector < std::vector < IdsAndProp >> ::iterator it = _2D_Line2Ids_N.begin(); it != _2D_Line2Ids_N.end();++it)
 	{
-		for (size_t j = 0; j < _2D_Line2Ids_N[i].size();++j)
+		for (std::vector < IdsAndProp >::iterator jt = it->begin(); jt != it->end();++jt)
 		{
-			CleanIdBufferForReuse(_2D_Line2Ids_N[i][j]);
+			CleanIdBufferForReuse(*jt);
 		}
-		_2D_Line2Ids_N[i].clear();
+		it->clear();
 	}
-	for (size_t i = 0; i < _2D_Line2Ids_P.size();++i)
+	for (std::vector < std::vector < IdsAndProp >> ::iterator it = _2D_Line2Ids_P.begin(); it != _2D_Line2Ids_P.end();++it)
 	{
-		for (size_t j = 0; j < _2D_Line2Ids_P[i].size();++j)
+		for (std::vector < IdsAndProp >::iterator jt = it->begin(); jt != it->end();++jt)
 		{
-			CleanIdBufferForReuse(_2D_Line2Ids_P[i][j]);
+			CleanIdBufferForReuse(*jt);
 		}
-		_2D_Line2Ids_P[i].clear();
+		it->clear();
 	}
-	for (size_t i = 0; i < _2D_TriIds_N.size();++i)
+	
+	for (std::vector < IdsAndProp >::iterator it = _2D_TriIds_N.begin(); it != _2D_TriIds_N.end();++it)
 	{
-		CleanIdBufferForReuse(_2D_TriIds_N[i]);
+		CleanIdBufferForReuse(*it);
 	}
-	for (size_t i = 0; i < _2D_TriIds_P.size();++i)
+	for (std::vector < IdsAndProp >::iterator it = _2D_TriIds_P.begin(); it != _2D_TriIds_P.end();++it)
 	{
-		CleanIdBufferForReuse(_2D_TriIds_P[i]);
+		CleanIdBufferForReuse(*it);
 	}
+
 	_2D_TriIds_P.clear();
 	_2D_TriIds_N.clear();
 	_2D_Line1Ids_N.clear();

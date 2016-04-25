@@ -24,41 +24,39 @@ public:
 
 	/*Atmero hosszat meghatoroz fv.*/
 	float GetDiamaterLength(const T* atom,const int& _id) const
-		{
-			return atom->diameter().length();
-		}
+	{
+		return atom->diameter().length();
+	}
 
 	/*Terfogatot meghatoroz fv.*/
 	float GetVolume(const T* atom, const int& _id) const
-		{
-			return atom->volume();
-		}
+	{
+		return atom->volume();
+	}
 
 	/*Utoljara hasznalt idot hatarozza meg*/
 	float GetLastUse(const T* atom, const int& _id) const
-		{
-			return (float)(*last_use)[_id];
-		}
+	{
+		return (float)(*last_use)[_id];
+	}
 		
 	/*Visszaadja az optimalis parametert a fourier egyutthatobol*/
 	float GetOptimal(const T* atom, const int& _id) const
-		{
-			return GetOptimalFromFourier(atom->fourier());
-		}
+	{
+		return GetOptimalFromFourier(atom->fourier());
+	}
 
 	/*Visszaadja az optimalis parameter es atmero kapcsolatabol megharozott erteket*/
 	float GetOptimalAndDiameter(const T* atom, const int& _id) const
-		{
-			//return 10 * GetOptimalFromFourier(atom->fourier()) + atom->diameter().length();
-			return GetOptimalFromFourier(atom->fourier()) * atom->diameter().length();
-		}
+	{
+		return GetOptimalFromFourier(atom->fourier()) * atom->diameter().length();
+	}
 
 	/*Visszaadja az optimalis parameter es terfogat kapcsolatabol megharozott erteket*/
 	float GetOptimalAndVolume(const T* atom, const int& _id) const
-		{
-			//return 5000 * GetOptimalFromFourier(atom->fourier()) + atom->volume();
-			return GetOptimalFromFourier(atom->fourier()) * atom->volume();
-		}
+	{
+		return GetOptimalFromFourier(atom->fourier()) * atom->volume();
+	}
 
 protected:
 	/*Optimalis parameter szamitas fourier egyutthatobol*/
@@ -69,4 +67,3 @@ protected:
 		return fourier < 0 ? 0 : 4 * (a + b - 4)* std::pow(fourier, 3) + 2 * (6 - 2 * a - b)* std::pow(fourier, 2) + a*fourier;
 	}
 };
-

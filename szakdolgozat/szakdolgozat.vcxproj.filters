@@ -34,9 +34,6 @@
     <Filter Include="Visualization">
       <UniqueIdentifier>{11e910c1-949e-42d1-8193-df75837b9e79}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Test">
-      <UniqueIdentifier>{73d2fc08-ae27-49bb-bc62-054b0dbe28a6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Logger">
       <UniqueIdentifier>{5941a021-f821-46ab-a528-68618581d796}</UniqueIdentifier>
     </Filter>
@@ -162,12 +159,6 @@
   <ItemGroup>
     <None Include="Shaders\geometry_shader.geom">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="test.obj">
-      <Filter>Test</Filter>
-    </None>
-    <None Include="torus.obj">
-      <Filter>Test</Filter>
     </None>
     <None Include="Shaders\frag_2d.frag">
       <Filter>Shaders</Filter>

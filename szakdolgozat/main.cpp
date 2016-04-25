@@ -10,14 +10,14 @@
 
 int main(int argc, char* args[])
 {
-	//SDL initialization, say if we got an error
+	//SDL incializálás
 	if ( SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
 		std::cout << "[SDL indítás] Hiba: " << SDL_GetError() << "\n";
 		return 1;
 	}
 
-	// Sets the number of bits stored colors, etc.
+	// A tarolt szin bittulajdonsagainak a beallitasa
 	SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -27,7 +27,7 @@ int main(int argc, char* args[])
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); // double buffering
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24); // depth puffer
 
-	//Window Create
+	//ablak letrehozasa
 	SDL_Window *win = 0;
 	win = SDL_CreateWindow("MeshApprox!",
 		100,									
@@ -42,7 +42,7 @@ int main(int argc, char* args[])
 		return 1;
 	}
 	/////////////////////////////////
-	//Create OpenGL context -> we can draw now
+	//Context keszites, így mar tudunk rajzolni
 	SDL_GLContext context = SDL_GL_CreateContext(win);
 
 	if (context == 0)
@@ -78,8 +78,8 @@ int main(int argc, char* args[])
 	window_title << "MeshApprox ";
 	SDL_SetWindowTitle(win, window_title.str().c_str());
 
-	bool quit = false; //relates to running of our program
-	SDL_Event ev; //msg what we should use
+	bool quit = false;
+	SDL_Event ev;
 
 	QApplication ui(argc, args);
 	Visualization app;
@@ -93,7 +93,6 @@ int main(int argc, char* args[])
 
 	while (!quit)
 	{
-		
 		while (SDL_PollEvent(&ev))
 		{
 				switch (ev.type)
@@ -129,12 +128,10 @@ int main(int argc, char* args[])
 		SDL_GL_SwapWindow(win);
 		app.Update();
 		app.Render();
-
 	}
 
 	ui.exit(0);
 	SDL_Quit();
-
 
 	return 0;
 }

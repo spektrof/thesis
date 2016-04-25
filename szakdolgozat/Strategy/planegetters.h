@@ -16,6 +16,7 @@ class PlaneGetterFunctions
 	std::vector< std::vector<int>> adj_mtx;
 	int Active;
 	Utility::PlaneResult requestPlane;
+	bool IsInsideEnable;
 
 	std::random_device rd;	//random generator
 
@@ -35,7 +36,8 @@ class PlaneGetterFunctions
 
 public:
 
-	PlaneGetterFunctions(std::vector< std::vector<int>> adj, V* d = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult() ) : data(d), adj_mtx(adj), Active(a),requestPlane(req) {}
+	PlaneGetterFunctions(std::vector< std::vector<int>> adj, V* d = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult() )
+						: data(d), adj_mtx(adj), Active(a),requestPlane(req),IsInsideEnable(false) {}
 	~PlaneGetterFunctions() {}
 
 	void SetActive(const int& b)
@@ -54,6 +56,10 @@ public:
 	{
 		requestPlane = rp;
 	}
+	void SwitchInside()
+	{
+		IsInsideEnable = !IsInsideEnable;
+	}
 
 	/*Vagasi strategiakhoz a sikszamito fuggvenyek*/
 	Utility::PlaneResult Manual()
@@ -63,7 +69,8 @@ public:
 
 	Utility::PlaneResult RandomNormalCentroid()
 	{
-		Utility::PlaneResult res(approx::Vector3<float>( (int)(rd()%11) -5 , (int)(rd() % 11) - 5, (int)(rd() % 11) - 5), data->atoms(Active).centroid());
+		Utility::PlaneResult res(approx::Vector3<float>( (rd()%11) -5.0f , (rd() % 11) - 5.0f, (rd() % 11) - 5.0f), data->atoms(Active).centroid());
+		res.normal.normalize();
 		return res;
 	}
 
@@ -143,7 +150,8 @@ public:
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.insert(faces[*it].points(j));
+				if (!IsInsideEnable || data->atoms(Active).point_inside(faces[*it].points(j)))
+					points.insert(faces[*it].points(j));
 			}
 		}
 
@@ -256,7 +264,7 @@ public:
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.push_back(faces[*it].points(j));
+					points.push_back(faces[*it].points(j));
 			}
 		}
 		Utility::PlaneResult res = PlanarFittingOn3dPoints3(points);
@@ -311,6 +319,7 @@ public:
 
 			for (int j = 0; j < 3; ++j)
 			{
+				if (!IsInsideEnable || data->atoms(Active).point_inside(faces[*it].points(j)))
 				points.insert(faces[*it].points(j));
 			}
 		}
@@ -333,7 +342,8 @@ public:
 		{
 			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.insert(*vit);
+				if (!IsInsideEnable || data->atoms(Active).point_inside(*vit))
+					vertexes.insert(*vit);
 			}
 		}
 
@@ -346,7 +356,7 @@ public:
 	{
 		/*Lekerem az osszes beeso lapot, ha nem volt akkor default sikkal terek vissza*/
 		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
-		if (faces.size() == 0) return Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0));
+		if (faces.size() == 0) return Utility::PlaneResult();
 
 		/*Ha volt akkor osszeszedem az osses lap pontjait ismetlodes nelkul*/
 		std::set<approx::Vector3<float>, approx::DifferentVector3<float>> vertexes;
@@ -356,7 +366,8 @@ public:
 		{
 			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.insert(*vit);
+				if (!IsInsideEnable || data->atoms(Active).point_inside(*vit))
+						vertexes.insert(*vit);
 			}
 		}
 		/*Illesztek rajuk sikot*/
@@ -432,9 +443,9 @@ public:
 	}*/
 };
 
-/*LU decompozíció
-Bemenete: A felbontani kívánt mátrix
-Kiemnete: L és U mátrixok	*/
+/*LU decompozicio
+Bemenete: A felbontani kívant matrix
+Kiemnete: L és U matrixok	*/
 template <typename V>
 typename PlaneGetterFunctions<V>::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A)
 {
@@ -497,29 +508,30 @@ template <typename V>
 Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>& tmp)
 {
 	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());
-	//vector mert a setnek csak const iteratora van -> nem lehet megvaltoztatni az adatot
+	//vector mert a setnek csak const iteratora van -> nem lehet megvaltoztatni az adatot ; vagy hozzak at pointert? indok: nem akarom megvaltoztatni debug miatt? :D
 
 	/*First step: sulypont meghatarozasa */
-	float _x = 0, _y = 0, _z = 0;
+	//float _x = 0, _y = 0, _z = 0;
+	approx::Vector3<float> centr = approx::Vector3<float>(0.0f, 0.0f, 0.0f);
 
 	for (std::vector<approx::Vector3<float>>::iterator it = points.begin(); it != points.end(); ++it)
 	{
-		_x += it->x;
+		/*_x += it->x;
 		_y += it->y;
-		_z += it->z;
+		_z += it->z;*/
+		centr += *it;
 	}
 	/*sulypontok*/
-	_x /= points.size();
+/*	_x /= points.size();
 	_y /= points.size();
-	_z /= points.size();
+	_z /= points.size();*/
+	centr /= points.size();
 
-	/*Second step: atlag levonasa a pontokbol - ill-cond.*/
+	/*Second step: atlag levonasa a pontokbol*/
 
 	for (std::vector<approx::Vector3<float>>::iterator it = points.begin(); it != points.end(); ++it)
 	{
-		it->x -= _x;
-		it->y -= _y;
-		it->z -= _z;
+		*it -= centr;
 	}
 
 	/*Third Step: LER keszitese:
@@ -556,14 +568,14 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 
 	glm::vec3 normal = glm::normalize(glm::vec3(x.x, x.y, x.z));
 
-	return Utility::PlaneResult(approx::Vector3<float>(normal.x, normal.y, normal.z), approx::Vector3<float>(_x, _y, _z));
+	return Utility::PlaneResult(approx::Vector3<float>(normal.x, normal.y, normal.z), centr);
 }
 
-/*normálisok + terület*/
+/*normalisok + terulet*/
 template <typename V>
-Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints2(const std::vector<approx::Vector3<float>>& tmp)	/*set mert legyen minden pont kül.*/
+Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints2(const std::vector<approx::Vector3<float>>& tmp)
 {
-	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());
+	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());	//ez most mindegy
 
 	float _x = 0, _y = 0, _z = 0;
 
@@ -578,6 +590,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints2(const std
 
 	for (std::set<approx::Vector3<float>, approx::DifferentVector3<float>>::iterator it = p_wism.begin(); it != p_wism.end(); ++it)
 	{
+		if (IsInsideEnable && !data->atoms(Active).point_inside(*it)) continue;	//nincs benne es aktiv a szuro
 		_x += it->x;
 		_y += it->y;
 		_z += it->z;
@@ -587,13 +600,20 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints2(const std
 	_y /= p_wism.size();
 	_z /= p_wism.size();
 	
+	for (std::vector<approx::Vector3<float>>::iterator it = points.begin(); it != points.end(); ++it)
+	{
+		it->x -= _x;
+		it->y -= _y;
+		it->z -= _z;
+	}
+
 	/*Normalokat osszeadom
 		Ket, a sikon fekvo vektor keresztszorzata (ccw ben vannak) */
 	glm::vec3 normal(0,0,0);
 	for (size_t i = 0; i < points.size() / 3;++i)
 	{
 		approx::Vector3<float> edge1 = points[3 * i + 2] - points[3 * i + 1];
-		approx::Vector3<float> edge2 = points[3 * i + 2] - points[3 * i];
+		approx::Vector3<float> edge2 = points[3 * i] - points[3 * i + 1];
 		normal += glm::cross(glm::vec3(edge1.x, edge1.y, edge1.z), glm::vec3(edge2.x, edge2.y, edge2.z));
 	}
 	/*Leosztom a normalisok szamaval*/
@@ -628,6 +648,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints3(const std
 
 	for (std::set<approx::Vector3<float>, approx::DifferentVector3<float>>::iterator it = p_wism.begin(); it != p_wism.end(); ++it)
 	{
+		if (IsInsideEnable && !data->atoms(Active).point_inside(*it)) continue;
 		_x += it->x;
 		_y += it->y;
 		_z += it->z;
@@ -642,7 +663,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints3(const std
 	for (size_t i = 0; i < points.size() / 3;++i)
 	{
 		approx::Vector3<float> edge1 = points[3 * i + 2] - points[3 * i + 1];
-		approx::Vector3<float> edge2 = points[3 * i + 2] - points[3 * i];
+		approx::Vector3<float> edge2 = points[3 * i] - points[3 * i + 1];
 		normal += glm::normalize(glm::cross(glm::vec3(edge1.x, edge1.y, edge1.z), glm::vec3(edge2.x, edge2.y, edge2.z)));
 	}
 

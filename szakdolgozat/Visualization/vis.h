@@ -74,7 +74,7 @@ protected:
 				átrakjam a planegetters be és akkor ott egy saját fv-ére  hivatkozik?
 				
 				Settert + Gettert kell ráírni így , nekem tetszik így is
-		-Kamera + fény módosítások bemutatása
+		-Kamera + fény módosítások bemutatása : kameramozgas (legyen folfele?)
 		-Ha elfogytak az elo atomok:
 			ActiveAtom = -1
 			és levédem mindenhol liveatoms.size()!=0 feltétellel a dolgokat
@@ -91,8 +91,19 @@ protected:
 		-leak
 		-új gomb : t
 		-ablakmodositas + hibauzenet ui bug?
-		-UI unique ptr
+		-UI unique ptr, ne egyesevel torteno kapcsolgatas eredmenye
 		-adattagok kiszedes, szomsz. mtx pointer eltunt stb
+
+		--------------------
+		SÍKILLESZTÉS
+			- Z gombbal lehet ki be kapcsolni a kieso pontok elhagyasat
+				- ha marad az eldobas akkor muszaj ujabb vizsgalat arra hogy nem ures a pontlista illesztesnel -> vekony elemeknel all fenn
+						ugyanis ha ez nincs akkor eleg a facek listajat ellenorizni ami megvan
+
+		--------------------
+		GOMB: ortho es perspektiv nezeti valtasra (3D ben) ?
+		-------------------
+		Máté: EXPORT?
 
 		Kedd: 
 		Szerda:
@@ -115,7 +126,6 @@ protected:
 		Apró bugok frissítés gyanánt:
 		
 		Apró kis TODOk:
-			GOMB: ortho es perspektiv nezeti valtasra (3D ben)
 
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
@@ -205,12 +215,12 @@ protected:
 	void MergeDataContainer(approx::BodyList&, const approx::BodyList&);
 
 	void DrawCuttingPlane(glm::mat4&, glm::mat4&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f));
-	void Draw3D(const int&, const bool& = true, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(0.0f, 0.0f, 0.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
+	void Draw3D(const int&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(0.0f, 0.0f, 0.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void Draw2D(glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(0.0f, 0.0f, 0.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void DrawTargetBody();
 
 	//--------------------------------------------
-	//IDs
+	//ID-k
 	GLuint program2D_ID;
 	GLuint program3D_ID;
 

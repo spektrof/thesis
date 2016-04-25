@@ -11,8 +11,6 @@ void ObjectCreator::BindingBufferData(GLuint* vao_buffer, GLuint* vbo_buffer, co
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-
-
 }
 void ObjectCreator::BindingBufferIndicies(GLuint* ind_buffer, const std::vector<GLuint> indicies)
 {
@@ -28,9 +26,9 @@ void ObjectCreator::Create3DObject(const std::vector<glm::vec3>& points, const s
 
 	std::vector<Vertex> _3DObject;
 
-	for (size_t i = 0; i < points.size(); ++i)
+	for (std::vector<glm::vec3>::const_iterator it = points.begin(); it != points.end(); ++it)
 	{
-		_3DObject.push_back({ glm::vec3(points[i].x, points[i].y, points[i].z) });
+		_3DObject.push_back({ *it });
 	}
 
 	BindingBufferData(&_3DvaoID, &_3DvboID, _3DObject);
@@ -44,9 +42,9 @@ void ObjectCreator::Create2DObject(const std::vector<glm::vec2>& points, GLuint&
 {
 	std::vector<Vertex> _2DObject;
 
-	for (size_t i = 0; i < points.size(); ++i)
+	for (std::vector<glm::vec2>::const_iterator it = points.begin(); it != points.end(); ++it)
 	{
-		_2DObject.push_back({ glm::vec3(points[i].x, 0, points[i].y) });
+		_2DObject.push_back({ glm::vec3(it->x, 0, it->y) });
 	}
 
 	glGenVertexArrays(1, &_2DvaoID);
@@ -61,6 +59,7 @@ void ObjectCreator::CreateCuttingPlane(GLuint& plane_vaoid, GLuint& plane_vboid,
 	// normálisa (0,0,1)
 	std::vector<ObjectCreator::Vertex> CuttingPlane;
 	
+	//negyzetenkent, bal felso sarokbol indulunk
 	float distance = (float)size / (float)freq;
 	for (int i = 0; i <= freq; ++i)
 	{
@@ -72,7 +71,7 @@ void ObjectCreator::CreateCuttingPlane(GLuint& plane_vaoid, GLuint& plane_vboid,
 
 	std::vector<GLuint> Planeindices;
 
-	for (int i = 0; i < freq; ++i)
+	for (int i = 0; i < freq; ++i)	
 	{
 		for (int j = 0; j < freq; ++j)
 		{

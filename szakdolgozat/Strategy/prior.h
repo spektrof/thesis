@@ -89,12 +89,13 @@ public:
 		return result;
 	}
 
-	/*Legregebben hasznalt atomok id-jait tartalmazo vektor frissitese*/
+	/*Legregebben hasznaltsagot leiro vektor cimenek a frissitese*/
 	void SetLastUse(std::vector<int>* lu)
 	{
 		PriorityFunctions->SetLastUse(lu);
 	}
 
+	/*A legregebben hasznalt vektor szerinti frissites (menet kozbeni)*/
 	void RefreshLastUseValues()
 	{
 		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)

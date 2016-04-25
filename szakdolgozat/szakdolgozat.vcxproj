@@ -275,16 +275,6 @@
     <None Include="Shaders\vert_3d.vert" />
     <None Include="Shaders\vert_2d.vert" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="test.obj">
-      <FileType>Document</FileType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="torus.obj">
-      <FileType>Document</FileType>
-    </None>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

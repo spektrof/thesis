@@ -30,7 +30,7 @@ namespace Utility
 	glm::mat4 GetTranslate(const approx::Vector3<float>&, const glm::vec3&, const float&);
 	glm::mat4 GetRotateFromNorm(const glm::vec3&);
 
-	glm::vec3 DescartesToPolar(float, float, float);
+	glm::vec3 DescartesToPolar(const float&, const float&, const float&);
 
 	std::vector< std::vector<int>> GetAdjacencyMatrix(const std::vector<approx::Face<float>>*);
 
