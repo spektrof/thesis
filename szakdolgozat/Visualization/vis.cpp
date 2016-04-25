@@ -76,7 +76,7 @@ bool Visualization::EngineInit()
 	//rajzolasi informaciok lekerese, majd objektum keszitese
 	data = app.atom_drawinfo();
 	approx::BodyList targetdata = app.target_drawinfo();
-	targetIds.count = targetdata.indicies.size();
+	targetIds.count = (int)targetdata.indicies.size();
 
 	Release2DIds();
 	CleanIdBufferForReuse(_3dIds);
@@ -206,7 +206,7 @@ void Visualization::AcceptCutting()
 	if (logger)
 	{
 		LOG2("Atom id vagas elott: " << ActiveAtom << "\n");
-		for (int i = data.index_ranges[ActiveAtom]; i < data.index_ranges[ActiveAtom+1];++i)
+		for (uint i = data.index_ranges[ActiveAtom]; i < data.index_ranges[ActiveAtom+1];++i)
 		{
 			LOG2(data.points[data.indicies[i]].x << " " << data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z << "\n");
 		}
@@ -240,7 +240,7 @@ void Visualization::AcceptCutting()
 	if (logger)
 	{
 		LOG2("Atom id vagas utan: " << NumberOfAtoms - 1 << "\n");
-		for (int i = data.index_ranges[NumberOfAtoms - 1]; i < data.index_ranges[NumberOfAtoms];++i)
+		for (uint i = data.index_ranges[NumberOfAtoms - 1]; i < data.index_ranges[NumberOfAtoms];++i)
 		{
 			LOG2( data.points[data.indicies[i]].x << " " <<data.points[data.indicies[i]].y << " " << data.points[data.indicies[i]].z<< "\n");
 		}
@@ -1060,7 +1060,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	//Indexek hozzafuzese
 	std::vector<GLuint> new_indicies(data.indicies.begin(), data.indicies.begin() + start);
 
-	for (int i = 0; i < cutresult.index_ranges[1];++i)
+	for (uint i = 0; i < cutresult.index_ranges[1];++i)
 	{
 		new_indicies.push_back(cutresult.indicies[i] + (int)CountOfPoints);
 	}
@@ -1071,7 +1071,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 		new_indicies.push_back(data.indicies[i]);
 	}
 
-	for (int i = cutresult.index_ranges[1]; i < cutresult.index_ranges[2];++i)
+	for (uint i = cutresult.index_ranges[1]; i < cutresult.index_ranges[2];++i)
 	{
 		new_indicies.push_back(cutresult.indicies[i] + (int)CountOfPoints);
 	}

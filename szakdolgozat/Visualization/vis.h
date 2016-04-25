@@ -92,6 +92,7 @@ protected:
 		-új gomb : t
 		-ablakmodositas + hibauzenet ui bug?
 		-UI unique ptr
+		-adattagok kiszedes, szomsz. mtx pointer eltunt stb
 
 		Kedd: 
 		Szerda:

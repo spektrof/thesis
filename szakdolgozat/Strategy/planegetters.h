@@ -123,7 +123,7 @@ public:
 			int index = *(active.begin());
 			active.erase(active.begin());
 
-			for (int i = 0;i < 3;++i)
+			for (int i = 0;i < 3;++i)	//feltetelezzuk, hogy haromszogelve van minden oldal
 			{
 				const int adj = adj_mtx[index][i];
 				if ( !used[adj] && adj < ids.size() && ids[adj] )	// used: HA 0 -> igaz (nem volt még)
@@ -137,13 +137,13 @@ public:
 		/*Osszegyujtom az osszes kulonbozo pontot a kiterjesztett a lapokbol -> used[] = 1*/
 		std::set< approx::Vector3<float>, approx::DifferentVector3<float>> points;
 
-		for (size_t i = 0; i < tmp.size();++i)
+		for (std::vector<int>::iterator it = tmp.begin(); it != tmp.end(); ++it)
 		{
-			if (!used[tmp[i]]) continue;	// Nem tagja a felületnek
+			if (!used[*it]) continue;	// Nem tagja a felületnek
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.insert(faces[tmp[i]].points(j));
+				points.insert(faces[*it].points(j));
 			}
 		}
 
@@ -194,13 +194,13 @@ public:
 		/*Get our different points*/
 		std::vector< approx::Vector3<float>> points;
 
-		for (size_t i = 0; i < tmp.size();++i)
+		for (std::vector<int>::iterator it = tmp.begin(); it != tmp.end(); ++it)
 		{
-			if (!used[tmp[i]]) continue;	// Nem tagja a felületnek
+			if (!used[*it]) continue;	// Nem tagja a felületnek
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.push_back(faces[tmp[i]].points(j));
+				points.push_back(faces[*it].points(j));
 			}
 		}
 
@@ -250,13 +250,13 @@ public:
 		/*Get our different points*/
 		std::vector< approx::Vector3<float>> points;
 
-		for (size_t i = 0; i < tmp.size();++i)
+		for (std::vector<int>::iterator it = tmp.begin(); it != tmp.end(); ++it)
 		{
-			if (!used[tmp[i]]) continue;	// Nem tagja a felületnek
+			if (!used[*it]) continue;	// Nem tagja a felületnek
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.push_back(faces[tmp[i]].points(j));
+				points.push_back(faces[*it].points(j));
 			}
 		}
 		Utility::PlaneResult res = PlanarFittingOn3dPoints3(points);
@@ -305,13 +305,13 @@ public:
 		/*Get our different points*/
 		std::set< approx::Vector3<float>, approx::DifferentVector3<float>> points;
 
-		for (size_t i = 0; i < tmp.size();++i)
+		for (std::vector<int>::iterator it = tmp.begin(); it != tmp.end(); ++it)
 		{
-			if (!used[tmp[i]]) continue;	// Nem tagja a felületnek
+			if (!used[*it]) continue;	// Nem tagja a felületnek
 
 			for (int j = 0; j < 3; ++j)
 			{
-				points.insert(faces[tmp[i]].points(j));
+				points.insert(faces[*it].points(j));
 			}
 		}
 
@@ -329,11 +329,11 @@ public:
 		std::set<approx::Vector3<float>, approx::DifferentVector3<float>> vertexes;
 		vertexes.clear();
 
-		for (size_t i = 0; i < faces.size();++i)
+		for (std::vector<approx::Face<float>>::iterator it = faces.begin(); it != faces.end(); ++it)
 		{
-			for (size_t j = 0; j < faces[i].size(); ++j)
+			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.insert(faces[i].points(j));
+				vertexes.insert(*vit);
 			}
 		}
 
@@ -352,11 +352,11 @@ public:
 		std::set<approx::Vector3<float>, approx::DifferentVector3<float>> vertexes;
 		vertexes.clear();
 
-		for (size_t i = 0; i < faces.size();++i)
+		for (std::vector<approx::Face<float>>::iterator it = faces.begin(); it != faces.end(); ++it)
 		{
-			for (size_t j = 0; j < faces[i].size(); ++j)
+			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.insert(faces[i].points(j));
+				vertexes.insert(*vit);
 			}
 		}
 		/*Illesztek rajuk sikot*/
@@ -373,11 +373,11 @@ public:
 		std::vector<approx::Vector3<float>> vertexes;
 		vertexes.clear();
 
-		for (size_t i = 0; i < faces.size();++i)
+		for (std::vector<approx::Face<float>>::iterator it = faces.begin(); it != faces.end(); ++it)
 		{
-			for (size_t j = 0; j < faces[i].size(); ++j)
+			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.push_back(faces[i].points(j));
+				vertexes.push_back(*vit);
 			}
 		}
 
@@ -394,11 +394,11 @@ public:
 		std::vector<approx::Vector3<float>> vertexes;
 		vertexes.clear();
 
-		for (size_t i = 0; i < faces.size();++i)
+		for (std::vector<approx::Face<float>>::iterator it = faces.begin(); it != faces.end(); ++it)
 		{
-			for (size_t j = 0; j < faces[i].size(); ++j)
+			for (approx::Face<float>::VertexIterator vit = it->begin(); vit != it->end(); ++vit)
 			{
-				vertexes.push_back(faces[i].points(j));
+				vertexes.push_back(*vit);
 			}
 		}
 
