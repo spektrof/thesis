@@ -7,6 +7,7 @@
 
 #include "../Engine/approximator.h"
 
+/*Esemeny tipusa*/
 enum ToDo{
 	NONE,
 	ACCEPT,
@@ -25,6 +26,7 @@ enum ToDo{
 	IMPORT,
 };
 
+/*Atomvalasztasi opcio*/
 enum ChoiceMode {
 	VOLUME,
 	DIAMETER,
@@ -34,6 +36,7 @@ enum ChoiceMode {
 	OPTIMALVOLUME,
 };
 
+/*Vagosik valasztasi opcio*/
 enum CuttingMode {
 	MANUAL,
 	MATCHEDEACHPOINT,
@@ -43,6 +46,7 @@ enum CuttingMode {
 	RANDOMUNDERFACE,
 };
 
+/*Elfogadas tipusa*/
 enum TypeOfAccept
 {
 	NEGATIVE,
@@ -50,12 +54,14 @@ enum TypeOfAccept
 	BOTH,
 };
 
+/*Megjelenitendo atomok tipusa*/
 enum Display
 {
 	LIVE,
 	RELEVANT,
 };
 
+/*3D Koordinatak*/
 struct Coord {
 	float x, y, z;
 	Coord(float a, float b, float c) : x(a), y(b), z(c) {}

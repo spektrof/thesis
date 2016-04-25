@@ -93,13 +93,13 @@ Light::Light(const int& c, const float& r, const int& o, const int& t)
 
 void Light::AddTo(float* unit)
 {
-	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;
+	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;	//visszaszamoljuk az egyseget a noveles elott
 
 	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }
 void Light::SubFrom(float* unit)
 {
-	*unit = float((int)std::round((*unit) * cunit - 1 + cunit) % cunit) / (float)cunit;
+	*unit = float((int)std::round((*unit) * cunit - 1 + cunit) % cunit) / (float)cunit; //visszaszamoljuk az egyseget a noveles elott
 
 	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }

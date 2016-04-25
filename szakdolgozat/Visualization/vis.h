@@ -68,21 +68,38 @@ public:
 protected:
 	/*	TODO list*/
 	/*
+		-Elõfordulhat hogy eleg nagy a metszetterfogat 
+			de a fourier egyutthato mar nem eleg nagy -> halott atom, amirol nem tudunk
+		-A síkválasztó függvény jelenleg itt van definiálva - 
+				átrakjam a planegetters be és akkor ott egy saját fv-ére  hivatkozik?
+				
+				Settert + Gettert kell ráírni így , nekem tetszik így is
+		-Kamera + fény módosítások bemutatása
+		-Ha elfogytak az elo atomok:
+			ActiveAtom = -1
+			és levédem mindenhol liveatoms.size()!=0 feltétellel a dolgokat
+				a síklekérésnél nem jó szerintem az ha minden stratégia ezzel kezdõdik (Activeatom!=-1) így kívülrõl intézném el
+				-> Lehessen változtatni stratégiát (sok if ebben az esetben) vagy ne (jöjjön hibaüzenet - vagy az nem kell) -> UI helyreállító fv-kell -> nagy switch így elsõ átgondolásra UI ont belül
+				DE ez nem kell akkor sem ha minden síklekérésnél vizsgálunk
+				TEHÁT lehetséges opciók:
+					- Minden síkválasztás IF(ActiveAtom==-1) return default; al kezdõdik
+					- Lehet stratégiát változtatni ( mert mért ne lehetne ), csak épp nem történik semmi és mindenhol liveatoms size ra vizsgálunk vis.cpp ben
+							-> probléma hogy manuális módban nem fog változni semmi, mert a sikrajzolasunk nem engedi meg ezt(nem tudunk centroidot szamolni)
+		-Restart jó így - vagy a síkválasztás se változzon - vagy a rendezés is változzon ( ez lehet gubanc lesz - mert a változtatás érték eventet okoz , de meglehet nezni)
+					- mivel manuális a default érték síkválasztásnál - de akkor így akkor legn. térfogat lesz a default - nem tudom miért vettem ki (lehet probléma volt)
+		-lastuse os bug - pointer egyszer megy fol, + rossz volt
+		-leak
+		-új gomb : t
+		-ablakmodositas + hibauzenet ui bug?
+		-UI unique ptr
+
 		Kedd: 
 		Szerda:
 		Csütörtök
 		Péntek:
-			képek + újraolvasás + pontosítás
-			elküldeni Gábornak
 		Szombat:
-			Kommentelés
 		Vasárnap:
-			Doksi olvasás + frissítés
-			
-		
-		LastUse - pointert állítunk, pl konstruktorban - utána már csak frissítés legyen
-		Szomszédsági mátrixot nem kell tárolni, csak 1x feltölteni konstruktorban és kész
-		
+				
 		LEAK:
 		/*
 			importálás ->engineinit() : pl torus test váltakozása esetén testnél nem ugrik vissza a memória
@@ -90,13 +107,14 @@ protected:
 			sok strategy váltás = +0,1 mb
 		*/
 	/*
+		UI: generated files !
+
 		BUG:
 
 		Apró bugok frissítés gyanánt:
 		
 		Apró kis TODOk:
 			GOMB: ortho es perspektiv nezeti valtasra (3D ben)
-			szomszédsági mátrixot elég a planegettersben tárolni, nem pointerrel!
 
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
@@ -111,16 +129,12 @@ protected:
 	 
 	approx::Approximator<float> app;
 	approx::BodyList data;
-	approx::BodyList targetdata;
-	std::vector<approx::PolyFace2D> _2Ddata;
-
-	std::vector< std::vector<int> > adj_mtx;
 
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior 
-		= PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
+		= PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume, &lastUse);
 	
 	//-----------------------------------------
-	//PLANE
+	//Sik
 	approx::Plane<float> p = approx::Plane<float>({ 1,0,0 }, approx::Vector3<float>(0.0f,0.0f,0.0f));  //vagosik
 
 	approx::Vector3<float> centr;
@@ -158,7 +172,7 @@ protected:
 	void CutChecker();
 
 	//-----------------------------------------
-	// Atom properties
+	// Atom tulajdonsagok
 	bool IsItActive(const int&);
 
 	std::vector <int> lastUse;
@@ -173,9 +187,7 @@ protected:
 	void SetTargetAtomProperties();
 	void SetPlaneProperties();
 
-	void LastUseChanging(const TypeOfAccept&);
-
-
+	void LastUseChanging();
 
 	//------------------------------------------
 	// UI
@@ -187,7 +199,7 @@ protected:
 	Light l;
 
 	//------------------------------------------
-	// DRAWING
+	// Rajzolas
 	int CuttingPlaneFreq;
 	void MergeDataContainer(approx::BodyList&, const approx::BodyList&);
 
@@ -219,7 +231,7 @@ protected:
 	std::vector<std::vector<IdsAndProp>> _2D_Line1Ids_P;
 	std::vector<std::vector<IdsAndProp>> _2D_Line2Ids_P;
 
-	// IDs of shader variables
+	// ID-k shader valtozokhoz
 	GLuint m_loc_mvp;
 	GLuint m_loc_mvp2;
 	GLuint world;
@@ -233,18 +245,18 @@ protected:
 	GLuint color2D;
 	GLuint alpha2D;
 
-
 	//----------------------------------------------
 
-	//transformation matrix
+	//transzformacios matrix
 	glm::mat4 m_matWorld;
 	glm::mat4 m_matView;
 	glm::mat4 m_matProj;
 
 	//----------------------------------------------
-	// Structure
+	// Egyeb elemek, fuggvenyek
 	std::string filename;
-	bool logger = false;
+	bool logger;
+	bool IsTargetDrawEnabled;
 
 	void CleanIdBufferForReuse(const IdsAndProp);
 	void Release2DIds();

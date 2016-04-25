@@ -11,7 +11,7 @@ template <typename T, template<typename> class V>
 class PriorityQue
 {
 	V<T>* PriorityFunctions;
-	typedef float (V<T>::*GETTER)(const T*,const int&) const;
+	typedef float (V<T>::*GETTER)(const T*,const int&) const;	//a tulajdonsagot meghatarozo fuggveny cime
 
 	GETTER m_getterFunc;
 
@@ -25,9 +25,9 @@ class PriorityQue
 	std::vector<Data> order;
 
 public:
-	PriorityQue(GETTER getterFunc)
+	PriorityQue(GETTER getterFunc, std::vector<int>* lu)
 	{
-		PriorityFunctions = new V<T>();
+		PriorityFunctions = new V<T>(lu);
 		m_getterFunc = getterFunc;
 	}
 	~PriorityQue() { delete PriorityFunctions;  }
@@ -43,21 +43,25 @@ public:
 		order.insert(it, Data(_id, tmp_val) );
 	}
 
+	/*Torli a parameterben megadott indexu tagot a sorbol*/
 	void erase(const int& e)
 	{
 		order.erase(order.begin() + e);
 	}
 
+	/*Torli a sort*/
 	void clear()
 	{
 		order.clear();
 	}
 
+	/*Tulajdonsag meghatarozo fuggveny csereje*/
 	void SetComparer(GETTER getterfunc)
 	{
 		m_getterFunc = getterfunc;
 	}
 
+	/*Visszaadja az atomok sorrendjet (id,ertek) formaban*/
 	std::vector<Utility::PriorResult> GetOrder() const
 	{
 		std::vector<Utility::PriorResult> result;
@@ -71,6 +75,7 @@ public:
 		return result;
 	}
 
+	/*Visszaadja a sor indexeit*/
 	std::vector<int> GetPriorIndexes() const
 	{
 		std::vector<int> result;
@@ -88,13 +93,14 @@ public:
 	void SetLastUse(std::vector<int>* lu)
 	{
 		PriorityFunctions->SetLastUse(lu);
-		
+	}
+
+	void RefreshLastUseValues()
+	{
 		for (std::vector<Data>::iterator it = order.begin(); it != order.end(); ++it)
 		{
 			it->value = (PriorityFunctions->*m_getterFunc)(NULL, it->id);
 		}
-
-	//	std::sort(order.begin(), order.end(), [&, this](const Data& lhs, const Data& rhs) { return lhs.value > rhs.value; });
 	}
 
 };

@@ -3,7 +3,7 @@
 UserInterface::UserInterface(QWidget *parent)
 	: QWidget(parent)
 {
-	window = new QWidget();
+	window = new QWidget(parent, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint);
 
 	_mainLayout = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
 	_label = new QLabel("Welcome", this);
@@ -333,9 +333,13 @@ void UserInterface::exportEvent()
 
 void UserInterface::importEvent()
 {
-	request.eventtype = IMPORT;
+	bool ok;
+	request.filename = QInputDialog::getText(0, "File opening", "Obj name:",QLineEdit::Normal,QString(), &ok).toLatin1().data();
 
-	request.filename = QInputDialog::getText(0, "File opening", "Obj name:").toLatin1().data();
+	if (ok)
+	{
+		request.eventtype = IMPORT;
+	}
 }
 
 void UserInterface::infoEvent()
@@ -402,7 +406,7 @@ Request UserInterface::GetRequest()
 		_acceptTypes->setCurrentIndex(0);
 
 	}
-	else if (result.eventtype == RESTART)	//restarttal osszefuggo valtozasok
+	else if (result.eventtype == RESTART)
 	{
 		//_choiceStrategy->setCurrentIndex(0);
 		_plane->setCurrentIndex(0);
@@ -410,6 +414,7 @@ Request UserInterface::GetRequest()
 		_fourierGroups->setCurrentIndex(0);
 		_xf->setText("0"); _yf->setText("0"); _zf->setText("0");
 	}
+
 	return result;
 }
 
@@ -697,12 +702,43 @@ void UserInterface::AddItemsToDropMenu()
 
 void UserInterface::RequestWrongCuttingErrorResolve()
 {
-	QMessageBox::warning(this, tr("WRONG CUT"), tr("U ARE STUPID!"), QMessageBox::Ok);
+	QMessageBox::warning(this, tr("WRONG CUT"), tr("Ertelmetlen vagas!\nA sik nem metszi az atomot."), QMessageBox::Ok);
 
 	_accept->setEnabled(false);
 	_acceptTypes->setEnabled(false);
 	_undo->setEnabled(false);
 	_cutting->setEnabled(true);
+
+	_choiceStrategy->setEnabled(true);
+	_prev->setEnabled(true);
+	_nextChoice->setEnabled(true);
+	_plane->setEnabled(true);
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
+}
+
+void UserInterface::SuccessImport()
+{
+	_choiceStrategy->setEnabled(true);
+	_prev->setEnabled(true);
+	_nextChoice->setEnabled(true);
+	_plane->setEnabled(true);
+
+	_accept->setEnabled(false);
+	_acceptTypes->setEnabled(false);
+	_undo->setEnabled(false);
+	_nextPlane->setEnabled(request.cut_mode > 2 ? true : false); //HA RANDOM
+	_cutting->setEnabled(true);
+
+	_nextNOk->setEnabled(false);
+	_n->setEnabled(false);
+
+	_n->setText("1");
+	_xn->setText("1"); _yn->setText("0"); _zn->setText("0");
+	_plane->setCurrentIndex(0);
+	_acceptTypes->setCurrentIndex(0);
+	_fourierGroups->setCurrentIndex(0);
+	_xf->setText("0"); _yf->setText("0"); _zf->setText("0");
+
 }
 
 void UserInterface::ErrorShow(const char* text)

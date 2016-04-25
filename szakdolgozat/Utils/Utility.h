@@ -1,12 +1,16 @@
 #pragma once
 
+/* Keszitette: Lukacs Peter
+
+   Az egyeb segedtipusokat, fuggvenyeket tartalmazo nevter.
+   Azokat tartalmazza, amiket nem art ha tobb helyrol el tudjuk erni.
+*/
 #include <SDL.h>
 #include "glm/glm.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform2.hpp>
 
-#include <vector> // pair miatt kell
-#include <iostream> // pair miatt kell
+#include <vector>
 #include "../Engine/approximator.h"
 
 namespace Utility
@@ -27,8 +31,6 @@ namespace Utility
 	glm::mat4 GetRotateFromNorm(const glm::vec3&);
 
 	glm::vec3 DescartesToPolar(float, float, float);
-
-	/*---------------------------*/
 
 	std::vector< std::vector<int>> GetAdjacencyMatrix(const std::vector<approx::Face<float>>*);
 

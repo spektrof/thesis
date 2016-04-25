@@ -21,10 +21,9 @@ public:
 	glm::vec3 GetAt() const { return at; }
 	glm::vec3 GetVertUnit() const { return Is2DView() ? vunit : zunit; }	//lehessen folfele menni vagy ne? (engem már zavar ha folfele megyunk xD )
 	glm::vec3 GetZoomUnit() const { return zunit; }
+	glm::vec3 GetHorUnit() const { return hunit; }
 	float GetView() const { return (float)ViewPoint; }
 	bool Is2DView() const { return ViewPoint == _2D; }
-
-	glm::vec3 GetHorUnit() const { return hunit; }
 
 	void SwitchCameraView(const glm::vec3& = glm::vec3(1,2,1));
 	void Add(const glm::vec3&);
@@ -33,7 +32,6 @@ public:
 	void MouseMove(SDL_MouseMotionEvent&);
 
 protected:
-
 	void SetCamera2DValues(const glm::vec3&);
 	void SetCamera3DValues();
 
@@ -42,7 +40,6 @@ protected:
 	glm::vec3 eye;
 	glm::vec3 up;
 	glm::vec3 at;
-
 
 private:
 	float omega, theta;				//forgatashoz, a gomb ket szoge
@@ -63,8 +60,6 @@ public:
 	~Light() {  }
 
 	glm::vec3 GetLightDir() const { return FenyIrany; }
-	//glm::vec3 GetLightUnit(const glm::vec3& up) const { return glm::normalize(glm::cross(up, lunit));}
-	//glm::vec3 GetVertUnit() const { return lunit; }
 	float* GetOmega() { return &omega; }
 	float* GetTheta() { return &theta; }
 

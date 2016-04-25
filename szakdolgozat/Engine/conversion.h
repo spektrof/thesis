@@ -17,7 +17,7 @@
 namespace approx {
 	typedef glm::vec2 Vec2;
 	typedef glm::vec3 Vec3;
-	typedef unsigned short Index;
+	typedef unsigned int Index;
 
 
 	//minden rajzolasi informaciot tartalmazo adaszerkezet
@@ -81,7 +81,7 @@ namespace approx {
 				}
 			}
 		}
-		res.index_ranges.push_back((unsigned short)res.indicies.size());
+		res.index_ranges.push_back((unsigned int)res.indicies.size());
 		return res;
 	}
 

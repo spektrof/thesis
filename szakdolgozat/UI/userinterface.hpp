@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 /*	Keszitette: Lukacs Peter
-Felhasznaloi felulet az approximalo programhoz
+	
+	Felhasznaloi felulet az approximalo programhoz
 */
 #include <QtWidgets/QWidget>
 #include <QPushButton>
@@ -24,6 +25,7 @@ public:
 	~UserInterface();
 	Request GetRequest();
 	void RequestWrongCuttingErrorResolve();
+	void SuccessImport();
 	void ErrorShow(const char*);
 
 protected:

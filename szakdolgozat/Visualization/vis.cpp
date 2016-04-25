@@ -14,6 +14,9 @@ Visualization::Visualization(void)
 
 	CuttingPlaneFreq = 12;
 
+	logger = false;
+	IsTargetDrawEnabled = true;
+
 	filename = "Targets/gummybear.obj";
 	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 
@@ -27,14 +30,7 @@ Visualization::~Visualization(void)
 	Clean();
 }
 
-/* Inicializálás:
-	Approximáló Init
-	Törlés
-	Hátlapeldobás
-	Vágósík létrehozása
-	Shaderek bekötése 2D és 3D hez
-	Shaderekhez a uniform változók bekötése
-	*/
+/* Inicializalas: Engine init + OpenGL */
 bool Visualization::Init()
 {
 	if (!EngineInit()) {	LOG("ERROR during engine init!\n"); return false;  }
@@ -42,19 +38,24 @@ bool Visualization::Init()
 	glClearColor(0.125f, 0.25f, 0.5f, 1.0f);
 
 	glEnable(GL_DEPTH_TEST);
-	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);	//hatlapeldobas
 
-	ObjectCreator::CreateCuttingPlane(planeIds.VaoId, planeIds.VboId, planeIds.IndexId, 50, CuttingPlaneFreq);	// (x,y síkban fekvő , (0,0,1) normálisú négyzet)
-	 
+	ObjectCreator::CreateCuttingPlane(planeIds.VaoId, planeIds.VboId, planeIds.IndexId, 50, CuttingPlaneFreq);	// (x,y sikban fekvo , (0,0,1) normalisu negyzet)
+	planeIds.count = 3 * 2 * CuttingPlaneFreq * CuttingPlaneFreq;	// egy negyzet 3 * 2 pont , a teljes sik CuttingPlaneFreq * CuttingPlaneFreq darab negyzetbol all
+
 	Add2DShaders();
 	Add3DShaders();
 	AddShaderUniformLocations();
+
+	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
+
 	LOG("---------------- INIT DONE ------------------\n"
 			"---------------------------------------------\n");
 	return true;
 }
 
-/* Approximációhoz + alap megjelenítéshez szükséges opjektumok lekérése */
+/* Approximaciohoz + alap megjeleniteshez szukseges opjektumok lekerese vagy alap allapotba helyezese */
 bool Visualization::EngineInit() 
 {
 	if (!app.set_target(filename.c_str(), 10.0f, 0.0f, 20.0f)) {
@@ -66,16 +67,16 @@ bool Visualization::EngineInit()
 	ActiveAtom = 0;
 	ActiveIndex = 0;
 
-	adj_mtx = Utility::GetAdjacencyMatrix(&(app.target().face_container()));
-
 	if (PlaneCalculator != NULL)
 	{
 		delete PlaneCalculator;
 	}
-	PlaneCalculator = new PlaneGetterFunctions<approx::Approximation<float>>(&app.container(),&adj_mtx);
+	PlaneCalculator = new PlaneGetterFunctions<approx::Approximation<float>>(Utility::GetAdjacencyMatrix(&(app.target().face_container())), &app.container());
 
+	//rajzolasi informaciok lekerese, majd objektum keszitese
 	data = app.atom_drawinfo();
-	targetdata = app.target_drawinfo();
+	approx::BodyList targetdata = app.target_drawinfo();
+	targetIds.count = targetdata.indicies.size();
 
 	Release2DIds();
 	CleanIdBufferForReuse(_3dIds);
@@ -83,84 +84,89 @@ bool Visualization::EngineInit()
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
 	
+	//egyeb objektumok alapallapotba helyezese
 	lastUse.clear();
 	lastUse.push_back(0);
 	prior.clear();
-	prior.SetLastUse(&lastUse);
+	prior.RefreshLastUseValues();
 
 	liveAtoms.clear();
 	relevantAtoms.clear();
 	CalculateDisplayVectorsByFourier();
 	display = &liveAtoms;
 
+	//az eredmeny lekerese majd a vagosik frissitese
 	GetPriorResult();
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
 	return true;
 }
 
-/* Renderelo : 2D vagy 3D ben ábrázol 
-		3D-ben fogad requesteket!
-*/
+/* Renderelo */
 void Visualization::Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
+	//keres fogadasa
 	switch (request.eventtype)
 	{
-	case ACCEPT:
-		AcceptCutting();
-		break;
-	case CUTTING:
-		GetResult();
-		break;
-	case UNDO:
-		GetUndo();
-		break;
-	case NEWPLANE:
-		SetNewPlane();
-		break;
-	case NEWSTRATEGY:
-		SetNewStrategy();
-		break;
-	case NEWCUTTINGMODE:
-		SetNewCuttingMode();
-		break;
-	case NEWDISPLAY:
-		SetNewDisplayMode();
-		break;
-	case RESTART:
-		if (c.Is2DView()) c.SwitchCameraView();
-		GetRestart();
-		break;
-	case NEXTATOM:
-		NextAtom();
-		break;
-	case PREVATOM:
-		PrevAtom();
-		break;
-	case RECALCULATING:
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case MORESTEPS:
-		for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
-		app.container().garbage_collection();
-		break;
-	case EXPORT:
-		app.save_atoms("Result/save_atoms.obj");
-		app.save_approximated_body("Result/save_atom_appbody.obj");
-		app.container().final_transform();
-		/*app.save_atoms("save_atoms");
-		app.save_atoms("save_atoms");*/
-		break;
-	case IMPORT:
-		ImportNewTarget();
-		break;
-	default:
-		break;
+		case ACCEPT:
+			AcceptCutting();
+			break;
+		case CUTTING:
+			GetResult();
+			break;
+		case UNDO:
+			GetUndo();
+			break;
+		case NEWPLANE:
+			SetNewPlane();
+			break;
+		case NEWSTRATEGY:
+			SetNewStrategy();
+			break;
+		case NEWCUTTINGMODE:
+			SetNewCuttingMode();
+			break;
+		case NEWDISPLAY:
+			SetNewDisplayMode();
+			break;
+		case RESTART:
+			if (c.Is2DView()) c.SwitchCameraView();
+			GetRestart();
+			break;
+		case NEXTATOM:
+			NextAtom();
+			break;
+		case PREVATOM:
+			PrevAtom();
+			break;
+		case RECALCULATING:
+			if (liveAtoms.size() != 0)
+			{
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+			}
+			break;
+		case MORESTEPS:
+			for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
+			app.container().garbage_collection();
+			break;
+		case EXPORT:
+			app.save_atoms("Result/save_atoms.obj");
+			app.save_approximated_body("Result/save_atom_appbody.obj");
+			app.container().final_transform();
+			/*app.save_atoms("save_atoms");
+			app.save_atoms("save_atoms");*/
+			break;
+		case IMPORT:
+			ImportNewTarget();
+			break;
+		default:
+			break;
 	}
 
-	if (c.Is2DView())	// true when _2D
+	//kamera mod alapjan torteno rendereles
+	if (c.Is2DView())	//_2D
 	{
 		glUseProgram(program2D_ID);
 		
@@ -175,7 +181,7 @@ void Visualization::Render()
 	
 		DrawCuttingPlane(Utility::GetTranslate(centr,_planenormal,distance),Utility::GetRotateFromNorm(_planenormal));
 						
-		DrawTargetBody();
+	    if (IsTargetDrawEnabled) DrawTargetBody();
 
 		glEnable(GL_BLEND);
 		glDepthMask(GL_FALSE);
@@ -194,17 +200,9 @@ void Visualization::Render()
 
 }
 
-/* Amikor elfogadunk egy vágást ez a függvény fut le */
+/* Vagas elfogadasa */
 void Visualization::AcceptCutting()
 {
-	/* Folyamat:
-		Elfogadjuk az adott vágást, ha sikeres volt
-		Lekérjük az új rajzolási információkat
-		Létrehozzuk az új testet
-		Aktualizáljuk a legrégebben használt vektorunkat
-		Aktualizáljuk fourier egy. alapján az élő és releváns atomjainkat
-		Lekérjük az aktuális prior sorrendet + vágósíkot
-		Log			*/
 	if (logger)
 	{
 		LOG2("Atom id vagas elott: " << ActiveAtom << "\n");
@@ -216,6 +214,7 @@ void Visualization::AcceptCutting()
 		LOG2("Fourier: " << app.container().atoms(ActiveAtom ).fourier() << "\n");
 		LOG2("Centroid: " << app.container().atoms(ActiveAtom ).centroid() << "\n");
 	}
+	//az adott resz(ek) elfogadasa
 	switch (request.type)
 	{ 
 		case BOTH:
@@ -236,7 +235,7 @@ void Visualization::AcceptCutting()
 			break;
 	}
 
-
+	//rajzolasi informaciok lekerese az objektum kesziteshez
 	data = app.atom_drawinfo();
 	if (logger)
 	{
@@ -253,37 +252,37 @@ void Visualization::AcceptCutting()
 	CleanIdBufferForReuse(_3dIds);
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
-	LastUseChanging(request.type);
+	LastUseChanging();
 
-	if (request.choice == UNTOUCHED)	{	
-		prior.SetLastUse(&lastUse);
-	}	// N log( N )-es rendezes van benne -> nem szeretnenk mindig lefuttatni csak mikor kell
+	if (request.choice == UNTOUCHED)	//mar nincs rendezes akar kiszedheto ez a feltetel ( n es ideju )
+	{	
+		prior.RefreshLastUseValues();
+	}
 
+	//az atomok csoportba osztasa
 	prior.erase(ActiveIndex);
 	CalculateDisplayVectorsByFourier();
 
+	//eredmeny lekeres + frissites
 	GetPriorResult();
-	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+	RefreshPlaneData(liveAtoms.size() != 0 ? (PlaneCalculator->*PlaneFunction)() : Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0)) );
 
 	LOG("\tACCEPT :       " << request.type << "\n\n");
 
 }
 
-/* Amikor egy vágást kérünk ez a függvény fut le */
+/* Vagasi eredmeny kerese */
 void Visualization::GetResult()
 {
-	/* Folyamat:
-		Leenerőlizzük van e közös pontja az aktuális atommal -> HIBA ha nincs
-		Vágás.
-		2D-s kép lekérése
-		HA nem MANUAL módban vagyunk, automatizáljuk az acceptet (van e közös rész a céltesttel?)
-			HA MANUAL módban vagyunk, akkor 
-					a megjelenítéshez mergeljük a 2 részt az eddig meglévővel olyam módon hogy az indexek ne csússzanak el elfogadás után
-												-> old , negative, old , positive
-					majd felöltjük ezt az adatot
-	*/
-	
-	if (!app.container().atoms(ActiveAtom).intersects_plane(p,0.001f))
+	if (liveAtoms.size() == 0) 
+	{
+		LOG("\tCUT :  There is no live atom!\n");
+		if (request.eventtype == MORESTEPS) return;
+		ui.ErrorShow("Elfogytak az elo atomok!\n");
+		return;
+	}
+	//ellenorzes: metszi-e a sik az atomot?
+	if (!app.container().atoms(ActiveAtom).intersects_plane(p, INTERSECTIONEPSILON))
 	{ 
 			LOG("\tCUT :  WRONG PLANE -> Cant cut that atom -> New plane generated!\n");
 			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -293,10 +292,13 @@ void Visualization::GetResult()
 			return; 
 	}
 
+	//ha minden rendben van akkor mehet a vagas
 	app.container().cut(ActiveAtom, p);
 
+	//2D-s vetuletek kerese
 	Get2DDrawInfo();
 
+	//nem manualis modban az elfogadas automatizalva van
 	if (request.cut_mode != MANUAL) { 
 		
 		LOG("\tCUT: sík - ( " <<p.normal().x << " , " << p.normal().y << " , " << p.normal().z << " ) "
@@ -310,6 +312,7 @@ void Visualization::GetResult()
 	LOG("\tCUT: sík - ( " << request.plane_norm.x << " , " << request.plane_norm.y << " , " << request.plane_norm.z << " ) "
 		<< "\n\t\t pont - ( " << request.plane_coord.x << " , " << request.plane_coord.y << " , " << request.plane_coord.z << " )\n");
 
+	//manual modhoz szukseges a merge a korrekt megjeleniteshez
 	MergeDataContainer(data, app.cut_drawinfo());
 
 	CleanIdBufferForReuse(_3dIds);
@@ -317,14 +320,9 @@ void Visualization::GetResult()
 
 }
 
-/* Amikor visszavonást kérünk ez a függvény fut le
-		CSAK MANUAL módban van lehetőség undora!	*/
+/* Visszavonas kerese	*/
 void Visualization::GetUndo()
 {
-	/*Folyamat:
-		Undozzuk a vágást
-		A merger állapotát is undozzuk (újra lekérjük az állapotot, majd föltöltjük)
-		*/
 	app.container().last_cut_result().undo();
 
 	data = app.atom_drawinfo();
@@ -338,7 +336,7 @@ void Visualization::GetUndo()
 	LOG("\tUNDO\n");
 }
 
-/* Amikor restartot kérünk ez a függvény fut le*/
+/* Ujrakezdes kerese*/
 void Visualization::GetRestart()
 {
 	/* Mindent az eredeti állapotába állítunk!*/
@@ -346,6 +344,8 @@ void Visualization::GetRestart()
 
 	ActiveAtom = 0;
 	ActiveIndex = 0;
+
+	IsTargetDrawEnabled = true;
 
 	app.restart();
 
@@ -366,7 +366,7 @@ void Visualization::GetRestart()
 
 	lastUse.clear();
 	lastUse.push_back(0);
-	if (request.choice == UNTOUCHED) { prior.SetLastUse(&lastUse); }
+	if (request.choice == UNTOUCHED) { prior.RefreshLastUseValues(); }
 
 	GetPriorResult();
 
@@ -378,23 +378,23 @@ void Visualization::GetRestart()
 	LOG("\tRESTART\n");
 }
 
-/* Amikor megváltozik a vágósík, ez a függvény fut le (only Manual mode)*/
+/* Vagosik valtozas manualis modhoz*/
 void Visualization::SetNewPlane()
 {
+	//a keres feltoltese a sikvalasztashoz
 	PlaneCalculator->SetRequest(Utility::PlaneResult(request.plane_norm, request.plane_coord));
 
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-
 }
 
-/* Amikor megváltozik a stratégia, ez a függvény fut le*/
+/* Strategia valtozas - atomrendezes*/
 void Visualization::SetNewStrategy()
 {
 	/*Folyamat:
 		Összehasonlító módosítása
 		prioritásos sor törlése, feltöltése -> beszúró rendezés lesz
 		Eredmény lekérés
-		Vágósík számolás ??? (kell)*/
+		Vágósík számolás*/
 	switch (request.choice)
 		{
 			case VOLUME:
@@ -402,7 +402,7 @@ void Visualization::SetNewStrategy()
 				prior.clear();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) {  prior.insert(*it, &app.container().atoms(*it));	}
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size()!=0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : VOLUME\n");
 				break;
 			case DIAMETER:
@@ -410,16 +410,16 @@ void Visualization::SetNewStrategy()
 				prior.clear();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : DIAMETER\n");
 				break;
 			case UNTOUCHED:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetLastUse);
 				prior.clear();
-				prior.SetLastUse(&lastUse);
+				prior.RefreshLastUseValues();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : UNTOUCHED\n");
 				break;
 			case OPTIMALPARAMETER:
@@ -427,7 +427,7 @@ void Visualization::SetNewStrategy()
 				prior.clear();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALPARAMETER\n");
 				break;
 			case OPTIMALDIAMETER:
@@ -435,7 +435,7 @@ void Visualization::SetNewStrategy()
 				prior.clear();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALATMERO\n");
 				break;
 			case OPTIMALVOLUME:
@@ -443,116 +443,127 @@ void Visualization::SetNewStrategy()
 				prior.clear();
 				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALVOLUME\n");
 				break;
 
 		}
 }
 
-/* Amikor megváltozik a vágósík típusa, ez a függvény fut le*/
+/* Vagosik valasztas modositasa*/
 void Visualization::SetNewCuttingMode()
 {
 	/*Folyamat:
 		Vágósík meghatározó fv. cseréje
-		Új vágósík lekérés
-		Log		*/
+		Új vágósík lekérés */
 	switch (request.cut_mode)
 	{
 	case MANUAL:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : MANUAL\n");
 		break;
 	case RANDOMNORMALCENTROID:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomNormalCentroid);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMNORMALCENTROID\n");
 		break;
 	case DIAMETERCENTROID:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterCentroid);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : ATMEROREMEROLEGESSULYP\n");
 		break;
 	case RANDOMUNDERFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomUnderFace);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMLAPALATT\n");
 		break;
 	case MATCHEDEACHPOINT:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : MINDENPONTRAILLESZTETT\n");
 		break;
 	case MATCHEDRANDOMSURFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMFELULETILLESZT\n");
 		break;
 	}
 }
 
-/* Amikor megváltozik a látható atomok típusa (élő vs releváns), ez a függvény fut le*/
+/* Megjelenitendo atomok valtoztatasa : elo vagy relevans*/
 void Visualization::SetNewDisplayMode()
 {
 	display = request.disp == LIVE ? &liveAtoms : &relevantAtoms;
 }
 
-/* Amikor a sorban következő atomot kérjük, ez a függvény fut le*/
+/*Sorban kovetkezo atomra ugras*/
 void Visualization::NextAtom()
 {
+	if (liveAtoms.size() == 0) return;
+	//Index valtoztatas
 	ActiveIndex = (ActiveIndex + 1) % liveAtoms.size();
 	ActiveAtom = priorQue[ActiveIndex];
 
+	//modositas feltoltese
 	PlaneCalculator->SetActive(ActiveAtom);
 
+	//vagaosik frissitese
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
-	std::cout << "AKTIV: " << ActiveAtom << "\n";
+	if (logger) std::cout << "AKTIV: " << ActiveAtom << "\n";
 	LOG("\tATOMVALTAS: +\n\n");
 }
 
-/* Amikor a sorban az aktuális előtti atomot kérjük, ez a függvény fut le*/
+/*A sorban az aktuális előtti atom lekerese*/
 void Visualization::PrevAtom()
 { 
-	ActiveIndex = (ActiveIndex - 1 + (int)liveAtoms.size()) % (int)liveAtoms.size();	// % nem kezeli a negatív számokat ()
+	if (liveAtoms.size() == 0) return;
+	ActiveIndex = (ActiveIndex - 1 + (int)liveAtoms.size()) % (int)liveAtoms.size();
 	ActiveAtom = priorQue[ActiveIndex];
 
 	PlaneCalculator->SetActive(ActiveAtom);
 
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
-	std::cout << "AKTIV: " << ActiveAtom << "\n";
+	if (logger) std::cout << "AKTIV: " << ActiveAtom << "\n";
 	LOG("\tATOMVALTAS: -\n\n");
 }
 
 void Visualization::ImportNewTarget()
 {
+	//uj fajl elerese
 	std::string newfile = "Targets/" + request.filename + ".obj";
+	//ellenorzes arra hogy megvaltozott e a fajl
 	if (newfile == filename) return;
 
+	//ellenorzes (leggyorsabb modon), hogy letezik e a fajl
 	struct stat buffer;
 	if (stat(newfile.c_str(), &buffer) == 0)
 	{
 		std::string tmp = filename;
 		filename = newfile;
 
+		//az uj fajl betoltese
 		if (EngineInit())
 		{
 			LOG("New file loaded successfully , new file is: " + newfile + "\n");
+			ui.SuccessImport();
+			IsTargetDrawEnabled = true;
+			if (c.Is2DView()) c.SwitchCameraView();
 		}
 		else
-		{
+		{	//sikertelen fajlbetoltes
 			filename = tmp;
 			LOG("New file loaded unsuccessfully\n");
 		}
 	}
-	else {
+	else {	//nem letezo fajl
 		ui.ErrorShow("Invalid Filename!");
 	}
 }
 
-/*2D-s shaderek bekötése : vertex + fragment*/
+/*2D-s shaderek bekotese : vertex + fragment*/
 void Visualization::Add2DShaders()
 {
 	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/vert_2d.vert");
@@ -569,12 +580,9 @@ void Visualization::Add2DShaders()
 
 	glDeleteShader(vs_ID);
 	glDeleteShader(fs_ID);
-
-	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
-
 }
 
-/*3D-s shaderek bekötése : vertex + geometry + fragment*/
+/*3D-s shaderek bekotese : vertex + geometry + fragment*/
 void Visualization::Add3DShaders()
 {
 	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/vert_3d.vert");
@@ -594,12 +602,9 @@ void Visualization::Add3DShaders()
 	glDeleteShader(vs_ID);
 	glDeleteShader(gs_ID);
 	glDeleteShader(fs_ID);
-
-	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
-
 }
 
-/*Uniform változók bekötése a shaderekhez*/
+/*Uniform változók bekotése a shaderekhez*/
 void Visualization::AddShaderUniformLocations()
 {
 	m_loc_mvp = glGetUniformLocation(program3D_ID, "MVP");
@@ -613,67 +618,49 @@ void Visualization::AddShaderUniformLocations()
 	m_loc_mvp2 = glGetUniformLocation(program2D_ID, "MVP");
 	color2D = glGetUniformLocation(program2D_ID, "COLOR");
 	alpha2D = glGetUniformLocation(program2D_ID, "ALPHA");
-
 }
 
-/*3D-s objektum rajzolása*/
+/*3D-s objektum rajzolasa*/
 void Visualization::Draw3D(const int& which, const bool& backdropping, glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
-	/* Folyamat:
-		Hátlapeldobás???
-		vao BIND
-		Egyéb tulajdonságok (szín, átlátsz.) felöltése uniform vált. keresztül
-		Range meghatározása
-		Rajzolás :)
-		*/
-	/*if (backdropping)	
-	{	
-		glDisable(GL_CULL_FACE);
-		glPolygonMode(GL_BACK, GL_LINE);
-	}
-	else
-	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-	}
-	*/
 	glPolygonMode(GL_FRONT, GL_FILL);
 
 	glBindVertexArray(_3dIds.VaoId);
 
+	//transzformacios matrixok feltoltese a shaderbe
 	glm::mat4 matWorld = trans * rot * scal;
 	glm::mat4 mvp = m_matProj * m_matView * matWorld;
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
+	//az atom tulajdonsagainak beallitasa
 	if (IsItActive(which)) { SetActiveAtomProperties(); }
 	else				   { SetAtomProperties(); }
 
-	
+	//atom rajzolasa
 	int start = data.index_ranges[ which];
 	int end = data.index_ranges[ which +1];
 
 	glDrawElements(GL_TRIANGLES,		// primitív típus
 		end - start,		// hany csucspontot hasznalunk a kirajzolashoz
-		GL_UNSIGNED_SHORT,	// indexek tipusa
-		(void*)(start * sizeof(unsigned short)));					// indexek cime
+		GL_UNSIGNED_INT,	// indexek tipusa
+		(void*)(start * sizeof(unsigned int)));					// indexek cime
 }
 
-/*2D-s információkat itt dolgozom föl
-Negative vágási szelet feldolgozása
-Positive vágási szelet feldolgozása
-*/
+//2D-s informaciok feldolgozasa
 void Visualization::Get2DDrawInfo()
 {
 	Release2DIds();
 
-	/*Default: negative rész*/
+	/*Default: negative resz*/
 	_2DTri = &_2D_TriIds_N;
 	_2DLine1 = &_2D_Line1Ids_N;
 	_2DLine2 = &_2D_Line2Ids_N;
 
 	//****************************************************************************
-	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
+	//NEGATIVE
+
+	std::vector<approx::PolyFace2D> _2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
 
 	Active2DIndex = 0;
 
@@ -685,6 +672,7 @@ void Visualization::Get2DDrawInfo()
 		size_t sizeOfRanges = _2Ddata[i].ranges.size();
 
 		//***********************************************
+		//alakzat levalasztasa 
 		int start = _2Ddata[i].ranges[0];
 		int end = _2Ddata[i].ranges[1];
 
@@ -709,7 +697,7 @@ void Visualization::Get2DDrawInfo()
 
 		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end), _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
 		//***********************************************
-
+		//vonalak szetvalasztasa
 		for (int j = 1; j < sizeOfRanges - 1; ++j)
 		{
 			start = _2Ddata[i].ranges[j];
@@ -745,6 +733,7 @@ void Visualization::Get2DDrawInfo()
 		size_t sizeOfRanges = _2Ddata[i].ranges.size();
 
 		//***********************************************
+		//alakzat levalasztasa
 		int start = _2Ddata[i].ranges[0];
 		int end = _2Ddata[i].ranges[1];
 
@@ -769,7 +758,7 @@ void Visualization::Get2DDrawInfo()
 
 		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin()+start, _2Ddata[i].points.begin()+end), _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
 		//***********************************************
-
+		//vonalak szetvalasztasa
 		for (int j = 1; j < sizeOfRanges - 1; ++j)
 		{
 			start = _2Ddata[i].ranges[j];
@@ -797,12 +786,10 @@ void Visualization::Get2DDrawInfo()
 
 }
 
-/*2D-s metszet vetületek rajzolása*/
+/*2D-s metszet vetuletek rajzolasa*/
 void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 {
-	/*Folyamat:
-		Vonalak rajzolása (targetatommal való metszet)
-		Metszet vetület átlátszóan	*/
+	//ha nincs semmi rajzolni valo akkor nem kell semmit tenni
 	if (!_2DTri->size()) return;
 
 	glm::mat4 matWorld = trans * rot * scal;
@@ -816,6 +803,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glUniform3f(color2D, 0.0f, 0.0f, 1.0f);
 	glUniform1f(alpha2D, 1.0f);
 
+	//egyik vonaltipus rajzolasa
 	for (int i = 0;  (*_2DLine1).size()!=0 &&  i < (*_2DLine1)[Active2DIndex].size(); ++i)
 	{
 		tmp = (*_2DLine1)[Active2DIndex][i];
@@ -834,6 +822,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glUniform3f(color2D, 0.0f, 1.0f, 0.0f);
 	glUniform1f(alpha2D, 1.0f);
 
+	//masik vonaltipus rajzolasa
 	for (int i = 0;  (*_2DLine2).size() != 0 &&  i < (*_2DLine2)[Active2DIndex].size(); ++i)
 	{
 		tmp = (*_2DLine2)[Active2DIndex][i];
@@ -852,6 +841,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glUniform3f(color2D, 1.0f, 0.0f, 0.0f);
 	glUniform1f(alpha2D, 0.5f);
 
+	//haromszog rajzolasa
 	tmp = (*_2DTri)[Active2DIndex];
 	glBindVertexArray(tmp.VaoId);
 
@@ -863,7 +853,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 		tmp.count);
 }
 
-/*Target test rajzolása*/
+/*Target test rajzolasa*/
 void Visualization::DrawTargetBody()
 {
 	glPolygonMode(GL_FRONT, GL_FILL);
@@ -879,12 +869,12 @@ void Visualization::DrawTargetBody()
 	SetTargetAtomProperties();
 
 	glDrawElements(GL_TRIANGLES,
-		(GLsizei)targetdata.indicies.size(),
-		GL_UNSIGNED_SHORT,
+		targetIds.count,
+		GL_UNSIGNED_INT,
 		0);
 }
 
-/*Vágósík rajzolása*/
+/*Vagosik rajzolasa*/
 void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
 {
 	glDisable(GL_CULL_FACE);
@@ -901,17 +891,17 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	glDrawElements(GL_TRIANGLES,		
-		3 * 2 * CuttingPlaneFreq * CuttingPlaneFreq,		
-		GL_UNSIGNED_SHORT,	
+		planeIds.count,
+		GL_UNSIGNED_INT,	
 		0);					
 }
 
 /*Fourier együttható szerinti csoportba kerülés
-	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható
+	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható, epsilon: EPSILONFOURIER
 	relevansAtom = releváns atomok: FOURIERCOEFFICIENT (0.5) -nél nagyobb fourier egy.ú atomok*/
 void Visualization::CalculateDisplayVectorsByFourier()
-{	//underface be is az epszilont ehez hangolni
-	/* ActiveAtom negativ fele ; NumberOfAtoms-1 positive fele both esetén*/
+{	
+	//Elso atomra fourier egyutthato szamolas - lehet negative vagy positive resz is, de both esetben mindig negative
 	float fourier = app.container().atoms(ActiveAtom).fourier();
 	if (logger) { std::cout << "Fourier of First Atom: " << fourier << "\n"; }
 
@@ -927,6 +917,7 @@ void Visualization::CalculateDisplayVectorsByFourier()
 
 	if (request.type != BOTH) return;
 
+	//masodik atomra
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
 	if (logger) { std::cout << "Fourier of Second Atom: " << fourier << "\n"; }
 
@@ -941,14 +932,14 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	}
 }
 
-/*Automatizált elfogadó:
-Vágás után lecheckoljuk van e metszete az egyes részeknek a céltesttel
-Epszilon: 0.001					*/
+/*Automatizált elfogado*/
 void Visualization::CutChecker()
 {
+	//ket valtozo arra hogy eleg nagy-e a metszetterfogat
 	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() > INTERSECTIONEPSILON;
 	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() > INTERSECTIONEPSILON;
 
+	//a bool ertekek alapjan az elfogadas
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
 	else if (IntersectionWithNegative) request.type = NEGATIVE;
 	else request.type = POSITIVE;
@@ -956,14 +947,14 @@ void Visualization::CutChecker()
 	AcceptCutting();
 }
 
-/*Prioritásos sor tartalmát lekérő eljárás*/
+/*Prioritasos sor tartalmat lekero eljaras*/
 void Visualization::GetPriorResult()
 {
 	std::vector<Utility::PriorResult> result = prior.GetOrder();
 	priorQue = prior.GetPriorIndexes();
 
 	ActiveIndex = 0;
-	ActiveAtom = priorQue.size() > 0 ? priorQue[ActiveIndex] : 0;
+	ActiveAtom = priorQue.size() > 0 ? priorQue[ActiveIndex] : -1;
 
 	PlaneCalculator->SetActive(ActiveAtom);
 
@@ -974,8 +965,7 @@ void Visualization::GetPriorResult()
 
 }
 
-/*Megállapítja hogy az aktuális atomról van-e szó mindegy milyen módban is vagyunk!
-Megj.: Fontosak az indexek*/
+/*Megallapitja hogy az aktualis atomrol van-e szo mindegy milyen modban is vagyunk!*/
 bool Visualization::IsItActive(const int& which)
 {
 	return	(request.type == NEGATIVE && (ActiveAtom) == which)
@@ -983,29 +973,27 @@ bool Visualization::IsItActive(const int& which)
 		|| (request.type == BOTH && (NumberOfAtoms == which || (ActiveAtom) == which));
 }
 
-/*Legrégebben használt atomok stratégiához
-	Ez aktualizálja a lastuse vektorom		*/
-void Visualization::LastUseChanging(const TypeOfAccept& ta)
+/*Last use vektor aktualizalasa	*/
+void Visualization::LastUseChanging()
 {
 	for (size_t i = 0; i < lastUse.size();++i) lastUse[i]++;
 
-	liveAtoms.erase(ActiveAtom); // EF a vágásnak
+	liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
 	relevantAtoms.erase(ActiveAtom);
-
-	/* MANUALNAL lesz erdekeltsege, ha nem manual akkor ilyen nincs is
-	Ahhoz hogy lassuk berakjuk az elo atomok koze mindket reszt, viszont annak ki kell kerulnie (a negativ mindenkepp ki fog)
-	DE ha BOTH-t tartjuk meg akkor a NumberOfAtoms valtozni fog -> alkalmazkodunk (kodismetles helyett ezt valasztottam)
-	*/
-	liveAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms); // EF a vágásnak
-	relevantAtoms.erase(request.type == BOTH ? NumberOfAtoms - 1 : NumberOfAtoms);	//Van közös rész, de újabb vágás esetén már nem biztos hogy releváns lesz -> need this
-	
-	switch (ta)
+	//valtoztatas az elfogadas tipusatol fugg
+	//Megj.: azert kell a liveatoms es relevans vectorokat valtoztatni mert 
+	//ha manualis modban vagtunk akkor belekerul a masik fele is az eredmenynek amit latnunk kellett
+	switch (request.type)
 	{
 		case BOTH:
+			liveAtoms.erase(NumberOfAtoms - 1 );
+	
 			lastUse[ActiveAtom] = 0;
 			lastUse.push_back(0);
 			break;
 		case POSITIVE:
+			liveAtoms.erase( NumberOfAtoms );
+	
 			lastUse[ActiveAtom] = 0;
 			break;
 		case NEGATIVE:
@@ -1015,22 +1003,14 @@ void Visualization::LastUseChanging(const TypeOfAccept& ta)
 	
 }
 
-/*	MANUAL módban a vágási eredmény mergelése a többi szabad atommal
-Folyamat:
-Search our points which only used in the cutted atom -> collect them in a set
-Delete them in reverse mode and decrease our indexes
-Delete our unused indicies
-Insert our ponts
-Insert Indicies in 3 part , before start , new indicies part1, after end, new indicies part2
-Insert Ranges in 3 part with same method
-*/
+/*	MANUAL modban a vagasi eredmeny mergelese a tobbi szabad atommal */
 void Visualization::MergeDataContainer(approx::BodyList& data, const approx::BodyList& cutresult)
 {
-	liveAtoms.insert(NumberOfAtoms);	// ez lesz azaz index ami a végére kerül
+	liveAtoms.insert(NumberOfAtoms);	// ez lesz azaz index ami a vegere kerül (masodik fele az eredmenynek)
 
 	int start = data.index_ranges[ActiveAtom];
 	int end = data.index_ranges[ActiveAtom + 1];
-	//Pontok törlése, indexek javítása
+	//Pontok torlese, indexek javitasa
 	std::set<int> DeletedPoints;
 
 	for (int i = start; i < end - 1; ++i)
@@ -1046,23 +1026,23 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 		}
 
 		auto index = data.indicies[i];
-		if (!count /*&& DeletedPoints.count(index) == 0*/)	//torolheto
+		if ( !count )	//torolheto
 		{
 			DeletedPoints.insert(index);
 		}
 	}
 
-	//Set orderd min to max by default and we want to erase in reverse mode to get the correct result
+	//a torolheto pontok tenyleges torlese, hatulrol kezdve a megfelelo eredmeny elerese miatt
 	for (std::set<int>::reverse_iterator j = DeletedPoints.rbegin(); j != DeletedPoints.rend(); j++)
 	{
 		data.points.erase(data.points.begin() + *j);
-		for (std::vector<GLushort>::iterator k = data.indicies.begin(); k != data.indicies.end(); k++)
+		for (std::vector<GLuint>::iterator k = data.indicies.begin(); k != data.indicies.end(); k++)
 		{
 			if (*k >= *j) { (*k)--; }
 		}
 	}
 
-	//Indexek törlése ; In order to erase the correct index we should go back to front
+	//Indexek torlese ; Szinten hatulrol elore haladva
 	for (int i = end - 1; i >= start; --i)
 	{
 		data.indicies.erase(data.indicies.begin() + i);
@@ -1078,14 +1058,14 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	}
 
 	//Indexek hozzafuzese
-	std::vector<GLushort> new_indicies(data.indicies.begin(), data.indicies.begin() + start);
+	std::vector<GLuint> new_indicies(data.indicies.begin(), data.indicies.begin() + start);
 
 	for (int i = 0; i < cutresult.index_ranges[1];++i)
 	{
 		new_indicies.push_back(cutresult.indicies[i] + (int)CountOfPoints);
 	}
 
-	//már törölve vannak ezek az idnexek -> starttól
+	//mar torolve vannak ezek az indexek -> starttol
 	for (size_t i = start; i < data.indicies.size();++i)
 	{
 		new_indicies.push_back(data.indicies[i]);
@@ -1099,7 +1079,7 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	data.indicies = new_indicies;
 
 	//Indexrange helyreallitas
-	std::vector<GLushort> new_ranges(data.index_ranges.begin(), data.index_ranges.begin() + ActiveAtom + 1);
+	std::vector<GLuint> new_ranges(data.index_ranges.begin(), data.index_ranges.begin() + ActiveAtom + 1);
 
 	int LastIndexRange = new_ranges.size() == 0 ? 0 : new_ranges[new_ranges.size() - 1];
 
@@ -1119,14 +1099,11 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 	data.index_ranges = new_ranges;
 }
 
-/*Vágósík beállítás + rajzoláshoz szükséges információk összeszedése
-Draw method:
-Change the default normal to the actual normal
-Translate to centr - distance
-where centr = centroid of atom,
-distance = centroid distance from the plane	*/
+/*Vagosik beallitas + rajzolashoz szukseges informaciok osszeszedese */
 void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 {
+	if (liveAtoms.size() == 0) return;
+
 	p = approx::Plane<float>(newplanedata.normal, newplanedata.point);
 	centr = app.container().atoms(ActiveAtom).centroid();
 	distance = p.classify_point(centr);
@@ -1137,17 +1114,17 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
-	case SDLK_z:
-		/*for (int i = 0;i < 100;++i)
+	/*case SDLK_z:	csak leakhez
+		for (int i = 0;i < 100;++i)
 		{
 			CleanIdBufferForReuse(_3dIds);
 			ObjectCreator::Create3DObject(data.points,data.indicies,_3dIds.VaoId,_3dIds.VboId,_3dIds.IndexId);
-		} ez így ok*/
+		}
 		for (int i = 0;i < 100;++i)
 		{
 			Get2DDrawInfo();
 		}
-		break;
+		break;*/
 	case SDLK_1:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -1235,6 +1212,9 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		_2DTri = _2DTri == &_2D_TriIds_N ? &_2D_TriIds_P : &_2D_TriIds_N;
 		c.SetCamera((*_2DTri)[Active2DIndex].eye);
 		break;
+	case SDLK_t:
+		IsTargetDrawEnabled = !IsTargetDrawEnabled;
+		break;
 	}
 }
 void Visualization::MouseMove(SDL_MouseMotionEvent& mouse)
@@ -1292,8 +1272,7 @@ void Visualization::Update()
 
 	request = ui.GetRequest();
 }
-/*Clean
-TODO: aktualizálni!*/
+/*Clean*/
 void Visualization::Clean()
 {
 	CleanIdBufferForReuse(_3dIds);
@@ -1305,7 +1284,7 @@ void Visualization::Clean()
 
 	delete PlaneCalculator;
 }
-/*Resize: ablakátméretezés*/
+/*ablakatmeretezes*/
 void Visualization::Resize(int _w, int _h)
 {
 	glViewport(0, 0, _w, _h);
@@ -1313,6 +1292,7 @@ void Visualization::Resize(int _w, int _h)
 	m_matProj = glm::perspective(45.0f, _w / (float)_h, 0.01f, 1000.0f);
 }
 
+/*Torli a parameterben megadott tipusban levo indexek ala feltoltott adatot*/
 void Visualization::CleanIdBufferForReuse(const IdsAndProp iap)
 {
 	glDeleteVertexArrays(1, &iap.VaoId);
@@ -1320,6 +1300,7 @@ void Visualization::CleanIdBufferForReuse(const IdsAndProp iap)
 	glDeleteBuffers(1, &iap.VboId);
 }
 
+/*Felszabaditja a 2D-s pontokat tarolo indexeket*/
 void Visualization::Release2DIds()
 {
 	for (size_t i = 0; i < _2D_Line1Ids_N.size();++i)

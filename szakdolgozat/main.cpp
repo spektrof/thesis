@@ -85,16 +85,17 @@ int main(int argc, char* args[])
 	Visualization app;
 
 	if (!app.Init())
-		{
+	{
 			SDL_DestroyWindow(win);
 			std::cout << "[app.Init] False!\n";
 			return 1;
-		}
+	}
 
 	while (!quit)
+	{
+		
+		while (SDL_PollEvent(&ev))
 		{
-			while (SDL_PollEvent(&ev))
-			{
 				switch (ev.type)
 				{
 				case SDL_QUIT:
@@ -123,17 +124,17 @@ int main(int argc, char* args[])
 					}
 					break;
 				}
-			}
-
-			SDL_GL_SwapWindow(win);
-			app.Update();
-			app.Render();
-
 		}
 
-	SDL_Quit();
+		SDL_GL_SwapWindow(win);
+		app.Update();
+		app.Render();
+
+	}
 
 	ui.exit(0);
+	SDL_Quit();
+
 
 	return 0;
 }

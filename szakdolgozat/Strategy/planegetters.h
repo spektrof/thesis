@@ -13,7 +13,7 @@ template <typename V>
 class PlaneGetterFunctions
 {
 	V* data;
-	std::vector< std::vector<int>>* adj_mtx;
+	std::vector< std::vector<int>> adj_mtx;
 	int Active;
 	Utility::PlaneResult requestPlane;
 
@@ -35,7 +35,7 @@ class PlaneGetterFunctions
 
 public:
 
-	PlaneGetterFunctions(V* d = NULL, std::vector< std::vector<int>>* adj = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult() ) : data(d), adj_mtx(adj), Active(a),requestPlane(req) {}
+	PlaneGetterFunctions(std::vector< std::vector<int>> adj, V* d = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult() ) : data(d), adj_mtx(adj), Active(a),requestPlane(req) {}
 	~PlaneGetterFunctions() {}
 
 	void SetActive(const int& b)
@@ -46,7 +46,7 @@ public:
 	{
 		data = d;
 	}
-	void SetAdjMatrix(std::vector< std::vector<int>>* a)
+	void SetAdjMatrix(std::vector< std::vector<int>> a)
 	{
 		adj_mtx = a;
 	}
@@ -81,7 +81,7 @@ public:
 	{
 		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
 
-		if (faces.size() == 0) return Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0));
+		if (faces.size() == 0) return Utility::PlaneResult();
 
 		int randomFace = rd() % faces.size();
 
@@ -95,7 +95,7 @@ public:
 	{
 		/*Lekerem az beeseo lapok indexeit, ha azok nem voltak akkor egy default sikkal terek vissza*/
 		std::vector<int> tmp = data->atoms(Active).face_indicies_inside();
-		if (tmp.size() == 0) return Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0));
+		if (tmp.size() == 0) return Utility::PlaneResult();
 
 		/*Ha volt beeso lap akkor csinalok egy maximum indexu lap hosszusagu vektort keszitek, majd feloltoltem ott 1-sekkel amelyik sik benne van*/
 		std::vector<approx::Face<float>> faces = data->target_body().face_container();
@@ -114,7 +114,7 @@ public:
 
 		active.clear();
 		active.insert(tmp[randomFace]);
-		used.resize(adj_mtx->size());
+		used.resize(adj_mtx.size());
 		used[tmp[randomFace]] = 1;
 
 		/*Oldal kiterjesztese szomszedsagi matrix alapjan*/
@@ -125,7 +125,7 @@ public:
 
 			for (int i = 0;i < 3;++i)
 			{
-				const int adj = (*adj_mtx)[index][i];
+				const int adj = adj_mtx[index][i];
 				if ( !used[adj] && adj < ids.size() && ids[adj] )	// used: HA 0 -> igaz (nem volt még)
 				{
 					active.insert(adj);
@@ -171,7 +171,7 @@ public:
 
 		active.clear();
 		active.insert(tmp[randomFace]);
-		used.resize(adj_mtx->size());
+		used.resize(adj_mtx.size());
 		used[tmp[randomFace]] = 1;
 
 		/*Faces stretch*/
@@ -182,7 +182,7 @@ public:
 
 			for (int i = 0;i < 3;++i)
 			{
-				const int adj = (*adj_mtx)[index][i];
+				const int adj = adj_mtx[index][i];
 				if (!used[adj] && adj < ids.size() && ids[adj])	// HA 0 -> igaz (nem volt még)
 				{
 					active.insert(adj);
@@ -227,7 +227,7 @@ public:
 
 		active.clear();
 		active.insert(tmp[randomFace]);
-		used.resize(adj_mtx->size());
+		used.resize(adj_mtx.size());
 		used[tmp[randomFace]] = 1;
 
 		/*Faces stretch*/
@@ -238,7 +238,7 @@ public:
 
 			for (int i = 0;i < 3;++i)
 			{
-				const int adj = (*adj_mtx)[index][i];
+				const int adj = adj_mtx[index][i];
 				if (!used[adj] && adj < ids.size() && ids[adj])	// HA 0 -> igaz (nem volt még)
 				{
 					active.insert(adj);
@@ -282,7 +282,7 @@ public:
 
 		active.clear();
 		active.insert(tmp[randomFace]);
-		used.resize(adj_mtx->size());
+		used.resize(adj_mtx.size());
 		used[tmp[randomFace]] = 1;
 
 		/*Faces stretch*/
@@ -293,7 +293,7 @@ public:
 
 			for (int i = 0;i < 3;++i)
 			{
-				const int adj = (*adj_mtx)[index][i];
+				const int adj = adj_mtx[index][i];
 				if (!used[adj] && adj < ids.size() && ids[adj])	// HA 0 -> igaz (nem volt még)
 				{
 					active.insert(adj);
@@ -324,7 +324,7 @@ public:
 	Utility::PlaneResult AllPointsFitting4()
 	{
 		std::vector<approx::Face<float>> faces = data->atoms(Active).faces_inside();
-		if (faces.size() == 0) return Utility::PlaneResult(approx::Vector3<float>(1, 0, 0), approx::Vector3<float>(0, 0, 0));
+		if (faces.size() == 0) return Utility::PlaneResult();
 
 		std::set<approx::Vector3<float>, approx::DifferentVector3<float>> vertexes;
 		vertexes.clear();
