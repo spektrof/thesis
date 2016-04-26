@@ -59,6 +59,7 @@ enum Display
 {
 	LIVE,
 	RELEVANT,
+	ONLYACTIVE,
 };
 
 /*3D Koordinatak*/

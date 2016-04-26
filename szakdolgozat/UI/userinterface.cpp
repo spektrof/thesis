@@ -236,6 +236,7 @@ void UserInterface::restartEvent()
 	_n->setText("1");
 	_xn->setText("1"); _yn->setText("0"); _zn->setText("0");
 
+	_strategy->setEnabled(true);
 	_choiceStrategy->setEnabled(true);
 	_prev->setEnabled(true);
 	_nextChoice->setEnabled(true);
@@ -264,7 +265,7 @@ void UserInterface::newplane_event()
 		if (_yn->isModified()) _yn->undo();
 		if (_zn->isModified()) _zn->undo();
 
-		ErrorShow("Invalid normal ! (dont use (0,0,0))\n");	//ujra lefut tole a newplaneevent fv.
+		InfoShow("Invalid normal ! (dont use (0,0,0))\n");	//ujra lefut tole a newplaneevent fv.
 
 		return;
 	}
@@ -328,15 +329,19 @@ void UserInterface::nextNCutEvent()
 
 void UserInterface::exportEvent()
 {
-	request.eventtype = EXPORT;
+	request.filename = QFileDialog::getSaveFileName(this, tr("Save File"), "/home/ELTE/Felevek/6/szakdolgozat/szakdolgozat/szakdolgozat/result.obj",tr("Obj (*.obj)")).toLatin1().data();
+
+	if (request.filename != "")
+	{
+		request.eventtype = EXPORT;
+	}
 }
 
 void UserInterface::importEvent()
 {
-	bool ok;
-	request.filename = QInputDialog::getText(0, "File opening", "Obj name:",QLineEdit::Normal,QString(), &ok).toLatin1().data();
+	request.filename = QFileDialog::getOpenFileName(this,tr("Open obj"), "/home/ELTE/Felevek/6/szakdolgozat/szakdolgozat/szakdolgozat/", tr("Obj Files (*.obj)")).toLatin1().data();
 
-	if (ok)
+	if (request.filename!="")
 	{
 		request.eventtype = IMPORT;
 	}
@@ -698,11 +703,12 @@ void UserInterface::AddItemsToDropMenu()
 
 	_fourierGroups->addItem("Live atoms", 0);
 	_fourierGroups->addItem("Relevant atoms", 1);
+	_fourierGroups->addItem("Only active atom", 2);
 }
 
-void UserInterface::RequestWrongCuttingErrorResolve()
+void UserInterface::RequestWrongCuttingErrorResolve(const char* text)
 {
-	QMessageBox::warning(this, tr("WRONG CUT"), tr("Ertelmetlen vagas!\nA sik nem metszi az atomot."), QMessageBox::Ok);
+	QMessageBox::warning(this, tr("WRONG CUT"), tr(text), QMessageBox::Ok);
 
 	_accept->setEnabled(false);
 	_acceptTypes->setEnabled(false);
@@ -718,6 +724,7 @@ void UserInterface::RequestWrongCuttingErrorResolve()
 
 void UserInterface::SuccessImport()
 {
+	_strategy->setEnabled(true);
 	_choiceStrategy->setEnabled(true);
 	_prev->setEnabled(true);
 	_nextChoice->setEnabled(true);
@@ -738,10 +745,22 @@ void UserInterface::SuccessImport()
 	_acceptTypes->setCurrentIndex(0);
 	_fourierGroups->setCurrentIndex(0);
 	_xf->setText("0"); _yf->setText("0"); _zf->setText("0");
-
 }
 
-void UserInterface::ErrorShow(const char* text)
+void UserInterface::InfoShow(const char* text)
 {
-	QMessageBox::information(this, tr("ERROR"), tr(text), QMessageBox::Ok);
+	QMessageBox::information(this, tr("INFO"), tr(text), QMessageBox::Ok);
+}
+
+void UserInterface::NoAtomLeft()
+{
+	InfoShow("No atom left!\nYou probably finished your task.");
+
+	_strategy->setEnabled(false);
+	_cutting->setEnabled(false);
+	_undo->setEnabled(false);
+	_accept->setEnabled(false);
+	_acceptTypes->setEnabled(false);
+	_n->setEnabled(false);
+	_nextNOk->setEnabled(false);
 }

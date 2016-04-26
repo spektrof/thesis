@@ -48,6 +48,21 @@ namespace approx{
 			}
 		};
 
+		struct Memo { //a nem valtozo szamitasokat nem kell ujra elvegezni, a bufferelendo dolgokat ebbe a tipusba lehet felvenni
+			bool has_intersection_volume;
+			T intersection_volume;
+
+			Memo() : has_intersection_volume(false) {}
+			Memo(const Memo&) = default;
+			Memo& operator = (const Memo&) = default;
+
+			void clear() {
+				has_intersection_volume = false;
+			}
+		};
+
+		mutable Memo cache;
+
 		typedef std::shared_ptr<SurfacePoly> PolyPtr;
 
 		std::vector<std::shared_ptr<SurfacePoly>> f_poly;
@@ -62,6 +77,42 @@ namespace approx{
 				return std::pair<int, int>(p1.second, p2.first);
 			else
 				return std::pair<int, int>(p1.first, p2.second);
+		}
+
+		ConvexAtom(std::vector<Face<T>>* f, const std::vector<int>& i, const Body<T>* targ, const std::vector<std::shared_ptr<SurfacePoly>>& plist, const Memo& m) :
+			Body<T>(f, i), f_poly(plist), target(targ), cache(m) {}
+		ConvexAtom(std::vector<Face<T>>* f, std::vector<int>&& i, const Body<T>* targ, std::vector<std::shared_ptr<SurfacePoly>>&& plist, const Memo& m) :
+			Body<T>(f, i), f_poly(plist), target(targ), cache(m) {}
+
+		T calculate_intersection_volume() const {
+			T sum = 0;
+			for (const Face<T>& f : *target) {
+				std::vector<Vector3<T>> tmp_vert, tmp_norm;
+				ConstFaceIterator it = begin();
+				Face<T> clipf = f;
+				//amennyiben a lap pontosan a sikon van, a vetuletet kell beszamitanom, magat a lapot nem, ezzel elkerulve a az ismetlodest
+				bool onplane = f.to_plane().example_point() == it->to_plane().example_point();
+				while (it != end() && clipf.size() >= 3 && !onplane) {
+					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(), &tmp_vert, &tmp_norm);
+					onplane = cut.points_added == 0 && cut.pt_inds.size() == clipf.size();
+					clipf = cut.negative;
+					++it;
+				}
+				if (clipf.size() >= 3 && !onplane) {
+
+					//T x = clipf.to_2d().area();
+					//T y = clipf.to_plane().signed_distance();
+					//Vector3<T> norm1 = clipf.to_plane().normal(),
+					//	       norm2 = clipf.normal();
+
+					sum += clipf.to_2d().area()*clipf.to_plane().signed_distance();
+				}
+			}
+
+			for (int i = 0; i < size(); ++i) {
+				sum += f_poly[i]->area()*faces(i).to_plane().signed_distance();
+			}
+			return sum / static_cast<T>(3);
 		}
 
 	public:
@@ -91,6 +142,7 @@ namespace approx{
 			Body<T>::operator=(a);
 			f_poly = a.f_poly;
 			target = a.target;
+			cache = a.cache;
 			return *this;
 		}
 
@@ -98,6 +150,7 @@ namespace approx{
 			Body<T>::operator=(a);
 			f_poly = std::move(a.f_poly);
 			target = a.target;
+			cache = a.cache;
 			return *this;
 		}
 
@@ -106,11 +159,11 @@ namespace approx{
 
 		//megadott taroloba masolas
 		ConvexAtom migrate_to(std::vector<Face<T>>* fcs) const {
-			return ConvexAtom(fcs, inds, target, f_poly);
+			return ConvexAtom(fcs, inds, target, f_poly, cache);
 		}
 		//megadott taroloba mozgatas
 		ConvexAtom migrate_to(std::vector<Face<T>>* fcs) {
-			return ConvexAtom(fcs, std::move(inds), target, std::move(f_poly));
+			return ConvexAtom(fcs, std::move(inds), target, std::move(f_poly),cache);
 		}
 
 		//Vagasi eredmeny mely minden lehetseges informaciot tartalmaz amely az esetleges visszavonashoz es utomuveletekhez
@@ -275,34 +328,11 @@ namespace approx{
 
 		//metszetterfogat szamitas a celtesttel
 		T intersection_volume() const {
-			T sum = 0;
-			for (const Face<T>& f : *target){
-				std::vector<Vector3<T>> tmp_vert, tmp_norm;
-				ConstFaceIterator it = begin();
-				Face<T> clipf = f;
-				//amennyiben a lap pontosan a sikon van, a vetuletet kell beszamitanom, magat a lapot nem, ezzel elkerulve a az ismetlodest
-				bool onplane = f.to_plane().example_point() == it->to_plane().example_point();
-				while (it != end() && clipf.size() >= 3 && !onplane){
-					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(),&tmp_vert,&tmp_norm);
-					onplane = cut.points_added == 0 && cut.pt_inds.size() == clipf.size();
-					clipf = cut.negative;
-					++it;
-				}
-				if (clipf.size() >= 3 && !onplane){
-
-					//T x = clipf.to_2d().area();
-					//T y = clipf.to_plane().signed_distance();
-					//Vector3<T> norm1 = clipf.to_plane().normal(),
-					//	       norm2 = clipf.normal();
-
-					sum += clipf.to_2d().area()*clipf.to_plane().signed_distance();
-				}
+			if (!cache.has_intersection_volume) {
+				cache.intersection_volume = calculate_intersection_volume();
+				cache.has_intersection_volume = true;
 			}
-
-			for (int i = 0; i < size(); ++i){
-				sum += f_poly[i]->area()*faces(i).to_plane().signed_distance();
-			}
-			return sum / static_cast<T>(3);
+			return cache.intersection_volume;
 		}
 
 		//Fourier-egyutthato, azaz a metszet es a teljes terfogatanak a hanyadosa
@@ -402,6 +432,11 @@ namespace approx{
 			return res;
 		}
 
+		//cache kitisztitasa, ha valamiert szukseg lenne ra,
+		void clear_cache() const {
+			Body<T>::clear_cache();
+			cache.clear();
+		}
 	};
 
 }

@@ -8,6 +8,7 @@
 // Az egyes pontokat a vektorban elfoglalt helyukkel adjuk meg.
 
 #include <utility>
+#include <cmath>
 #include <algorithm>
 #include <vector>
 #include <set>
@@ -46,9 +47,9 @@ namespace approx{
 				std::swap(pind1, pind2);
 				std::swap(sign1, sign2);
 			}
-			T   all = (abs(sign1) + abs(sign2)),
-				div = abs(sign1 / all),
-				div2 = abs(sign2 / all);
+			T   all = (std::abs(sign1) + std::abs(sign2)),
+				div = std::abs(sign1 / all),
+				div2 = std::abs(sign2 / all);
 			return div2*points(pind1) + div*points(pind2);
 		}
 

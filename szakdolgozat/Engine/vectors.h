@@ -68,7 +68,7 @@ namespace approx{
 		void normalize(){ *this /= length(); }
 
 		//egyenloseg teszteles
-		bool operator == (const Vector2& v)const { return x == v.x && y == v.y; }
+		bool operator == (const Vector2& v) const { return x == v.x && y == v.y; }
 		bool operator != (const Vector2& v) const { return x != v.x || y != v.y; }
 
 	};

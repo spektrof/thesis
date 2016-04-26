@@ -7,7 +7,7 @@
 // A test kepes meghatarozni terfogatat, kozeppontjat, atmerojet, sikkal valo metszest eldonteni,
 // valamint sikkal valo metszetvetuletet eloallitani.
 // 
-
+#include <cmath>
 #include <vector>
 #include <algorithm>
 #include "face.h"
@@ -17,73 +17,53 @@
 namespace approx{
 
 	//Parametere a skalar tipus ami felett ertelmezzuk a vektorteret
-	template <class T> class Body{
-	protected:
-		std::vector<Face<T>>* _faces;
-		std::vector<int> inds;
+	template <class T> class Body {
 
+		//koltseges szamitasok gyorsitasara cacheleshez
+		struct Memo {
 
-	public:
-		Body(std::vector<Face<T>>* f, const std::vector<int>& i) : _faces(f), inds(i){}
-		Body(std::vector<Face<T>>* f, std::vector<int>&& i) : _faces(f), inds(i){}
-		Body(const Body&) = default;
-		Body(Body&& b) : _faces(b._faces), inds(std::move(b.inds)){}
+			bool has_volume;
+			T volume;
+			bool has_diameter;
+			Vector3<T> diameter;
+			bool has_centroid;
+			Vector3<T> centroid;
 
-		typedef T ScalarType;
+			Memo() : has_volume(false), has_diameter(false),has_centroid(false) {}
+			Memo(const Memo&) = default;
+			Memo& operator = (const Memo&) = default;
 
-		typedef IndexIterator<Face<T>> FaceIterator;
-		typedef ConstIndexIterator<Face<T>> ConstFaceIterator;
+			void clear() {
+				has_volume = false;
+				has_diameter = false;
+				has_centroid = false;
+			}
+		};
 
-		Body& operator = (const Body& b) = default;
-		Body& operator =(Body&& b){
-			inds = std::move(b.inds);
-			_faces = b._faces;
-			return *this;
+		mutable Memo cache;
+
+		//atmero szamitas, kintrol cachelve erheto el
+		Vector3<T> calculate_diameter() const {
+			Vector3<T> diam;
+			for (int i = 0; i < size(); ++i) {
+				for (int j = i; j < size(); ++j) {
+					for (const Vector3<T>& p1 : faces(i)) {
+						for (const Vector3<T>& p2 : faces(j)) {
+							Vector3<T> d = (p1 - p2);
+							if (d.length() > diam.length()) {
+								diam = d;
+							}
+						}
+					}
+				}
+			}
+			return diam;
 		}
 
-		//hasznalhato-e a test
-		bool valid() const { return _faces && inds.size()>1; }
-		//bool konverzio, erteke a valid metoduseval egyezik
-		operator bool() const { return valid(); }
-
-		//egyenloseg vizsgalat
-		bool operator == (const Body& b) const {
-			return _faces == b._faces && inds == b.inds;
-		}
-
-		//mozgatas masik tarolora hivatkozassal
-		Body migrate_to(std::vector<Face<T>>* fcs){
-			return Body(fcs, std::move(inds));
-		}
-
-		//masolas masik tarolora hivatkozassal
-		Body migrate_to(std::vector<Face<T>>* fcs) const {
-			return Body(fcs, inds);
-		}
-
-		//a test lapszama
-		int size() const { return inds.size(); }
-	    //az i. lap indexe a taroloban
-		int indicies(size_t i) const { return inds[i]; }
-		//indexlista lekerdezese konstans hozzaferesre
-		const std::vector<int>& indicies() const { return inds; }
-		//indexlista lekerdezese
-		std::vector<int>& indicies() { return inds; }
-		
-		//az i. lap elerese
-		Face<T>& faces(size_t i){ return _faces->operator[](inds[i]); }
-		const Face<T>& faces(size_t i) const { return _faces->operator[](inds[i]); }
-
-		FaceIterator begin() { return FaceIterator(_faces, &inds, 0); }
-		FaceIterator end() { return FaceIterator(_faces, &inds, inds.size()); }
-
-		ConstFaceIterator begin() const { return ConstFaceIterator(_faces, &inds, 0); }
-		ConstFaceIterator end() const { return ConstFaceIterator(_faces, &inds, inds.size()); }
-
-		// a test terfogata
-		T volume() const {
+		//terfogatszamitas, kintrol cachelve erheto el
+		T calculate_volume() const {
 			T sum = 0;
-			for (const Face<T>& f : *this){
+			for (const Face<T>& f : *this) {
 				//TODO
 				sum += f.to_2d().area() * dot(f.points(0), f.normal());
 				//sum += f.to_2d().area() * dot(f.center(), f.normal());
@@ -92,8 +72,8 @@ namespace approx{
 			return sum;
 		}
 
-		//a test sulypontja 
-		Vector3<T> centroid() const {
+		//sulypont szamitas, kintrol cachelve erheto el
+		Vector3<T> calculate_centroid() const {
 			Vector3<T> center(0, 0, 0);
 			for (const Face<T>& f : *this) {
 				Vector3<T> a = f.points(0);
@@ -110,15 +90,99 @@ namespace approx{
 			return center;
 		}
 
+		Body(std::vector<Face<T>>* f, const std::vector<int>& i,const Memo& m) : _faces(f), inds(i),cache(m) {}
+		Body(std::vector<Face<T>>* f, std::vector<int>&& i, const Memo& m) : _faces(f), inds(i),cache(m) {}
+
+	protected:
+		std::vector<Face<T>>* _faces;
+		std::vector<int> inds;
+
+
+	public:
+		Body(std::vector<Face<T>>* f, const std::vector<int>& i) : _faces(f), inds(i) {}
+		Body(std::vector<Face<T>>* f, std::vector<int>&& i) : _faces(f), inds(i) {}
+		Body(const Body&) = default;
+		Body(Body&& b) : _faces(b._faces), inds(std::move(b.inds)) {}
+
+		typedef T ScalarType;
+
+		typedef IndexIterator<Face<T>> FaceIterator;
+		typedef ConstIndexIterator<Face<T>> ConstFaceIterator;
+
+		Body& operator = (const Body& b) = default;
+		Body& operator =(Body&& b) {
+			inds = std::move(b.inds);
+			_faces = b._faces;
+			cache = b.cache;
+			return *this;
+		}
+
+		//hasznalhato-e a test
+		bool valid() const { return _faces && inds.size() > 1; }
+		//bool konverzio, erteke a valid metoduseval egyezik
+		operator bool() const { return valid(); }
+
+		//egyenloseg vizsgalat
+		bool operator == (const Body& b) const {
+			return _faces == b._faces && inds == b.inds;
+		}
+
+		//mozgatas masik tarolora hivatkozassal
+		Body migrate_to(std::vector<Face<T>>* fcs) {
+			return Body(fcs, std::move(inds),cache);
+		}
+
+		//masolas masik tarolora hivatkozassal
+		Body migrate_to(std::vector<Face<T>>* fcs) const {
+			return Body(fcs, inds, cache);
+		}
+
+		//a test lapszama
+		int size() const { return inds.size(); }
+		//az i. lap indexe a taroloban
+		int indicies(size_t i) const { return inds[i]; }
+		//indexlista lekerdezese konstans hozzaferesre
+		const std::vector<int>& indicies() const { return inds; }
+		//indexlista lekerdezese
+		std::vector<int>& indicies() { return inds; }
+
+		//az i. lap elerese
+		Face<T>& faces(size_t i) { return _faces->operator[](inds[i]); }
+		const Face<T>& faces(size_t i) const { return _faces->operator[](inds[i]); }
+
+		FaceIterator begin() { return FaceIterator(_faces, &inds, 0); }
+		FaceIterator end() { return FaceIterator(_faces, &inds, inds.size()); }
+
+		ConstFaceIterator begin() const { return ConstFaceIterator(_faces, &inds, 0); }
+		ConstFaceIterator end() const { return ConstFaceIterator(_faces, &inds, inds.size()); }
+
+		// a test terfogata
+		T volume() const {
+			if (!cache.has_volume) {
+				cache.volume = calculate_volume();
+				cache.has_volume = true;
+			}
+			return cache.volume;
+		}
+
+		//a test sulypontja 
+		Vector3<T> centroid() const {
+			if (!cache.has_centroid) {
+				cache.centroid = calculate_centroid();
+				cache.has_centroid = true;
+			}
+			return cache.centroid;
+		}
+
 		//eldonti hogy az adott sik metszi-e a testet
 		//pontosan akkor igaz, ha a testnek esik a sik pozitiv es negativ oldalara is pontja
-		bool intersects_plane(const Plane<T>& plane) const{
-			bool negative=false, positive=false;
+		bool intersects_plane(const Plane<T>& plane) const {
+			bool negative = false, positive = false;
 			ConstFaceIterator it = begin(), endit = end();
-			while (it != endit && (!negative || !positive)){
+			while (it != endit && (!negative || !positive)) {
 				typename Face<T>::VertexIterator pt = it->begin(),
-												 endpt = it->end();
-				while (pt != endpt && (!negative || !positive)){
+					endpt = it->end();
+				while (pt != endpt && (!negative || !positive)) {
 					T sign = plane.classify_point(*pt);
 					negative = negative || sign < 0;
 					positive = positive || sign > 0;
@@ -141,8 +205,8 @@ namespace approx{
 					endpt = it->end();
 				while (pt != endpt && (!negative || !positive)) {
 					T sign = plane.classify_point(*pt);
-					negative = negative || (sign < 0 && abs(sign) >= minimal);
-					positive = positive || (sign > 0 && abs(sign) >= minimal);
+					negative = negative || (sign < 0 && std::abs(sign) >= minimal);
+					positive = positive || (sign > 0 && std::abs(sign) >= minimal);
 					++pt;
 				}
 				++it;
@@ -201,20 +265,16 @@ namespace approx{
 
 		//a legnagyobb atmero hosszaval es iranyaval megegyezo vektor
 		Vector3<T> diameter() const {
-			Vector3<T> diam;
-			for (int i = 0; i < size(); ++i) {
-				for (int j = i; j < size(); ++j) {
-					for (const Vector3<T>& p1 : faces(i)) {
-						for (const Vector3<T>& p2 : faces(j)) {
-							Vector3<T> d = (p1 - p2);
-							if (d.length() > diam.length()) {
-								diam = d;
-							}
-						}
-					}
-				}
+			if (!cache.has_diameter) {
+				cache.diameter = calculate_diameter();
+				cache.has_diameter = true;
 			}
-			return diam;
+			return cache.diameter;
+		}
+
+		//a belso cache torlese, a cachelt szamitasi eredmenyek ujraertekelodnek ha szukseg van rajuk
+		void clear_cache() const {
+			cache.clear();
 		}
 
 	};

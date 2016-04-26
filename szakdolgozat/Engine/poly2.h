@@ -17,7 +17,7 @@ namespace approx{
 
 	// Sokszog tipus 2 dimenzioban.
 	// Tetszoleges skalar tipussal paramezerezheto ami megfelel a Vector2 elvarasainak,
-	// valamint elvegezheto rajta az "x > 0" es az abszolutertek muvelet.
+	// valamint elvegezheto rajta az "x > 0" es az std::abs abszolutertek muvelet.
 	template<class T> class Polygon2{
 		std::vector<Vector2<T>> pts; //a pontok felsorolasa
 	public:
@@ -68,9 +68,11 @@ namespace approx{
 		//teruletet kiszamito metodus, a pontossaga a megadott skalartol fugg
 		//kepes kezelni CW es CCW sorrendben megadott alakzatot is
 		T area() const {
-			return abs(signed_area());
+			return std::abs(signed_area());
 		}
 
+		//pontosan akkor igaz, ha a pontos oramutatoval ellenkezo iranyban vannak felsorolva
+		//a pontok szamaban linearis idoigenyu, de mukodik konkav esetre is
 		bool is_ccw() const {
 			return signed_area() < 0;
 		}
@@ -93,7 +95,7 @@ namespace approx{
 				if (sign1 < 0){//a pont a negativ oldalra esik
 					neg.push_back(pts[i]);
 					if (sign2 > 0){//a kovetkezo pont pozitiv, a ketto kozott vagas keletkezik
-						T div = abs(sign1 / (abs(sign1)+abs(sign2)));
+						T div = std::abs(sign1 / (std::abs(sign1)+std::abs(sign2)));
 						Vector2<T> cpt = (1 - div)*pts[i] + div*pts[(i + 1) % n];
 						pos.push_back(cpt);
 						neg.push_back(cpt);
@@ -102,7 +104,7 @@ namespace approx{
 				else if (sign1 > 0){//a pont a pozitiv oldalra esik
 					pos.push_back(pts[i]);
 					if (sign2 < 0){//a kovetkezo pont negativ, a ketto kozott vagas keletkezik
-						T div = abs(sign1 / (abs(sign1) + abs(sign2)));
+						T div = std::abs(sign1 / (std::abs(sign1) + std::abs(sign2)));
 						Vector2<T> cpt = (1 - div)*pts[i] + div*pts[(i + 1) % n];
 						pos.push_back(cpt);
 						neg.push_back(cpt);
@@ -136,8 +138,8 @@ namespace approx{
 				T c1 = line.classify_point(points(i)),
 				  c2 = line.classify_point(points((i + 1) % n));
 				if (c1 * c2 < 0) {
-					T all = abs(c1) + abs(c2);
-					Vector2<T> pt = abs(c2) / all * points(i) + abs(c1) / all * points((i + 1) % n);
+					T all = std::abs(c1) + std::abs(c2);
+					Vector2<T> pt = std::abs(c2) / all * points(i) + std::abs(c1) / all * points((i + 1) % n);
 					if (pt.x > v.x) {
 						inside = !inside;
 					}
@@ -149,7 +151,7 @@ namespace approx{
 			return inside;
 		}
 
-		//A Sutherland-Hodgman algoritmus alapjan konvex kivagja a p polygon beesõ részét.
+		//A Sutherland-Hodgman algoritmus alapjan konvex kivagja a p polygon beeso reszet.
 		Polygon2<T> convex_clip(const Polygon2<T>& p) const {
 			Polygon2<T>  output = p;
 			bool cc = ccw(pts[0], pts[1], pts[2]);

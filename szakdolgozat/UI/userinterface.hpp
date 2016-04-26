@@ -11,6 +11,7 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QInputDialog>
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include "../../GeneratedFiles/ui_userinterface.h"
@@ -24,9 +25,10 @@ public:
 	UserInterface(QWidget *parent = 0);
 	~UserInterface();
 	Request GetRequest();
-	void RequestWrongCuttingErrorResolve();
+	void RequestWrongCuttingErrorResolve(const char*);
 	void SuccessImport();
-	void ErrorShow(const char*);
+	void NoAtomLeft();
+	void InfoShow(const char*);
 
 protected:
 	void Init();
@@ -95,7 +97,7 @@ private:
 	QPushButton* _import;
 	QPushButton* _moreInfo;
 	QPushButton* _back;
-
+	
 	std::unique_ptr<QVBoxLayout> head;
 
 	std::unique_ptr<QVBoxLayout> strategiesGroup;

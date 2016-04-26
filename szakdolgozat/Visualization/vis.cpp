@@ -17,7 +17,6 @@ Visualization::Visualization(void)
 	logger = false;
 
 	filename = "Targets/gummybear.obj";
-	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 
 	_2DTri = &_2D_TriIds_N;
 	_2DLine1 = &_2D_Line1Ids_N;
@@ -98,6 +97,7 @@ bool Visualization::EngineInit()
 
 	//az eredmeny lekerese majd a vagosik frissitese
 	GetPriorResult();
+	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
 	return true;
@@ -143,21 +143,16 @@ void Visualization::Render()
 			PrevAtom();
 			break;
 		case RECALCULATING:
-			if (liveAtoms.size() != 0)
-			{
-				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-			}
+			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 			break;
 		case MORESTEPS:
 			for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
 			app.container().garbage_collection();
 			break;
 		case EXPORT:
-			app.save_atoms("Result/save_atoms.obj");
-			app.save_approximated_body("Result/save_atom_appbody.obj");
 			app.container().final_transform();
-			/*app.save_atoms("save_atoms");
-			app.save_atoms("save_atoms");*/
+			app.save_atoms(request.filename);
+			app.save_approximated_body(request.filename.substr(0, request.filename.length()-4) + "_appbody.obj");
 			break;
 		case IMPORT:
 			ImportNewTarget();
@@ -208,18 +203,18 @@ void Visualization::AcceptCutting()
 	switch (request.type)
 	{ 
 		case BOTH:
-			if (!app.container().last_cut_result().choose_both()) { ui.ErrorShow("ERROR BOTH\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_both()) { ui.InfoShow("ERROR BOTH\nThe cut is dopped!"); return; }
 			if (logger) std::cout << "Megtartom: BOTH\n";
 
 			NumberOfAtoms++;
 			break;
 		case POSITIVE:
-			if (!app.container().last_cut_result().choose_positive()) { ui.ErrorShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_positive()) { ui.InfoShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
 			if (logger) std::cout << "Megtartom: POSITIVE\n";
 
 			break;
 		case NEGATIVE:
-			if (!app.container().last_cut_result().choose_negative()) { ui.ErrorShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_negative()) { ui.InfoShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
 			if (logger) std::cout << "Megtartom: NEGATIVE\n";
 
 			break;
@@ -242,31 +237,30 @@ void Visualization::AcceptCutting()
 	prior.erase(ActiveIndex);
 	CalculateDisplayVectorsByFourier();
 
-	//eredmeny lekeres + frissites
-	GetPriorResult();
-	RefreshPlaneData(liveAtoms.size() != 0 ? (PlaneCalculator->*PlaneFunction)() : Utility::PlaneResult() );
-
 	LOG("\tACCEPT :       " << request.type << "\n\n");
 
+	//eredmeny lekeres + frissites
+	GetPriorResult();
+
+	if (liveAtoms.size() == 0)
+	{
+		ui.NoAtomLeft();
+		return;
+	}
+
+	RefreshPlaneData( (PlaneCalculator->*PlaneFunction)());
 }
 
 /* Vagasi eredmeny kerese */
 void Visualization::GetResult()
 {
-	if (liveAtoms.size() == 0) 
-	{
-		LOG("\tCUT :  There is no live atom!\n");
-		if (request.eventtype == MORESTEPS) return;
-		ui.ErrorShow("Elfogytak az elo atomok!\n");
-		return;
-	}
 	//ellenorzes: metszi-e a sik az atomot?
 	if (!app.container().atoms(ActiveAtom).intersects_plane(p, INTERSECTIONEPSILON))
 	{ 
 			LOG("\tCUT :  WRONG PLANE -> Cant cut that atom -> New plane generated!\n");
 			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 			if (request.eventtype == MORESTEPS) return;
-			ui.RequestWrongCuttingErrorResolve();
+			ui.RequestWrongCuttingErrorResolve("Ertelmetlen vagas!\nA sik nem metszi az atomot.");
 
 			return; 
 	}
@@ -379,50 +373,50 @@ void Visualization::SetNewStrategy()
 			case VOLUME:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 				prior.clear();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) {  prior.insert(*it, &app.container().atoms(*it));	}
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) {  prior.insert(*it, &app.container().atoms(*it));	}
 				GetPriorResult();
-				if (liveAtoms.size()!=0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : VOLUME\n");
 				break;
 			case DIAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetDiamaterLength);
 				prior.clear();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : DIAMETER\n");
 				break;
 			case UNTOUCHED:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetLastUse);
 				prior.clear();
 				prior.RefreshLastUseValues();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : UNTOUCHED\n");
 				break;
 			case OPTIMALPARAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetOptimal);
 				prior.clear();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALPARAMETER\n");
 				break;
 			case OPTIMALDIAMETER:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetOptimalAndDiameter);
 				prior.clear();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALATMERO\n");
 				break;
 			case OPTIMALVOLUME:
 				prior.SetComparer(&SorterFunctions<approx::ConvexAtom<float>>::GetOptimalAndVolume);
 				prior.clear();
-				for (std::set<int>::iterator it = display->begin(); it != display->end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
+				for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it) { prior.insert(*it, &app.container().atoms(*it)); }
 				GetPriorResult();
-				if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 				LOG("Choice : OPTIMALVOLUME\n");
 				break;
 		}
@@ -438,32 +432,32 @@ void Visualization::SetNewCuttingMode()
 	{
 	case MANUAL:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : MANUAL\n");
 		break;
 	case RANDOMNORMALCENTROID:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomNormalCentroid);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMNORMALCENTROID\n");
 		break;
 	case DIAMETERCENTROID:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::DiameterCentroid);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : ATMEROREMEROLEGESSULYP\n");
 		break;
 	case RANDOMUNDERFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomUnderFace);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMLAPALATT\n");
 		break;
 	case MATCHEDEACHPOINT:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : MINDENPONTRAILLESZTETT\n");
 		break;
 	case MATCHEDRANDOMSURFACE:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
-		if (liveAtoms.size() != 0) RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		LOG("CuttingMode : RANDOMFELULETILLESZT\n");
 		break;
 	}
@@ -472,17 +466,18 @@ void Visualization::SetNewCuttingMode()
 /* Megjelenitendo atomok valtoztatasa : elo vagy relevans*/
 void Visualization::SetNewDisplayMode()
 {
-	display = request.disp == LIVE ? &liveAtoms : &relevantAtoms;
+	display = request.disp == LIVE ? &liveAtoms : request.disp == RELEVANT ? &relevantAtoms : &onlyActive;
 }
 
 /*Sorban kovetkezo atomra ugras*/
 void Visualization::NextAtom()
 {
-	if (liveAtoms.size() == 0) return;
 	//Index valtoztatas
 	ActiveIndex = (ActiveIndex + 1) % liveAtoms.size();
 	ActiveAtom = priorQue[ActiveIndex];
 
+	onlyActive.clear();
+	onlyActive.insert(ActiveAtom);
 	//modositas feltoltese
 	PlaneCalculator->SetActive(ActiveAtom);
 
@@ -496,10 +491,11 @@ void Visualization::NextAtom()
 /*A sorban az aktuális előtti atom lekerese*/
 void Visualization::PrevAtom()
 { 
-	if (liveAtoms.size() == 0) return;
-
 	ActiveIndex = (ActiveIndex - 1 + (int)liveAtoms.size()) % (int)liveAtoms.size();
 	ActiveAtom = priorQue[ActiveIndex];
+
+	onlyActive.clear();
+	onlyActive.insert(ActiveAtom);
 
 	PlaneCalculator->SetActive(ActiveAtom);
 
@@ -512,7 +508,7 @@ void Visualization::PrevAtom()
 void Visualization::ImportNewTarget()
 {
 	//uj fajl elerese
-	std::string newfile = "Targets/" + request.filename + ".obj";
+	std::string newfile = request.filename;
 	//ellenorzes arra hogy megvaltozott e a fajl
 	if (newfile == filename) return;
 
@@ -537,7 +533,7 @@ void Visualization::ImportNewTarget()
 		}
 	}
 	else {	//nem letezo fajl
-		ui.ErrorShow("Invalid Filename!");
+		ui.InfoShow("Invalid Filename!");
 	}
 }
 
@@ -907,12 +903,12 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	}
 }
 
-/*Automatizált elfogado*/
+/*Automatizalt elfogado*/
 void Visualization::CutChecker()
 {
-	//ket valtozo arra hogy eleg nagy-e a metszetterfogat
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->intersection_volume() > INTERSECTIONEPSILON;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->intersection_volume() > INTERSECTIONEPSILON;
+	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > INTERSECTIONEPSILON;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > INTERSECTIONEPSILON;
 
 	//a bool ertekek alapjan az elfogadas
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
@@ -930,6 +926,9 @@ void Visualization::GetPriorResult()
 
 	ActiveIndex = 0;
 	ActiveAtom = priorQue.size() > 0 ? priorQue[ActiveIndex] : -1;
+
+	onlyActive.clear();
+	if (ActiveAtom!=-1) onlyActive.insert(ActiveAtom);
 
 	PlaneCalculator->SetActive(ActiveAtom);
 
@@ -1077,8 +1076,6 @@ void Visualization::MergeDataContainer(approx::BodyList& data, const approx::Bod
 /*Vagosik beallitas + rajzolashoz szukseges informaciok osszeszedese */
 void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 {
-	if (liveAtoms.size() == 0) return;
-
 	p = approx::Plane<float>(newplanedata.normal, newplanedata.point);
 	centr = app.container().atoms(ActiveAtom).centroid();
 	distance = p.classify_point(centr);
@@ -1105,10 +1102,6 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting3);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		break;
-	case SDLK_4:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting4);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
 	case SDLK_5:
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -1121,18 +1114,20 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface3);
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 		break;
-	case SDLK_8:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface4);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
 	case SDLK_p:	// change projections
 		Active2DIndex = 0;
 		c.SwitchCameraView(_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1));
 		break;
 	case SDLK_w:	//camera
-		c.Add(c.GetVertUnit());
+		c.Add(c.GetZoomUnit());
 		break;
 	case SDLK_s:
+		c.Sub(c.GetZoomUnit());
+		break;
+	case SDLK_q:	//camera
+		c.Add(c.GetVertUnit());
+		break;
+	case SDLK_e:
 		c.Sub(c.GetVertUnit());
 		break;
 	case SDLK_a:

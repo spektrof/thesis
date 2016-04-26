@@ -51,13 +51,13 @@ void Camera::SetCamera(const glm::vec3& v)
 }
 void Camera::Add(const glm::vec3& unit)
 {
+	if (Is2DView() && eye.y + unit.y < 10) return;
+
 	eye += unit;
 	at += unit;
 }
 void Camera::Sub(const glm::vec3& unit)
 {
-	if (Is2DView() && eye.y - unit.y < 10) return;
-
 	eye -= unit;
 	at -= unit;
 }

@@ -48,7 +48,7 @@ namespace approx{
 
 		//a siktol valo tavolsaga a pontnak
 		ScalarType distance(const Vector& p) const {
-			return abs(classify_point(p));
+			return std::abs(classify_point(p));
 		}
 
 		bool valid() const { return n.length() > 0; }
@@ -89,7 +89,7 @@ namespace approx{
 		//a masik sikkal elmetszem ezt a sikot, a metszet egyenest
 		//ennek a siknak a koordinatarendszereben adom meg
 		Line<T> intersection_line(const Plane& p) const {
-			if (abs(dot(normal(), p.normal())) > 0.9999f) return Line<T>();
+			if (std::abs(dot(normal(), p.normal())) > 0.9999f) return Line<T>();
 			std::pair<Vector3<T>, Vector3<T>> base = ortho2d();
 			Vector3<T> up = cross(normal(), p.normal()).normalized();
 			Vector3<T> w = cross(up, normal()).normalized();

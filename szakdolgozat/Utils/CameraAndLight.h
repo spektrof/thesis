@@ -19,7 +19,7 @@ public:
 	glm::vec3 GetEye() const { return eye; }
 	glm::vec3 GetUp() const { return up; }
 	glm::vec3 GetAt() const { return at; }
-	glm::vec3 GetVertUnit() const { return Is2DView() ? vunit : zunit; }	//lehessen folfele menni vagy ne? (engem már zavar ha folfele megyunk xD )
+	glm::vec3 GetVertUnit() const { return vunit; }
 	glm::vec3 GetZoomUnit() const { return zunit; }
 	glm::vec3 GetHorUnit() const { return hunit; }
 	float GetView() const { return (float)ViewPoint; }

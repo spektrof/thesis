@@ -286,7 +286,7 @@ namespace approx{
 
 		//konstruktor mely az approximalando testre mutato pointert es a kezdo kocka lapjainak kozelseget varja
 		//futasideje linearis a celtest pontjainak szamaban
-		Approximation(const TargetBody<T>* _target, T _border) : target(_target), last_cut(-1){
+		Approximation(const TargetBody<T>* _target, T _border) : target(_target), last_cut(-1), vertices{}, normals{}, faces{} {
 			starting_atom(_border);
 		}
 
@@ -371,12 +371,12 @@ namespace approx{
 			CutResult(Approximation *a) : a(a){}
 
 			//pozitiv oldali atom
-			const AtomType* positive(){
+			const AtomType* positive() const {
 				return static_cast<AtomType*>(a->cut_res.positive.get());
 			}
 
 			//negativ oldali atom
-			const AtomType* negative(){
+			const AtomType* negative() const {
 				return static_cast<AtomType*>(a->cut_res.negative.get());
 			}
 

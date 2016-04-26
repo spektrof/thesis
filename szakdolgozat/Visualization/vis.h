@@ -68,61 +68,24 @@ public:
 protected:
 	/*	TODO list*/
 	/*
-		-Elõfordulhat hogy eleg nagy a metszetterfogat 
-			de a fourier egyutthato mar nem eleg nagy -> halott atom, amirol nem tudunk
-		-A síkválasztó függvény jelenleg itt van definiálva - 
-				átrakjam a planegetters be és akkor ott egy saját fv-ére  hivatkozik?
-				
-				Settert + Gettert kell ráírni így , nekem tetszik így is
-		-Kamera + fény módosítások bemutatása : kameramozgas (legyen folfele?)
-		-Ha elfogytak az elo atomok:
-			ActiveAtom = -1
-			és levédem mindenhol liveatoms.size()!=0 feltétellel a dolgokat
-				a síklekérésnél nem jó szerintem az ha minden stratégia ezzel kezdõdik (Activeatom!=-1) így kívülrõl intézném el
-				-> Lehessen változtatni stratégiát (sok if ebben az esetben) vagy ne (jöjjön hibaüzenet - vagy az nem kell) -> UI helyreállító fv-kell -> nagy switch így elsõ átgondolásra UI ont belül
-				DE ez nem kell akkor sem ha minden síklekérésnél vizsgálunk
-				TEHÁT lehetséges opciók:
-					- Minden síkválasztás IF(ActiveAtom==-1) return default; al kezdõdik
-					- Lehet stratégiát változtatni ( mert mért ne lehetne ), csak épp nem történik semmi és mindenhol liveatoms size ra vizsgálunk vis.cpp ben
-							-> probléma hogy manuális módban nem fog változni semmi, mert a sikrajzolasunk nem engedi meg ezt(nem tudunk centroidot szamolni)
-		-Restart jó így - vagy a síkválasztás se változzon - vagy a rendezés is változzon ( ez lehet gubanc lesz - mert a változtatás érték eventet okoz , de meglehet nezni)
-					- mivel manuális a default érték síkválasztásnál - de akkor így akkor legn. térfogat lesz a default - nem tudom miért vettem ki (lehet probléma volt)
-		-lastuse os bug - pointer egyszer megy fol, + rossz volt
-		-leak
-		-új gomb : t
-		-ablakmodositas + hibauzenet ui bug?
-		-UI unique ptr, ne egyesevel torteno kapcsolgatas eredmenye
-		-adattagok kiszedes, szomsz. mtx pointer eltunt stb
+		-opendialog import & export
 
-		--------------------
-		SÍKILLESZTÉS
-			- Z gombbal lehet ki be kapcsolni a kieso pontok elhagyasat
-				- ha marad az eldobas akkor muszaj ujabb vizsgalat arra hogy nem ures a pontlista illesztesnel -> vekony elemeknel all fenn
-						ugyanis ha ez nincs akkor eleg a facek listajat ellenorizni ami megvan
-
-		--------------------
-		GOMB: ortho es perspektiv nezeti valtasra (3D ben) ?
+		KERDESEK:
+		-EPSILONOK: intersection + sima eldonto
+		-popup elo atomrol - jo igy? (ha inkabb rajzolas utan jojjon akkor ujabb adattag kell +1 if a renderbe)
+		-nekem tetszik igy a vagosik :D , tobbszori vagas utan is oke
 		-------------------
-		Máté: EXPORT?
-
 		Kedd: 
 		Szerda:
 		Csütörtök
 		Péntek:
 		Szombat:
 		Vasárnap:
-				
-		LEAK:
-		/*
-			importálás ->engineinit() : pl torus test váltakozása esetén testnél nem ugrik vissza a memória
-			1000 vágás utáni restart: +0,5 mb
-			sok strategy váltás = +0,1 mb
-		*/
 	/*
 		UI: generated files !
 
 		BUG:
-
+	
 		Apró bugok frissítés gyanánt:
 		
 		Apró kis TODOk:
@@ -163,6 +126,7 @@ protected:
 	std::set<int>* display;
 	std::set<int> liveAtoms;
 	std::set<int> relevantAtoms;
+	std::set<int> onlyActive;
 
 	void CalculateDisplayVectorsByFourier();
 
