@@ -10,16 +10,22 @@ Használati útmutató:
                                 
 TODO:
   - Shader fejlesztés doksi alapján
-  - Finding leaks
-  - MatchPlaning "bug"
+  - Testing (fourier-coefficient)
       
 -------------------------------------------------------------------------------------
 
-Funkcióbillentyűk:
-  - p : 3D és 2D nézeti kapcsoló
-  - wasd + mouse left press : kamera mozgatása
-  - nyilak : fény mozgatása
-  - o : (csak 2D ben) positive és negatív vetület közötti kapcsoló
-  - numpad +/- : (csak 2D ben) vetülek közötti iteráció (lapok)
-  - l : console logger ki/be kapcsolás
+Functionbuttons:
+  - p : switch between 3D and 2D(projection)
+  - wasd + mouse left press : camera moving
+  - left,right etc : light moving on sphere surface
+  - o : (only 2D) switch between positive and negative projection
+  - numpad +/- : (only 2D) iteration between face projection 
+  - l : console logger on/off
+  - t : target atom appear / disappear
+
+
+Fit to random surface:
+We can get coplanarity points where we cant fit plane, then we return a default plane.
+The dissemination is running while the sum of distance between the points and our plane dont reach the maximum.
+
 
