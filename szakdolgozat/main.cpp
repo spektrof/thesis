@@ -128,6 +128,8 @@ int main(int argc, char* args[])
 		SDL_GL_SwapWindow(win);
 		app.Update();
 		app.Render();
+
+		SDL_SetWindowTitle(win, (window_title.str() + " - distance: " + app.GetDistance()).c_str());
 	}
 
 	ui.exit(0);

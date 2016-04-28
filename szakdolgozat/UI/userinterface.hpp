@@ -27,7 +27,7 @@ public:
 	Request GetRequest();
 	void RequestWrongCuttingErrorResolve(const char*);
 	void SuccessImport();
-	void NoAtomLeft();
+	void NoAtomLeft(const char*, const bool& = false);
 	void InfoShow(const char*);
 
 protected:

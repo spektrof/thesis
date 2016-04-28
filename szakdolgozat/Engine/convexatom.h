@@ -91,10 +91,10 @@ namespace approx{
 				ConstFaceIterator it = begin();
 				Face<T> clipf = f;
 				//amennyiben a lap pontosan a sikon van, a vetuletet kell beszamitanom, magat a lapot nem, ezzel elkerulve a az ismetlodest
-				bool onplane = f.to_plane().example_point() == it->to_plane().example_point();
+				bool onplane = false;
 				while (it != end() && clipf.size() >= 3 && !onplane) {
 					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(), &tmp_vert, &tmp_norm);
-					onplane = cut.points_added == 0 && cut.pt_inds.size() == clipf.size();
+					onplane = false;
 					clipf = cut.negative;
 					++it;
 				}

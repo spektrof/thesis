@@ -4,8 +4,8 @@
 #include <GL/GLU.h>
 
 #define FOURIERCOEFFICIENT 0.5f
-#define EPSILONFOURIER 0.0001f
-#define INTERSECTIONEPSILON  0.001f
+#define EPSILONFOURIER 0.003f
+#define INTERSECTIONEPSILON  0.003f
 
 Visualization::Visualization(void)
 {
@@ -94,6 +94,20 @@ bool Visualization::EngineInit()
 	relevantAtoms.clear();
 	CalculateDisplayVectorsByFourier();
 	display = &liveAtoms;
+
+	//Ha a betoltott objben levo targy tul vekony es hosszu akkor nem fog elni(Fourier-egyutthato kicsi)
+	//Ilyenkor toroljuk az indexeket es figyelmeztetjuk a felhasznalot
+	if (liveAtoms.size() == 0)
+	{
+		prior.clear();
+		CleanIdBufferForReuse(_3dIds);
+		CleanIdBufferForReuse(targetIds);
+		targetIds.count = 0;
+		ui.NoAtomLeft("Your input is too small!\nChoose an other obj.",true);
+		return false;
+	}
+
+	targetDistance = CalculateDistance();
 
 	//az eredmeny lekerese majd a vagosik frissitese
 	GetPriorResult();
@@ -236,6 +250,7 @@ void Visualization::AcceptCutting()
 	//az atomok csoportba osztasa
 	prior.erase(ActiveIndex);
 	CalculateDisplayVectorsByFourier();
+	targetDistance = CalculateDistance();
 
 	LOG("\tACCEPT :       " << request.type << "\n\n");
 
@@ -244,7 +259,7 @@ void Visualization::AcceptCutting()
 
 	if (liveAtoms.size() == 0)
 	{
-		ui.NoAtomLeft();
+		ui.NoAtomLeft("No atom left!\nYou probably finished your task.");
 		return;
 	}
 
@@ -260,7 +275,7 @@ void Visualization::GetResult()
 			LOG("\tCUT :  WRONG PLANE -> Cant cut that atom -> New plane generated!\n");
 			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 			if (request.eventtype == MORESTEPS) return;
-			ui.RequestWrongCuttingErrorResolve("Ertelmetlen vagas!\nA sik nem metszi az atomot.");
+			ui.RequestWrongCuttingErrorResolve("Invalid cut!\nThe intersection is empty.");
 
 			return; 
 	}
@@ -336,6 +351,8 @@ void Visualization::GetRestart()
 	relevantAtoms.clear();
 	CalculateDisplayVectorsByFourier();
 	display = &liveAtoms;
+
+	targetDistance = CalculateDistance();
 
 	lastUse.clear();
 	lastUse.push_back(0);
@@ -512,29 +529,22 @@ void Visualization::ImportNewTarget()
 	//ellenorzes arra hogy megvaltozott e a fajl
 	if (newfile == filename) return;
 
-	//ellenorzes (leggyorsabb modon), hogy letezik e a fajl
-	struct stat buffer;
-	if (stat(newfile.c_str(), &buffer) == 0)
-	{
-		std::string tmp = filename;
-		filename = newfile;
+	std::string tmp = filename;
+	filename = newfile;
 
-		//az uj fajl betoltese
-		if (EngineInit())
-		{
+	//az uj fajl betoltese
+	if (EngineInit())
+	{
 			LOG("New file loaded successfully , new file is: " + newfile + "\n");
 			ui.SuccessImport();
 			if (c.Is2DView()) c.SwitchCameraView();
-		}
-		else
-		{	//sikertelen fajlbetoltes
+	}
+	else
+	{	//sikertelen fajlbetoltes
 			filename = tmp;
 			LOG("New file loaded unsuccessfully\n");
-		}
 	}
-	else {	//nem letezo fajl
-		ui.InfoShow("Invalid Filename!");
-	}
+
 }
 
 /*2D-s shaderek bekotese : vertex + fragment*/
@@ -876,7 +886,7 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	float fourier = app.container().atoms(ActiveAtom).fourier();
 	if (logger) { std::cout << "Fourier of First Atom: " << fourier << "\n"; }
 
-	if ( std::abs(fourier) > EPSILONFOURIER && std::abs(fourier-1.0f) > EPSILONFOURIER)
+	if ( fourier > 0 && std::abs(fourier) > EPSILONFOURIER && std::abs(fourier-1.0f) > EPSILONFOURIER && fourier < 1)
 	{
 		prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
 		liveAtoms.insert(ActiveAtom);
@@ -892,7 +902,7 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
 	if (logger) { std::cout << "Fourier of Second Atom: " << fourier << "\n"; }
 
-	if (std::abs(fourier) > EPSILONFOURIER && std::abs(fourier - 1.0f) > EPSILONFOURIER)
+	if (fourier > 0 && std::abs(fourier) > EPSILONFOURIER && std::abs(fourier - 1.0f) > EPSILONFOURIER  && fourier < 1)
 	{
 		prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
 		liveAtoms.insert(NumberOfAtoms - 1);
@@ -906,9 +916,9 @@ void Visualization::CalculateDisplayVectorsByFourier()
 /*Automatizalt elfogado*/
 void Visualization::CutChecker()
 {
-	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > INTERSECTIONEPSILON;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > INTERSECTIONEPSILON;
+	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > EPSILONFOURIER;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > EPSILONFOURIER;
 
 	//a bool ertekek alapjan az elfogadas
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
@@ -971,6 +981,8 @@ void Visualization::LastUseChanging()
 			lastUse[ActiveAtom] = 0;
 			break;
 		case NEGATIVE:
+			liveAtoms.erase(NumberOfAtoms);
+
 			lastUse[ActiveAtom] = 0;
 		break;
 	}
@@ -1086,34 +1098,6 @@ void Visualization::RefreshPlaneData(const Utility::PlaneResult& newplanedata)
 void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
-	case SDLK_z:	
-		PlaneCalculator->SwitchInside();
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_1:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_2:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting2);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_3:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::AllPointsFitting3);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_5:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_6:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface2);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
-	case SDLK_7:
-		PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::RandomSurface3);
-		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		break;
 	case SDLK_p:	// change projections
 		Active2DIndex = 0;
 		c.SwitchCameraView(_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1));
@@ -1313,4 +1297,31 @@ void Visualization::Release2DIds()
 	_2D_Line1Ids_P.clear();
 	_2D_Line2Ids_N.clear();
 	_2D_Line2Ids_P.clear();
+}
+
+std::string Visualization::GetDistance()
+{
+	return std::to_string(targetDistance);
+}
+
+float Visualization::CalculateDistance()
+{
+	float sum = 0.0f;
+
+	std::vector<int> used;
+	used.resize(NumberOfAtoms);
+
+	for (std::set<int>::iterator it = relevantAtoms.begin(); it != relevantAtoms.end(); ++it)
+	{
+		used[*it] = 1;
+		sum += ( 1 - app.container().atoms(*it).fourier() ) * app.container().atoms(*it).volume();
+	}
+	for (std::set<int>::iterator it = liveAtoms.begin(); it != liveAtoms.end(); ++it)
+	{
+		if (used[*it]) continue;
+		used[*it] = 1;
+		sum += app.container().atoms(*it).fourier() * app.container().atoms(*it).volume();
+	}
+
+	return sum / app.target().body().volume();
 }

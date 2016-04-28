@@ -40,13 +40,12 @@ void main()
 
 	//------------------------------------------
 	//fragment végso színe
-	_color = vec4(
+	_color =
 			// Ambient : simulates indirect lighting
-			 MaterialAmbientColor +
+			 vec4(MaterialAmbientColor,1) +
 			 // Diffuse : "color" of the object
-			 MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
+			 vec4(MaterialDiffuseColor,1) * LightColor * LightPower * cosTheta / (distance*distance) +
 			 // Specular : reflective highlight, like a mirror
-			 MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance)
-			 //Opacity
-			 , opacity) ;
+			 vec4(MaterialSpecularColor,1) * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+	_color.a = opacity;
 }

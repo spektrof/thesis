@@ -46,6 +46,7 @@ public:
 
 	void Update();
 	void Render();
+	std::string GetDistance();
 
 	void KeyboardDown(SDL_KeyboardEvent&);
 	void MouseMove(SDL_MouseMotionEvent&);
@@ -68,13 +69,11 @@ public:
 protected:
 	/*	TODO list*/
 	/*
-		-opendialog import & export
-
 		KERDESEK:
-		-EPSILONOK: intersection + sima eldonto
-		-popup elo atomrol - jo igy? (ha inkabb rajzolas utan jojjon akkor ujabb adattag kell +1 if a renderbe)
-		-nekem tetszik igy a vagosik :D , tobbszori vagas utan is oke
+
 		-------------------
+		BUG:
+
 		Kedd: 
 		Szerda:
 		Csütörtök
@@ -87,7 +86,6 @@ protected:
 		BUG:
 	
 		Apró bugok frissítés gyanánt:
-		
 		Apró kis TODOk:
 
 	*//*	Blender : doksi*/
@@ -232,6 +230,9 @@ protected:
 	std::string filename;
 	bool logger;
 	bool IsTargetDrawEnabled;
+
+	float targetDistance;
+	float CalculateDistance();
 
 	void CleanIdBufferForReuse(const IdsAndProp);
 	void Release2DIds();

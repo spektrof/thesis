@@ -9,8 +9,8 @@ UserInterface::UserInterface(QWidget *parent)
 	_label = new QLabel("Welcome", this);
 	_info = new QLabel("Hey, Im imformation about this ui", this);
 
-	_choice = new QLabel("Choice", this);
-	_cut = new QLabel("Cut", this);
+	_choice = new QLabel("Atom", this);
+	_cut = new QLabel("Plane", this);
 
 	_strategy = new QGroupBox(tr("Strategies"), this);
 	norms = new QGroupBox(tr("Normals"));
@@ -33,7 +33,7 @@ UserInterface::UserInterface(QWidget *parent)
 	_yn = new QLineEdit("0", this);
 	_zn = new QLineEdit("0", this);
 
-	_cutting = new QPushButton("Cutting", this);
+	_cutting = new QPushButton("Cut", this);
 	_undo = new QPushButton("Undo", this);
 	_accept = new QPushButton("Accept", this);
 
@@ -689,17 +689,17 @@ void UserInterface::AddItemsToDropMenu()
 
 	_choiceStrategy->addItem("Largest volume", 0);
 	_choiceStrategy->addItem("Largest diameter", 1);
-	_choiceStrategy->addItem("Longest time intact", 2);
+	_choiceStrategy->addItem("Least recently used", 2);
 	_choiceStrategy->addItem("Optimal", 3);
 	_choiceStrategy->addItem("Optimal and diameter", 4);
 	_choiceStrategy->addItem("Optimal and volume", 5);
 
 	_plane->addItem("Manual", 0);
-	_plane->addItem("Matched on all point", 1);
-	_plane->addItem("Diameter normal through centroid", 2);
-	_plane->addItem("Random normal through centroid", 3);
-	_plane->addItem("Matched on random surface", 4);
-	_plane->addItem("Random face under", 5);
+	_plane->addItem("Fit to all points", 1);
+	_plane->addItem("Diameter normal and centroid", 2);
+	_plane->addItem("Random normal and centroid", 3);
+	_plane->addItem("Fit to random surface", 4);
+	_plane->addItem("Support of random face", 5);
 
 	_fourierGroups->addItem("Live atoms", 0);
 	_fourierGroups->addItem("Relevant atoms", 1);
@@ -745,6 +745,10 @@ void UserInterface::SuccessImport()
 	_acceptTypes->setCurrentIndex(0);
 	_fourierGroups->setCurrentIndex(0);
 	_xf->setText("0"); _yf->setText("0"); _zf->setText("0");
+
+	_restart->setEnabled(true);
+	_export->setEnabled(true);
+	_fourierGroups->setEnabled(true);
 }
 
 void UserInterface::InfoShow(const char* text)
@@ -752,9 +756,9 @@ void UserInterface::InfoShow(const char* text)
 	QMessageBox::information(this, tr("INFO"), tr(text), QMessageBox::Ok);
 }
 
-void UserInterface::NoAtomLeft()
+void UserInterface::NoAtomLeft(const char* txt, const bool& wrongobj)
 {
-	InfoShow("No atom left!\nYou probably finished your task.");
+	InfoShow(txt);
 
 	_strategy->setEnabled(false);
 	_cutting->setEnabled(false);
@@ -763,4 +767,11 @@ void UserInterface::NoAtomLeft()
 	_acceptTypes->setEnabled(false);
 	_n->setEnabled(false);
 	_nextNOk->setEnabled(false);
+
+	if (wrongobj)
+	{
+		_restart->setEnabled(false);
+		_export->setEnabled(false);
+		_fourierGroups->setEnabled(false);
+	}
 }
