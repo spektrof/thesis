@@ -33,7 +33,7 @@ public:
 
 protected:
 	void SetCamera2DValues(const glm::vec3&);
-	void SetCamera3DValues();
+	void SetCamera3DValues(const glm::vec3&);
 
 	bool is_left_pressed = false;	// camera moving
 

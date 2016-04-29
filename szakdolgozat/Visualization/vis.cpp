@@ -3,8 +3,8 @@
 
 #include <GL/GLU.h>
 
-#define FOURIERCOEFFICIENT 0.5f
-#define EPSILONFOURIER 0.003f
+#define RELEVANCYEPSILON 0.5f
+#define FOURIEREPSILON 0.003f
 #define INTERSECTIONEPSILON  0.003f
 
 Visualization::Visualization(void)
@@ -878,20 +878,20 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 }
 
 /*Fourier együttható szerinti csoportba kerülés
-	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható, epsilon: EPSILONFOURIER
-	relevansAtom = releváns atomok: FOURIERCOEFFICIENT (0.5) -nél nagyobb fourier egy.ú atomok*/
+	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható, epsilon: FOURIEREPSILON
+	relevansAtom = releváns atomok: RELEVANCYEPSILON  (0.5) -nél nagyobb fourier egy.ú atomok*/
 void Visualization::CalculateDisplayVectorsByFourier()
 {	
 	//Elso atomra fourier egyutthato szamolas - lehet negative vagy positive resz is, de both esetben mindig negative
 	float fourier = app.container().atoms(ActiveAtom).fourier();
 	if (logger) { std::cout << "Fourier of First Atom: " << fourier << "\n"; }
 
-	if ( fourier > 0 && std::abs(fourier) > EPSILONFOURIER && std::abs(fourier-1.0f) > EPSILONFOURIER && fourier < 1)
+	if ( fourier > 0 && std::abs(fourier) > FOURIEREPSILON && std::abs(fourier-1.0f) > FOURIEREPSILON && fourier < 1)
 	{
 		prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
 		liveAtoms.insert(ActiveAtom);
 	}
-	if (fourier > FOURIERCOEFFICIENT)
+	if (fourier > RELEVANCYEPSILON )
 	{
 		relevantAtoms.insert(ActiveAtom);
 	}
@@ -902,12 +902,12 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
 	if (logger) { std::cout << "Fourier of Second Atom: " << fourier << "\n"; }
 
-	if (fourier > 0 && std::abs(fourier) > EPSILONFOURIER && std::abs(fourier - 1.0f) > EPSILONFOURIER  && fourier < 1)
+	if (fourier > 0 && std::abs(fourier) > FOURIEREPSILON && std::abs(fourier - 1.0f) > FOURIEREPSILON  && fourier < 1)
 	{
 		prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
 		liveAtoms.insert(NumberOfAtoms - 1);
 	}
-	if (fourier > FOURIERCOEFFICIENT)
+	if (fourier > RELEVANCYEPSILON )
 	{
 		relevantAtoms.insert(NumberOfAtoms - 1);
 	}
@@ -917,8 +917,8 @@ void Visualization::CalculateDisplayVectorsByFourier()
 void Visualization::CutChecker()
 {
 	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > EPSILONFOURIER;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > EPSILONFOURIER;
+	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > FOURIEREPSILON;
+	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > FOURIEREPSILON;
 
 	//a bool ertekek alapjan az elfogadas
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
@@ -1099,8 +1099,8 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
 	case SDLK_p:	// change projections
-		Active2DIndex = 0;
-		c.SwitchCameraView(_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1));
+		if (!c.Is2DView()) _3dIds.eye = c.GetEye();
+		c.SwitchCameraView(c.Is2DView() ? _3dIds.eye : (_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1)) );
 		break;
 	case SDLK_w:	//camera
 		c.Add(c.GetZoomUnit());
