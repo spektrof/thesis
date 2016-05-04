@@ -1,10 +1,8 @@
 ﻿#include "userinterface.hpp"
 
 UserInterface::UserInterface(QWidget *parent)
-	: QWidget(parent)
+	: QWidget(parent, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint)
 {
-	window = new QWidget(parent, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint);
-
 	_mainLayout = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
 	_label = new QLabel("Welcome", this);
 	_info = new QLabel("Hey, Im imformation about this ui", this);
@@ -114,15 +112,13 @@ UserInterface::~UserInterface()
 	delete _import;
 	delete _moreInfo;
 	delete _back;
-
-	delete window;
 }
 
 void UserInterface::Init()
 {
-	window->setStyleSheet("background-color: #7ac5cd;");
-	window->setFixedSize(400, 400);
-	window->move(900, 200);
+	setStyleSheet("background-color: #7ac5cd;");
+	setFixedSize(400, 400);
+	move(900, 200);
 	//---------------------------------------
 	SetLabelProperties();
 	SetButtonsProperties();
@@ -176,8 +172,8 @@ void UserInterface::Init()
 
 	//-------------------------------------------
 
-	window->setLayout(_mainLayout.release());
-	window->show();
+	setLayout(_mainLayout.release());
+	show();
 }
 
 void UserInterface::cuttingEvent()

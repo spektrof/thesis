@@ -152,6 +152,7 @@ namespace approx{
 			if (cube_size <= 0) return;
 			scale = cube_size / maxdist;
 			rescale(scale);
+			bdy.clear_cache();
 		}
 
 		void transform_back() {
@@ -159,6 +160,7 @@ namespace approx{
 			scale = 1;
 			move_by(-trans);
 			trans = { 0,0,0 };
+			bdy.clear_cache();
 		}
 
 		T inverse_scale() const {

@@ -5,8 +5,6 @@
 	A strategiahoz tartozo atomrendezes, ezen fuggvenyek alapjan hatarozza meg az atom adott tulajdonsagat.
 */
 
-#include "..\Engine\approximator.h"
-
 template <class T>
 class SorterFunctions
 {

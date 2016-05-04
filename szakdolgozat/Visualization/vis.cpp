@@ -4,8 +4,9 @@
 #include <GL/GLU.h>
 
 #define RELEVANCYEPSILON 0.5f
-#define FOURIEREPSILON 0.003f
-#define INTERSECTIONEPSILON  0.003f
+#define FOURIEREPSILON 0.005f
+#define INTERSECTIONEPSILON  0.001f
+#define MINVOLUME  0.005f
 
 Visualization::Visualization(void)
 {
@@ -17,6 +18,7 @@ Visualization::Visualization(void)
 	logger = false;
 
 	filename = "Targets/gummybear.obj";
+	prior.SetLastUse(&lastUse);
 
 	_2DTri = &_2D_TriIds_N;
 	_2DLine1 = &_2D_Line1Ids_N;
@@ -56,7 +58,7 @@ bool Visualization::Init()
 /* Approximaciohoz + alap megjeleniteshez szukseges opjektumok lekerese vagy alap allapotba helyezese */
 bool Visualization::EngineInit() 
 {
-	if (!app.set_target(filename.c_str(), 10.0f, 0.0f, 20.0f)) {
+	if (!app.set_target(filename.c_str(), 2.0f, 0.0f, 20.0f)) {
 		LOG("HIBA A FAJL BETOLTESENEL!\n");
 		return false;
 	}
@@ -66,6 +68,7 @@ bool Visualization::EngineInit()
 	ActiveIndex = 0;
 
 	IsTargetDrawEnabled = true;
+	partialTarget = false;
 
 	if (PlaneCalculator != NULL)
 	{
@@ -83,7 +86,7 @@ bool Visualization::EngineInit()
 	CleanIdBufferForReuse(targetIds);
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies,targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
-	
+
 	//egyeb objektumok alapallapotba helyezese
 	lastUse.clear();
 	lastUse.push_back(0);
@@ -147,7 +150,7 @@ void Visualization::Render()
 			SetNewDisplayMode();
 			break;
 		case RESTART:
-			if (c.Is2DView()) c.SwitchCameraView();
+			if (c.Is2DView()) c.SwitchCameraView(_3dIds.eye);
 			GetRestart();
 			break;
 		case NEXTATOM:
@@ -213,13 +216,15 @@ void Visualization::Render()
 /* Vagas elfogadasa */
 void Visualization::AcceptCutting()
 {
+	//minimum terfogat es szerinti ellenorzes
+	AcceptChecker();
 	//az adott resz(ek) elfogadasa
 	switch (request.type)
 	{ 
 		case BOTH:
 			if (!app.container().last_cut_result().choose_both()) { ui.InfoShow("ERROR BOTH\nThe cut is dopped!"); return; }
 			if (logger) std::cout << "Megtartom: BOTH\n";
-
+		
 			NumberOfAtoms++;
 			break;
 		case POSITIVE:
@@ -231,6 +236,11 @@ void Visualization::AcceptCutting()
 			if (!app.container().last_cut_result().choose_negative()) { ui.InfoShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
 			if (logger) std::cout << "Megtartom: NEGATIVE\n";
 
+			break;
+		case INVALID:
+			app.container().last_cut_result().undo();
+			if (logger) std::cout << "Megtartom: NONE\n";
+			ui.InfoShow("A keletkezett ket resz kozul egyik sem megfelelo\n");
 			break;
 	}
 
@@ -245,6 +255,15 @@ void Visualization::AcceptCutting()
 	if (request.choice == UNTOUCHED)	//mar nincs rendezes akar kiszedheto ez a feltetel ( n es ideju )
 	{	
 		prior.RefreshLastUseValues();
+	}
+
+	if (request.type == INVALID)
+	{
+		if (liveAtoms.size() == 0)	//csak ha torlunk is -> ki is kell torolni lastusechangingben
+		{
+			ui.NoAtomLeft("No atom left!\nYou probably finished your task.");
+		}
+		return;
 	}
 
 	//az atomok csoportba osztasa
@@ -284,7 +303,12 @@ void Visualization::GetResult()
 	app.container().cut(ActiveAtom, p);
 
 	//2D-s vetuletek kerese
-	Get2DDrawInfo();
+	Release2DIds();
+
+	Get2DDrawInfo(approx::drawinfo2d(*app.container().last_cut_result().negative()), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	Get2DDrawInfo(approx::drawinfo2d(*app.container().last_cut_result().positive()), _2D_TriIds_P, _2D_Line1Ids_P, _2D_Line2Ids_P);
+
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
 
 	//nem manualis modban az elfogadas automatizalva van
 	if (request.cut_mode != MANUAL) { 
@@ -498,6 +522,14 @@ void Visualization::NextAtom()
 	//modositas feltoltese
 	PlaneCalculator->SetActive(ActiveAtom);
 
+	//2D-s metszetkep frissites
+	Release2DIds();
+
+	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
+
+	if (partialTarget)	PartialTargetDrawRefresh();
+
 	//vagaosik frissitese
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
@@ -515,6 +547,14 @@ void Visualization::PrevAtom()
 	onlyActive.insert(ActiveAtom);
 
 	PlaneCalculator->SetActive(ActiveAtom);
+
+	//2D-s metszetkep frissites
+	Release2DIds();
+
+	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
+
+	if (partialTarget)	PartialTargetDrawRefresh();
 
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
@@ -632,42 +672,29 @@ void Visualization::Draw3D(const int& which, glm::mat4& scal, glm::mat4& trans, 
 }
 
 //2D-s informaciok feldolgozasa
-void Visualization::Get2DDrawInfo()
+void Visualization::Get2DDrawInfo(const std::vector<approx::PolyFace2D>& data, std::vector<IdsAndProp>& Tri, std::vector<std::vector<IdsAndProp>>& Line1, std::vector<std::vector<IdsAndProp>>& Line2)
 {
-	Release2DIds();
 
-	/*Default: negative resz*/
-	_2DTri = &_2D_TriIds_N;
-	_2DLine1 = &_2D_Line1Ids_N;
-	_2DLine2 = &_2D_Line2Ids_N;
+	Line1.resize(data.size());
+	Line2.resize(data.size());
 
-	//****************************************************************************
-	//NEGATIVE
-
-	std::vector<approx::PolyFace2D> _2Ddata = approx::drawinfo2d(*app.container().last_cut_result().negative());
-
-	Active2DIndex = 0;
-
-	_2D_Line1Ids_N.resize(_2Ddata.size());
-	_2D_Line2Ids_N.resize(_2Ddata.size());
-
-	for (int i = 0; i < _2Ddata.size(); ++i)
+	for (int i = 0; i < data.size(); ++i)
 	{
-		size_t sizeOfRanges = _2Ddata[i].ranges.size();
+		size_t sizeOfRanges = data[i].ranges.size();
 
 		//***********************************************
 		//alakzat levalasztasa 
-		int start = _2Ddata[i].ranges[0];
-		int end = _2Ddata[i].ranges[1];
+		int start = data[i].ranges[0];
+		int end = data[i].ranges[1];
 
-		glm::vec2 point = _2Ddata[i].points[start];
+		glm::vec2 point = data[i].points[start];
 		float maxx, maxy;
 		float minx = maxx = point.x, miny = maxy = point.y;
 		glm::vec2 eye = point;
 
 		for (int j = start + 1; j < end;++j)
 		{
-			point = _2Ddata[i].points[j];
+			point = data[i].points[j];
 
 			minx = point.x < minx ? point.x : minx;
 			miny = point.y < miny ? point.y : miny;
@@ -677,97 +704,32 @@ void Visualization::Get2DDrawInfo()
 			eye += point;
 		}
 
-		_2D_TriIds_N.push_back(IdsAndProp(end-start, glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y /( end - start))));
+		Tri.push_back(IdsAndProp(end-start, glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y /( end - start))));
 
-		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end), _2D_TriIds_N[i].VaoId, _2D_TriIds_N[i].VboId);
+		ObjectCreator::Create2DObject(std::vector<glm::vec2>(data[i].points.begin() + start, data[i].points.begin() + end), Tri[i].VaoId, Tri[i].VboId);
 		//***********************************************
 		//vonalak szetvalasztasa
 		for (int j = 1; j < sizeOfRanges - 1; ++j)	//az outereknel is az elso a lape
 		{
-			start = _2Ddata[i].ranges[j];
-			end = _2Ddata[i].ranges[j + 1];
-			std::vector<glm::vec2> points = std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end);
-			points.push_back(_2Ddata[i].points[start]);
+			start = data[i].ranges[j];
+			end = data[i].ranges[j + 1];
+			std::vector<glm::vec2> points = std::vector<glm::vec2>(data[i].points.begin() + start, data[i].points.begin() + end);
+			points.push_back(data[i].points[start]);
 
-			switch (_2Ddata[i].outer[j])
+			switch (data[i].outer[j])
 			{
 			case 0:
-				_2D_Line1Ids_N[i].push_back(IdsAndProp(end - start + 1));
-				ObjectCreator::Create2DObject(points, _2D_Line1Ids_N[i].back().VaoId, _2D_Line1Ids_N[i].back().VboId);
+				Line1[i].push_back(IdsAndProp(end - start + 1));
+				ObjectCreator::Create2DObject(points, Line1[i].back().VaoId, Line1[i].back().VboId);
 				break;
 			case 1:
-				_2D_Line2Ids_N[i].push_back(IdsAndProp(end - start + 1));
-				ObjectCreator::Create2DObject(points, _2D_Line2Ids_N[i].back().VaoId, _2D_Line2Ids_N[i].back().VboId);
+				Line2[i].push_back(IdsAndProp(end - start + 1));
+				ObjectCreator::Create2DObject(points, Line2[i].back().VaoId, Line2[i].back().VboId);
 				break;
 			}
 
 		}
 	}
-
-	//*****************************************************************************
-	//POSITIVE
-
-	_2Ddata = approx::drawinfo2d(*app.container().last_cut_result().positive());
-
-	_2D_Line1Ids_P.resize(_2Ddata.size());
-	_2D_Line2Ids_P.resize(_2Ddata.size());
-
-	for (int i = 0; i < _2Ddata.size(); ++i)
-	{
-		size_t sizeOfRanges = _2Ddata[i].ranges.size();
-
-		//***********************************************
-		//alakzat levalasztasa
-		int start = _2Ddata[i].ranges[0];
-		int end = _2Ddata[i].ranges[1];
-
-		glm::vec2 point = _2Ddata[i].points[start];
-		float maxx, maxy;
-		float minx = maxx = point.x, miny = maxy = point.y;
-		glm::vec2 eye = point;
-
-		for (int j = start + 1; j < end;++j)
-		{
-			point = _2Ddata[i].points[j];
-
-			minx = point.x < minx ? point.x : minx;
-			miny = point.y < miny ? point.y : miny;
-			maxx = point.x > maxx ? point.x : maxx;
-			maxy = point.y > maxy ? point.y : maxy;
-
-			eye += _2Ddata[i].points[j];
-		}
-
-		_2D_TriIds_P.push_back(IdsAndProp((end - start), glm::vec3(eye.x / (end - start), 2 * sqrt(pow(minx - maxx, 2) + pow(miny - maxy, 2)), eye.y / (end - start))));
-
-		ObjectCreator::Create2DObject(std::vector<glm::vec2>(_2Ddata[i].points.begin()+start, _2Ddata[i].points.begin()+end), _2D_TriIds_P[i].VaoId, _2D_TriIds_P[i].VboId);
-		//***********************************************
-		//vonalak szetvalasztasa
-		for (int j = 1; j < sizeOfRanges - 1; ++j)
-		{
-			start = _2Ddata[i].ranges[j];
-			end = _2Ddata[i].ranges[j + 1];
-
-			std::vector<glm::vec2> points = std::vector<glm::vec2>(_2Ddata[i].points.begin() + start, _2Ddata[i].points.begin() + end);
-			points.push_back(_2Ddata[i].points[start]);
-
-			switch (_2Ddata[i].outer[j])
-			{
-			case 0:
-				_2D_Line1Ids_P[i].push_back(IdsAndProp(end - start + 1));
-				ObjectCreator::Create2DObject(points, _2D_Line1Ids_P[i].back().VaoId, _2D_Line1Ids_P[i].back().VboId);
-				break;
-			case 1:
-				_2D_Line2Ids_P[i].push_back(IdsAndProp(end - start + 1));
-				ObjectCreator::Create2DObject(points, _2D_Line2Ids_P[i].back().VaoId, _2D_Line2Ids_P[i].back().VboId);
-				break;
-			}
-
-		}
-	}
-
-	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
-
 }
 
 /*2D-s metszet vetuletek rajzolasa*/
@@ -916,14 +878,14 @@ void Visualization::CalculateDisplayVectorsByFourier()
 /*Automatizalt elfogado*/
 void Visualization::CutChecker()
 {
-	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
+	/*//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
 	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > FOURIEREPSILON;
 	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > FOURIEREPSILON;
 
 	//a bool ertekek alapjan az elfogadas
 	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
 	else if (IntersectionWithNegative) request.type = NEGATIVE;
-	else request.type = POSITIVE;
+	else request.type = POSITIVE;*/
 
 	AcceptCutting();
 }
@@ -962,28 +924,40 @@ void Visualization::LastUseChanging()
 {
 	for (size_t i = 0; i < lastUse.size();++i) lastUse[i]++;
 
-	liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
-	relevantAtoms.erase(ActiveAtom);
 	//valtoztatas az elfogadas tipusatol fugg
 	//Megj.: azert kell a liveatoms es relevans vectorokat valtoztatni mert 
 	//ha manualis modban vagtunk akkor belekerul a masik fele is az eredmenynek amit latnunk kellett
 	switch (request.type)
 	{
 		case BOTH:
+			liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
+			relevantAtoms.erase(ActiveAtom);
+
 			liveAtoms.erase(NumberOfAtoms - 1 );
 	
 			lastUse[ActiveAtom] = 0;
 			lastUse.push_back(0);
 			break;
 		case POSITIVE:
+			liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
+			relevantAtoms.erase(ActiveAtom);
+
 			liveAtoms.erase( NumberOfAtoms );
 	
 			lastUse[ActiveAtom] = 0;
 			break;
 		case NEGATIVE:
+			liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
+			relevantAtoms.erase(ActiveAtom);
+
 			liveAtoms.erase(NumberOfAtoms);
 
 			lastUse[ActiveAtom] = 0;
+		break;
+		case INVALID:
+			liveAtoms.erase(NumberOfAtoms);
+			liveAtoms.erase(ActiveAtom);
+			lastUse.erase(lastUse.begin() + ActiveAtom);
 		break;
 	}
 	
@@ -1152,7 +1126,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		c.SetCamera((*_2DTri)[Active2DIndex].eye);
 		break;
 	case SDLK_o:	//2D-s pos - neg váltó
-		if (!c.Is2DView() || !_2DTri->size()) break;
+		if (!c.Is2DView() || (!_2D_TriIds_P.size() && !_2D_TriIds_N.size()) ) break;
 		Active2DIndex = 0;
 		_2DLine1 = _2DLine1 == &_2D_Line1Ids_N ? &_2D_Line1Ids_P : &_2D_Line1Ids_N;
 		_2DLine2 = _2DLine2 == &_2D_Line2Ids_N ? &_2D_Line2Ids_P : &_2D_Line2Ids_N;
@@ -1161,6 +1135,20 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 	case SDLK_t:
 		IsTargetDrawEnabled = !IsTargetDrawEnabled;
+		break;
+	case SDLK_z:
+		partialTarget = !partialTarget;
+		if (partialTarget)
+		{
+			PartialTargetDrawRefresh();
+		}
+		else if (IsTargetDrawEnabled)
+		{
+			approx::BodyList targetdata = app.target_drawinfo();
+			targetIds.count = (int)targetdata.indicies.size();
+			CleanIdBufferForReuse(targetIds);
+			ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies, targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
+		}
 		break;
 	}
 }
@@ -1297,11 +1285,18 @@ void Visualization::Release2DIds()
 	_2D_Line1Ids_P.clear();
 	_2D_Line2Ids_N.clear();
 	_2D_Line2Ids_P.clear();
+
+	/*Default: negative resz*/
+	_2DTri = &_2D_TriIds_N;
+	_2DLine1 = &_2D_Line1Ids_N;
+	_2DLine2 = &_2D_Line2Ids_N;
+
+	Active2DIndex = 0;
 }
 
-std::string Visualization::GetDistance()
+float Visualization::GetDistance()
 {
-	return std::to_string(targetDistance);
+	return targetDistance;
 }
 
 float Visualization::CalculateDistance()
@@ -1324,4 +1319,34 @@ float Visualization::CalculateDistance()
 	}
 
 	return sum / app.target().body().volume();
+}
+
+void Visualization::AcceptChecker()
+{
+	if (logger)
+	{
+		std::cout << "Fourier: " << app.container().last_cut_result().negative()->fourier() << " Volume: " << app.container().last_cut_result().negative()->volume() << "\n";
+		std::cout << "Fourier: " << app.container().last_cut_result().positive()->fourier() << " Volume: " << app.container().last_cut_result().positive()->volume() << "\n";
+	}
+
+	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
+	bool NegativeCheck = app.container().last_cut_result().negative()->fourier() > FOURIEREPSILON && app.container().last_cut_result().negative()->volume() > MINVOLUME;
+	bool PositiveCheck = app.container().last_cut_result().positive()->fourier() > FOURIEREPSILON && app.container().last_cut_result().positive()->volume() > MINVOLUME;
+
+	//a bool ertekek alapjan az elfogadas
+	if (NegativeCheck && PositiveCheck)	request.type = BOTH;
+	else if (NegativeCheck) request.type = NEGATIVE;
+	else if (PositiveCheck) request.type = POSITIVE;
+	else request.type = INVALID;
+}
+
+void Visualization::PartialTargetDrawRefresh()
+{
+	if (ActiveAtom < 0) return;
+
+	IsTargetDrawEnabled = true;
+	approx::BodyList targetdata = approx::compact_drawinfo(app.container().atoms(ActiveAtom).faces_inside());
+	targetIds.count = (int)targetdata.indicies.size();
+	CleanIdBufferForReuse(targetIds);
+	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies, targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
 }

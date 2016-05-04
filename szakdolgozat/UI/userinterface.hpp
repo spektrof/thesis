@@ -4,6 +4,7 @@
 	
 	Felhasznaloi felulet az approximalo programhoz
 */
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QWidget>
 #include <QPushButton>
 #include <QComboBox>
@@ -14,7 +15,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QVBoxLayout>
-#include "../../GeneratedFiles/ui_userinterface.h"
 #include "request.h"
 
 class UserInterface : public QWidget
@@ -66,8 +66,6 @@ protected:
 	void importEvent();
 
 private:
-	QWidget *window;
-
 	std::unique_ptr<QVBoxLayout> _mainLayout;
 
 	QLabel* _label, * _info;

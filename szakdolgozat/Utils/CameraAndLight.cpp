@@ -1,4 +1,3 @@
-#include "Utility.h"
 #include "CameraAndLight.h"
 
 Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const float& t, const float& r)
@@ -93,7 +92,7 @@ Light::Light(const int& c, const float& r, const int& o, const int& t)
 void Light::AddTo(float* unit)
 {
 	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;	//visszaszamoljuk az egyseget a noveles elott
-
+	std::cout << (int)std::round((*unit) * cunit) << "\n";
 	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }
 void Light::SubFrom(float* unit)

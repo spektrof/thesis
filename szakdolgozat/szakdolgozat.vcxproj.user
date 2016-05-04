@@ -9,15 +9,17 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerEnvironment>PATH=T:\OGLPack\bin\x64;C:\Qt\5.5.1\qtbase\bin;%PATH%</LocalDebuggerEnvironment>
+    <LocalDebuggerEnvironment>PATH=$(QTDIR)\bin%3bT:\OGLPack\bin\x64%3bC:\Qt\5.5.1\qtbase\bin%3b%PATH%</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <QTDIR>C:\Qt\5.5.1\qtbase</QTDIR>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_copied|x64'">
     <LocalDebuggerEnvironment>PATH=T:\OGLPack\bin\x64;C:\Qt\5.5.1\qtbase\bin;%PATH%</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerEnvironment>PATH=T:\OGLPack\bin\x64;C:\Qt\5.5.1\qtbase\bin;%PATH%</LocalDebuggerEnvironment>
+    <LocalDebuggerEnvironment>PATH=$(QTDIR)\bin%3bT:\OGLPack\bin\x64%3bC:\Qt\5.5.1\qtbase\bin%3b%PATH%</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <QTDIR>C:\Qt\5.5.1\qtbase</QTDIR>
   </PropertyGroup>
 </Project>

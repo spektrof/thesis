@@ -64,9 +64,8 @@ namespace approx{
 		T calculate_volume() const {
 			T sum = 0;
 			for (const Face<T>& f : *this) {
-				//TODO
-				sum += f.to_2d().area() * dot(f.points(0), f.normal());
-				//sum += f.to_2d().area() * dot(f.center(), f.normal());
+				sum += f.to_2d().area() * f.to_plane().signed_distance();
+				//sum += f.to_2d().area() * dot(f.points(0), f.normal());
 			}
 			sum /= 3;
 			return sum;
@@ -236,6 +235,15 @@ namespace approx{
 					//a grafban szomszedokka teszem oket
 					neighbours[pt1].push_back(pt2);
 					neighbours[pt2].push_back(pt1);
+				}
+				else if (cut.pt_inds.size() > 1 && cut.pt_inds.size() != face.size()) { //ralogo el
+					const std::vector<Vector3<T>>& vs = *face.vertex_container();
+					for (int i = 0; i < cut.pt_inds.size() - 1; ++i) {
+						Vector2<T> pt1(dot(base.first, vs[cut.pt_inds[i]]), dot(base.second, vs[cut.pt_inds[i]])),
+								   pt2(dot(base.first, vs[cut.pt_inds[i+1]]), dot(base.second, vs[cut.pt_inds[i+1]]));
+						neighbours[pt1].push_back(pt2);
+						neighbours[pt2].push_back(pt1);
+					}
 				}
 				//mivel mar nincs szuksegem a sokszogekre eldobom a pontjaikat
 			}

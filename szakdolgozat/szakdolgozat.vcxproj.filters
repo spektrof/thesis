@@ -19,12 +19,6 @@
     <Filter Include="GeneratedFiles">
       <UniqueIdentifier>{915a585e-596f-405f-8821-7f9f73830ae1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GeneratedFiles\Debug">
-      <UniqueIdentifier>{5425fa66-ef7f-4cd9-be0a-192062df551b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GeneratedFiles\Release">
-      <UniqueIdentifier>{910a60af-d61b-4898-8d45-1ffaa924ac12}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UI">
       <UniqueIdentifier>{c6591fdf-e911-4afa-a238-804cd6704222}</UniqueIdentifier>
     </Filter>
@@ -48,12 +42,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\GeneratedFiles\Debug\moc_userinterface.cpp">
-      <Filter>GeneratedFiles\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\GeneratedFiles\qrc_userinterface.cpp">
-      <Filter>GeneratedFiles</Filter>
-    </ClCompile>
     <ClCompile Include="UI\userinterface.cpp">
       <Filter>UI</Filter>
     </ClCompile>
@@ -69,11 +57,11 @@
     <ClCompile Include="Visualization\vis.cpp">
       <Filter>Visualization</Filter>
     </ClCompile>
+    <ClCompile Include="..\GeneratedFiles\moc_userinterface.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\GeneratedFiles\ui_userinterface.h">
-      <Filter>GeneratedFiles</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\GLUtils.hpp">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -91,9 +79,6 @@
     </ClInclude>
     <ClInclude Include="logger\logger.h">
       <Filter>Logger</Filter>
-    </ClInclude>
-    <ClInclude Include="UI\userinterface.hpp">
-      <Filter>UI</Filter>
     </ClInclude>
     <ClInclude Include="Strategy\planegetters.h">
       <Filter>Strategy</Filter>
@@ -172,5 +157,11 @@
     <None Include="Shaders\vert_3d.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="ui.pro" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="UI\userinterface.hpp">
+      <Filter>UI</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -7,9 +7,9 @@ Minden sikvalaszto fuggveny itt talalhato.
 */
 
 #include <random>
-#define FACEEPSILON 0.0001f
-#define FITEPSILON 2.0f
-#include <glm/gtc/epsilon.hpp>
+//#define FACEEPSILON 0.000001f	//ezzel pont 1 kockara ha vegeztunk; maci viszont nem oke
+#define FACEEPSILON 0.0001f	//ezzel pont 1 kockara ha vegeztunk
+#define DISTANCEEPSILON  2.0f
 
 template <typename V>
 class PlaneGetterFunctions
@@ -20,18 +20,22 @@ class PlaneGetterFunctions
 	Utility::PlaneResult requestPlane;
 
 	std::random_device rd;	//random generator
-
+#ifdef ONLYFORTEST
+	public:
+#endif
 	struct LuMatricies
 	{
 		glm::mat3 L;
 		glm::mat3 U;
-		LuMatricies(const glm::mat3& l, const glm::mat3& u) : L(l), U(u) {}
+		glm::mat3 P;
+		LuMatricies(const glm::mat3& l = glm::mat3(1.0f), const glm::mat3& u = glm::mat3(1.0f), const glm::mat3& p = glm::mat3(1.0f)) : L(l), U(u), P(p) {}
 	};
 
 	Utility::PlaneResult PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>&, bool&, bool&);
 
-	LuMatricies GetLuDecomposition(glm::mat3*);
-	glm::vec3 GetSolutionOfLER(const LuMatricies*, const glm::vec3*);
+	LuMatricies GetLuDecomposition(glm::mat3*, bool& copl);
+	glm::vec3 GetSolutionOfLER(const LuMatricies*,  glm::vec3&);
+	glm::mat3 GetPivot(glm::mat3& A);
 	float GetDistanceValue(const glm::vec3&,const std::vector<approx::Vector3<float>>&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat4x3&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat3&);
@@ -57,10 +61,6 @@ public:
 	void SetRequest(Utility::PlaneResult rp)
 	{
 		requestPlane = rp;
-	}
-	void SwitchInside()
-	{
-		IsInsideEnable = !IsInsideEnable;
 	}
 
 	/*Vagasi strategiakhoz a sikszamito fuggvenyek*/
@@ -196,40 +196,86 @@ public:
 
 };
 
-/*LU decompozicio
-Bemenete: A felbontani kívant matrix
-Kiemnete: L és U matrixok	*/
+/*LU decompozicio , A = P * L * U	
+en most ilyen alakot kaptam: A = inv(P) * L * U */
 template <typename V>
-typename PlaneGetterFunctions<V>::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A)
+typename PlaneGetterFunctions<V>::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A,bool& copl)
 {
+	//szingularis
+	glm::mat3 P = /*glm::mat3(1.0f)*/GetPivot(*A);
+	*A = (*A) * glm::inverse(P); //ez oke
+
 	glm::mat3 L = glm::mat3(1.0f);
 	glm::mat3 U = *A;
 	/* Note: glm::mat3 szorzás : A * B az valójában B * A */
 	for (int i = 0; i < 3;++i)
-	{
+	{		
+		/*int max = U[i][i];
+		int row = i;
+		for (int j=i;j<3;++j)
+		{
+			if (U[j][i] > max)
+			{
+				max = U[j][i];
+				row = j;
+			}
+		}
+		if (i != row)
+		{
+			glm::mat3 tmpP=glm::mat3(1.0f);
+			std::cout<<"CSERE: "<< i << " " << row<<"\n";
+			for (int j=0;j<3;++j)
+			{
+				float tmp = P[i][j];
+				P[i][j] = P[row][j];
+				P[row][j] = tmp;
+				
+				tmp = tmpP[i][j];
+				tmpP[i][j] = tmpP[row][j];
+				tmpP[row][j] = tmp;
+			}
+			//L
+			for (int j=0;j<i;++j)
+			{
+				float tmp = L[i][j];
+				L[i][j] = L[row][j];
+				L[row][j] = tmp;
+			}
+			//L = tmpP * L;
+			//U
+			/*for (int j=i;j<3;++j)
+			{
+				float tmp = U[i][j];
+				U[i][j] = U[row][j];
+				U[row][j] = tmp;
+			}*/
+			/*U *= tmpP;
+		}
+		*/
+
 		glm::mat3 Lk = glm::mat3(1.0f);
 		glm::mat3 LIk = glm::mat3(1.0f);
 
 		for (int j = i + 1; j < 3; ++j)
 		{
-			Lk[j][i] = -(*A)[j][i] / (*A)[i][i];
-			LIk[j][i] = (*A)[j][i] / (*A)[i][i];
+			Lk[j][i] = -U[j][i] / U[i][i];
+			LIk[j][i] = U[j][i] / U[i][i];
 		}
 
 		L = LIk * L;
 		U *= Lk;
-		(*A) = (*A) * Lk;
+		//(*A) *= Lk;
 	}
 
-	glm::mat3 check = U * L;
-
-	return LuMatricies(L, U);
+	return LuMatricies(L, U, P);
 }
 
 /* A = LU után & b vektor segítségével megoldja a LERT*/
 template <typename V>
-glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatricies* LU, const glm::vec3* b)
+glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatricies* LU,  glm::vec3& b)
 {
+	b = b * glm::inverse(LU->P);
+
 	glm::vec3 x, y;
 
 	/* L * y = b */
@@ -240,7 +286,7 @@ glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatricies* LU, const
 		{
 			tmp += y[j] * LU->L[i][j];
 		}
-		y[i] = ((*b)[i] - tmp) / LU->L[i][i];
+		y[i] = (b[i] - tmp) / LU->L[i][i];
 	}
 
 	/* U * x = y */
@@ -300,10 +346,16 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	glm::mat3 A = LER_left * glm::transpose(LER_left);
 	glm::vec3 b = LER_right * glm::transpose(LER_left);
 
-	LuMatricies result = GetLuDecomposition(&A);
-
+	bool copl = false;
+	LuMatricies result = GetLuDecomposition(&A,copl);
+	if (copl)
+	{
+		std::cout << "Coplanarity - LU\n";
+		return Utility::PlaneResult();
+	}
+	
 	/*Fifth step: Get our x = (A , B , C)*/
-	glm::vec3 x = GetSolutionOfLER(&result, &b);
+	glm::vec3 x = GetSolutionOfLER(&result, b);
 	glm::vec3 check = x * A;
 
 	if (true == glm::any(glm::isnan(x))) {
@@ -315,7 +367,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	/*Sixth step: Get our normal*/
 	glm::vec3 normal = glm::normalize(glm::vec3(x.x, x.y, x.z));
 
-	ok = GetDistanceValue(normal,points) < FITEPSILON;
+	ok = GetDistanceValue(normal,points) < DISTANCEEPSILON ;
 	if (!ok) return Utility::PlaneResult();
 
 	return Utility::PlaneResult(approx::convert<float>(normal), centr + approx::convert<float>(normal * FACEEPSILON));
@@ -330,6 +382,37 @@ float PlaneGetterFunctions<V>::GetDistanceValue(const glm::vec3& v, const std::v
 		sum += std::pow(glm::dot(approx::convert<float>(*it), v),2);
 	}
 	return sum;
+}
+
+template <typename V>
+glm::mat3 PlaneGetterFunctions<V>::GetPivot(glm::mat3& A)
+{
+	glm::mat3 pivot = glm::mat3(1.0f);
+	
+	for (int i=0; i<2; ++i)
+	{
+		int max = A[i][i];
+		int row = i;
+		for (int j=i;j<3;++j)
+		{
+			if (A[j][i] > max)
+			{
+				max = A[j][i];
+				row = j;
+			}
+		}
+		if (i != row)
+		{
+			//std::cout<<"CSERE: "<< i << " " << row<<"\n";
+			for (int j=0;j<3;++j)
+			{
+				float tmp = pivot[i][j];
+				pivot[i][j] = pivot[row][j];
+				pivot[row][j] = tmp;
+			}
+		}
+	}
+	return pivot;
 }
 
 template <typename V>

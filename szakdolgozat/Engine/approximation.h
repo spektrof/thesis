@@ -501,7 +501,8 @@ namespace approx{
 			normals = std::move(new_normals);
 			for (AtomType& a : _atoms)
 				for (Face<T>& f : a){
-					f.normal_index() -= normal_needed[f.normal_index()];
+					int tmpn = f.normal_index();
+					f.normal_index() -= normal_needed[tmpn];
 					for (int& ind : f.indicies())
 						ind -= needed[ind];
 				}
@@ -552,6 +553,9 @@ namespace approx{
 			scl = scl > 0 ? scl : 1;
 			for (Vector3<T>& v : vertices) {
 				v = (v*scl) + t;
+			}
+			for (ConvexAtom<T>& a : *this) {
+				a.clear_cache();
 			}
 		}
 

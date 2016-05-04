@@ -46,42 +46,14 @@ namespace approx{
 		}
 	}
 
-	//template <class T> void depth_first_search(const Graph<T>& graph, std::set<Vector2<T>, Less2d<T>>& visited, std::vector<Vector2<T>>& path, std::vector<Polygon2<T>>& result) {
-	//	visited.insert(path.back());
-	//	std::vector<Vector2<T>> list = graph.at(path.back());
-	//	if (path.size() == 1) {
-	//		std::sort(list.begin(), list.end(), [=](const Vector2<T>& a, const Vector2<T>& b) {
-	//			Vector2<T> v1 = (a - path.back()).normalized(), v2 = (b - path.back()).normalized();
-	//			return atan2(v1.y, v1.x) < atan2(v2.y, v2.x);
-	//		});
-	//	}
-	//	else {
-	//		Vector2<T> v = path[path.size() - 1] - path[path.size() - 2];
-	//		T angle = atan2(v.y, v.x);
-	//		std::sort(list.begin(), list.end(), [=](const Vector2<T>& a, const Vector2<T>& b) {
-	//			Vector2<T> v1 = (a - path.back()).normalized(), v2 = (b - path.back()).normalized();
-	//			return atan2(v1.y, v1.x)-angle < atan2(v2.y, v2.x)-angle;
-	//		});
-	//	}
-	//	for (const Vector2<T>& pt : list) {
-	//		if (!visited.count(pt)) {//arra a pontra meg nem mentem
-	//			path.push_back(pt);
-	//			visited.insert(pt);
-	//			depth_first_search(graph, visited, path, result);
-	//			path.pop_back();
-	//		}
-	//		else {
-	//			std::vector<Vector2<T>>::iterator it = find(path.begin(), path.end() - 1, pt);
-	//			//korre talaltam
-	//			if (it != path.end() - 1 && it != path.end() - 2) {
-	//				Polygon2<T> tmp(it, path.end());
-	//				//a kesobbi alkalmazasok miatt fix ccw sorrendbe rakom
-	//				if (!tmp.is_ccw()) std::reverse(tmp.begin(), tmp.end());
-	//				result.emplace_back(std::move(tmp));
-	//			}
-	//		}
-	//	}
-	//}
+	template<class T> bool graph_neighbours(const Graph<T>& graph,const Vector2<T>& a, const Vector2<T>& b) {
+		auto avec = graph.at(a);
+		auto bvec = graph.at(b);
+		return
+			(std::find(avec.begin(), avec.end(), b) != avec.end() &&
+				std::find(bvec.begin(), bvec.end(), a) != bvec.end());
+	
+	}
 
 
 

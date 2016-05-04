@@ -68,15 +68,10 @@ namespace approx{
 		std::vector<std::shared_ptr<SurfacePoly>> f_poly;
 		const Body<T>* target;
 
-		static std::pair<int, int> decide_pair(const std::pair<int, int>& p1, const std::pair<int, int>& p2) {
-			if (p1.first == p1.first)
-				return std::pair<int, int>{p1.second, p2.second};
-			if (p2.second == p1.second)
-				return std::pair<int, int>(p1.first, p2.first);
-			if (p1.first == p2.second)
-				return std::pair<int, int>(p1.second, p2.first);
-			else
-				return std::pair<int, int>(p1.first, p2.second);
+		static std::pair<int, int> decide_pair(const std::pair<int, int>& p1, const std::pair<int, int>& p2,int pt) {			
+                        int i1 = pt == p1.first ? p1.second : p1.first;
+			int i2 = pt == p2.first ? p2.second : p2.first;
+			return std::pair<int, int>(i1,i2);
 		}
 
 		ConvexAtom(std::vector<Face<T>>* f, const std::vector<int>& i, const Body<T>* targ, const std::vector<std::shared_ptr<SurfacePoly>>& plist, const Memo& m) :
@@ -88,31 +83,26 @@ namespace approx{
 			T sum = 0;
 			for (const Face<T>& f : *target) {
 				std::vector<Vector3<T>> tmp_vert, tmp_norm;
-				ConstFaceIterator it = begin();
 				Face<T> clipf = f;
-				//amennyiben a lap pontosan a sikon van, a vetuletet kell beszamitanom, magat a lapot nem, ezzel elkerulve a az ismetlodest
+				
 				bool onplane = false;
-				while (it != end() && clipf.size() >= 3 && !onplane) {
-					typename Face<T>::CutResult cut = clipf.cut_by(it->to_plane(), &tmp_vert, &tmp_norm);
-					onplane = false;
-					clipf = cut.negative;
-					++it;
+				for (int i = 0; i < size() && clipf.size() >= 3;++i) {
+					Plane<T> cutplane = f_poly[i]->plane;
+					bool flip = dot(cutplane.normal(), faces(i).normal()) < 0;
+					typename Face<T>::CutResult cut = clipf.cut_by(cutplane, &tmp_vert, &tmp_norm);
+					onplane = onplane || (cut.pt_inds.size() == clipf.size() && (cutplane.normal() == f.normal() || cutplane.normal() == -(f.normal())));
+					clipf = flip ? cut.positive : cut.negative;
 				}
-				if (clipf.size() >= 3 && !onplane) {
-
-					//T x = clipf.to_2d().area();
-					//T y = clipf.to_plane().signed_distance();
-					//Vector3<T> norm1 = clipf.to_plane().normal(),
-					//	       norm2 = clipf.normal();
-
-					sum += clipf.to_2d().area()*clipf.to_plane().signed_distance();
+				if (clipf.size() >= 3) {
+					sum += clipf.to_2d().area()*f.to_plane().signed_distance();
 				}
 			}
 
 			for (int i = 0; i < size(); ++i) {
 				sum += f_poly[i]->area()*faces(i).to_plane().signed_distance();
 			}
-			return sum / static_cast<T>(3);
+			T res = sum / static_cast<T>(3);
+			return res;
 		}
 
 	public:
@@ -240,8 +230,7 @@ namespace approx{
 				}
 				else{//a vagas nem krealt uj lapokat, de lehet hogy egy el vagy pont raesik
 					if (cut.pt_inds.size()){//raeso pont vagy pontok
-						pt_ids.push_back(cut.pt_inds.front());
-						pt_ids.push_back(cut.pt_inds.back());
+						pt_ids.insert(pt_ids.end(), cut.pt_inds.begin(), cut.pt_inds.end());
 					}
 					if (cut.pt_inds.size() < cut.positive.size()){ //a pozitiv oldalra kerul az egesz lap
 						pos_faces.push_back(indicies(i));
@@ -277,7 +266,7 @@ namespace approx{
 				}
 
 				_faces->emplace_back(faces(0).vertex_container(),new_fc, faces(0).normal_container(),p.normal());
-				Polygon2<T> clipper = _faces->back().to_2d(base.first,base.second); //a lap a sik koordinatarendszerebe athelyezve
+				Polygon2<T> clipper = _faces->back().to_2d(base.first,base.second).to_convex(); //a lap a sik koordinatarendszerebe athelyezve
 				std::reverse(new_fc.begin(),new_fc.end());
 				_faces->emplace_back(faces(0).vertex_container(), std::move(new_fc), faces(0).normal_container(),p.normal()*-1);
 				faces_added+=2;
@@ -359,17 +348,19 @@ namespace approx{
 								neigh12 = (*_faces)[rep_ind1].neighbours_of(cutpt2),
 								neigh22 = (*_faces)[rep_ind2].neighbours_of(cutpt2);
 			//meghatarozom melyik pontok koze kell beszurni
-			std::pair<int, int> pair1 = decide_pair(neigh11,neigh21);
-			std::pair<int, int> pair2 = decide_pair(neigh12, neigh22);
+			std::pair<int, int> pair1 = decide_pair(neigh11,neigh21,cutpt2);
+			std::pair<int, int> pair2 = decide_pair(neigh12, neigh22,cutpt1);
 			bool in1 = false, in2 = false;
 			int n=size()-1;
-			for (int i = 0; i < n && !(in1 && in2); ++i) {
+			for (int i = 0; i < n && !in1; ++i) {
 				if (i != ind) {
-					if (!in1) {
-						in1 = faces(i).insert_index(pair1.first, pair1.second, cutpt1);
-						if(!in1 && !in2) faces(i).insert_index(pair2.first, pair2.second, cutpt2);
-					}
-					else if (!in2) in2 = faces(i).insert_index(pair2.first, pair2.second, cutpt2);
+
+					in1 = faces(i).insert_index(pair1.first, pair1.second, cutpt1);	
+				}
+			}
+			for (int i = 0; i < n && !in2; ++i) {
+				if (i != ind) {
+					in2 = faces(i).insert_index(pair2.first, pair2.second, cutpt2);
 				}
 			}
  		}

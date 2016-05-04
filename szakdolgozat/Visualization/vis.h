@@ -22,7 +22,6 @@
 
 //----------------
 #include "../Utils/ObjectCreator.h"
-#include "../Utils/Utility.h"
 #include "../Utils/CameraAndLight.h"
 #include "../Strategy/prior.h"
 #include "../Strategy/priorityfunctions.h"
@@ -31,9 +30,7 @@
 
 //----------------
 #include "../UI/userinterface.hpp"
-#include "../UI/request.h"
 //--------------------
-#include "../Engine/approximator.h"
 
 class Visualization
 {
@@ -46,7 +43,7 @@ public:
 
 	void Update();
 	void Render();
-	std::string GetDistance();
+	float GetDistance();
 
 	void KeyboardDown(SDL_KeyboardEvent&);
 	void MouseMove(SDL_MouseMotionEvent&);
@@ -70,7 +67,7 @@ protected:
 	/*	TODO list*/
 	/*
 		KERDESEK:
-
+			DISTANCE FENN
 		-------------------
 		BUG:
 
@@ -81,7 +78,6 @@ protected:
 		Szombat:
 		Vasárnap:
 	/*
-		UI: generated files !
 
 		BUG:
 	
@@ -103,7 +99,7 @@ protected:
 	approx::BodyList data;
 
 	PriorityQue< approx::ConvexAtom<float>, SorterFunctions> prior 
-		= PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume, &lastUse);
+		= PriorityQue<approx::ConvexAtom<float>, SorterFunctions>(&SorterFunctions<approx::ConvexAtom<float>>::GetVolume);
 	
 	//-----------------------------------------
 	//Sik
@@ -143,7 +139,7 @@ protected:
 	void PrevAtom();
 	
 	void CutChecker();
-
+	void AcceptChecker();
 	//-----------------------------------------
 	// Atom tulajdonsagok
 	bool IsItActive(const int&);
@@ -180,6 +176,7 @@ protected:
 	void Draw3D(const int&, glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(0.0f, 0.0f, 0.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void Draw2D(glm::mat4& = glm::scale<float>(1.0f, 1.0f, 1.0f), glm::mat4& = glm::translate<float>(0.0f, 0.0f, 0.0f), glm::mat4& = glm::rotate<float>(0.0f, 1.0f, 0.0f, 0.0f));
 	void DrawTargetBody();
+	void PartialTargetDrawRefresh();
 
 	//--------------------------------------------
 	//ID-k
@@ -189,7 +186,7 @@ protected:
 	IdsAndProp _3dIds, planeIds, targetIds;
 
 	/* 2D ID-s */
-	void Get2DDrawInfo();
+	void Get2DDrawInfo(const std::vector<approx::PolyFace2D>&, std::vector<IdsAndProp>&, std::vector<std::vector<IdsAndProp>>&, std::vector<std::vector<IdsAndProp>>&);
 	int Active2DIndex;
 
 	std::vector<IdsAndProp>* _2DTri;
@@ -230,6 +227,7 @@ protected:
 	std::string filename;
 	bool logger;
 	bool IsTargetDrawEnabled;
+	bool partialTarget;
 
 	float targetDistance;
 	float CalculateDistance();

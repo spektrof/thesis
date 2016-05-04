@@ -137,6 +137,32 @@ namespace approx {
 		return res;
 	}
 
+	//kompakt info kinyerese, csak azoka a pontok kerulnek be amiket tenyleg felhasznalunk
+        //egy laphalmaz megjelenitesere lehet hasznalni, ha nem egy egesz test kell
+	template <class T> BodyList compact_drawinfo(const std::vector<Face<T>>& body) {
+		BodyList res;
+		std::unordered_map<int, int> verts;
+		for (const Face<T>& f : body) {
+			for (int i : f.indicies()) {
+				if (!verts.count(i)) {
+					verts[i] = res.points.size();
+					res.points.push_back(convert(f.vertex_container()->operator[](i)));
+				}
+			}
+			if (f.size()) {
+				int prev = f.is_ccw() ? 1 : 0;
+				for (int i = 2; i < f.indicies().size(); ++i) {
+					res.indicies.push_back(verts[f.indicies(0)]);
+					res.indicies.push_back(verts[f.indicies(i - prev)]);
+					res.indicies.push_back(verts[f.indicies(i - 1 + prev)]);
+				}
+			}
+		}
+		res.index_ranges = { 0, (Index)res.indicies.size() };
+		return res;
+	}
+
+
 	//a lapokra eso metszetrajzolatok kinyerese
 	template <class T> std::vector<PolyFace2D> drawinfo2d(const ConvexAtom<T>& a) {
 		std::vector<PolyFace2D> result;

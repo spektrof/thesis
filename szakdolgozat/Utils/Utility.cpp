@@ -11,17 +11,31 @@ glm::mat4 Utility::GetTranslate(const approx::Vector3<float>& centroid, const gl
 									centroid.y - (normal.y * distance),
 									centroid.z - (normal.z * distance));
 }
+/*Visszaadja a forgatasi matrixot
+  Bemenete: normalizalt vektor!*/
 glm::mat4 Utility::GetRotateFromNorm(const glm::vec3& vec)
 {
+	if (vec == glm::vec3(0,0,0)) return glm::rotate<float>(0, 1.0f, 0.0f, 0.0f); 
+	
 	glm::vec3 axis = glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), vec);	//tengely
 
 	float angle = glm::acos(glm::dot(glm::vec3(0.0f, 0.0f, 1.0f), vec));	//szog
+	
+	#ifdef ONLYFORTEST
+		std::cout<<"Forgatasi szog: "<< angle * 180.0f / (float)M_PI<<"\n";
+	#endif
+	
 	if (angle == 0.0f)
 		return glm::rotate<float>(angle, 1.0f, 0.0f, 0.0f); // ekkor a keresztszorzat 0 -> nem lehet normalizalni - helybenhagyas
 	if (angle == (float)M_PI)
 		return glm::rotate<float>(angle * 180.0f / (float)M_PI, 0.0f, 1.0f, 0.0f); // ekkor a keresztszorzat 0 -> nem lehet normalizálni - fordulas
 
 	axis = glm::normalize(axis);
+	
+	#ifdef ONLYFORTEST
+		std::cout<<"Forgatasi tengely: "<< axis <<"\n";
+	#endif
+	
 	return glm::rotate<float>(angle * 180.0f / (float)M_PI, axis.x, axis.y, axis.z);
 }
 

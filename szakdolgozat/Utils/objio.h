@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "objrepair.h"
 #include "targetbody.h"
+#include "approximation.h"
 #include <map>
 #include "geoios.h"
 
@@ -61,6 +62,7 @@ namespace approx {
 			tb.vecs.clear();
 			tb.normals.clear();
 			tb.faces.clear();
+			tb.transform_back();
 			std::ifstream f(filename);
 			if (!f) return exit_cleanup(tb);
 			std::vector<Vector3<T>> accum_normals;
@@ -171,9 +173,10 @@ namespace approx {
 	template <class T> class ObjectWriter {
 
 		//a megadott vektorlistat "beginning x y z" sorok formajaban a megadott streambe irja
-		static void write_obj_vector(std::ostream& os, const std::string& beginning, const std::vector<Vector3<T>>& v) {
+		static void write_obj_vector(std::ostream& os, const std::string& beginning, const std::vector<Vector3<T>>& v, const Vector3<T>& mov=Vector3<T>(), T rescale=1) {
 			for (const Vector3<T>& e : v) {
-				os << beginning << " " << e.x << " " << e.y << " " << e.z << std::endl;
+				Vector3<T> e2 = (e * rescale) + mov;
+				os << beginning << " " << e2.x << " " << e2.y << " " << e2.z << std::endl;
 			}
 			os << std::endl;
 		}
@@ -197,12 +200,12 @@ namespace approx {
 	public:
 		//az egy tarolon osztozo, iteratorok altal megadott Body vagy abból leszármazó, testek kiiratasa egyetlen fajlba
 		//a parameterben atadott iteratorok altal mutatott tipusnak a Body<T> publikus interfacevel kell rendelkezniuk
-		template <class BodyIter> static void save_obj(const std::string& filename, BodyIter first, BodyIter last) {
+		template <class BodyIter> static void save_obj(const std::string& filename, BodyIter first, BodyIter last, T rescale = 1, const Vector3<T>& mov = Vector3<T>()) {
 			std::ofstream f(filename);
 			while (first != last && !first->size()) ++first; //elmegyek az elso testig amiben van is lap 
 			if (first != last) { //ha van nem ures test a listaban kiiratom a vertex es normal vektorokat
 				f << "#No. vertices: " << first->faces(0).vertex_container()->size() << ":" << std::endl;
-				write_obj_vector(f, "v", *(first->faces(0).vertex_container()));
+				write_obj_vector(f, "v", *(first->faces(0).vertex_container()),mov,rescale);
 				f << "#No. normals " << first->faces(0).normal_container()->size() << ":" << std::endl;
 				write_obj_vector(f, "vn", *(first->faces(0).normal_container()));
 			}
@@ -218,12 +221,12 @@ namespace approx {
 		}
 
 		//az egesz approximacio kiiratasa egyetlen, .obj formatumu fajlba
-		static void save_obj(const std::string& filename, const Approximation<T>& app) {
-			save_obj(filename, app.begin(), app.end());
+		static void save_obj(const std::string& filename, const Approximation<T>& app, T rescale = 1, const Vector3<T>& mov = Vector3<T>()) {
+			save_obj(filename, app.begin(), app.end(),rescale,mov);
 		}
 
 		//egyetlen test kiiratasa a fajlba, a kello szelektalas mellett mellett
-		static void save_obj(const std::string& filename, const Body<T>& b) {
+		static void save_obj(const std::string& filename, const Body<T>& b, T rescale = 1, const Vector3<T>& mov = Vector3<T>()) {
 			std::ofstream f(filename);
 			std::map<int, int> normals, verts;
 			std::vector<Vector3<T>> w_normals, w_verts;
@@ -240,7 +243,7 @@ namespace approx {
 				}
 			}
 			f << "#No. vertices: " << w_verts.size() << ":" << std::endl;
-			write_obj_vector(f, "v", w_verts);
+			write_obj_vector(f, "v", w_verts,mov,rescale);
 			f << "#No. normals: " << w_normals.size() << ":" << std::endl;
 			write_obj_vector(f, "vn", w_normals);
 			f << "o approx_body" << std::endl;

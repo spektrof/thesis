@@ -5,8 +5,6 @@
 	A strategiahoz tartozo atomrendezest ez az osztaly vegzi el. Innen kerdezzuk le az aktualis sorrendet.
 */
 
-#include "..\Engine\approximator.h"
-
 template <typename T, template<typename> class V>
 class PriorityQue
 {
@@ -25,9 +23,9 @@ class PriorityQue
 	std::vector<Data> order;
 
 public:
-	PriorityQue(GETTER getterFunc, std::vector<int>* lu)
+	PriorityQue(GETTER getterFunc)
 	{
-		PriorityFunctions = new V<T>(lu);
+		PriorityFunctions = new V<T>();
 		m_getterFunc = getterFunc;
 	}
 	~PriorityQue() { delete PriorityFunctions;  }
@@ -35,10 +33,12 @@ public:
 	/*Beszuro rendezes*/
 	void insert(const int& _id, const T* atom)
 	{
+		if (atom == NULL) return;
+		
 		float tmp_val = (PriorityFunctions->*m_getterFunc)(atom,_id);
 		std::vector<Data>::iterator it = order.begin();
 
-		for (; it != order.end() && it->value > tmp_val; ++it) { }
+		for (; it != order.end() && it->value >= tmp_val; ++it) { }
 
 		order.insert(it, Data(_id, tmp_val) );
 	}
@@ -46,6 +46,7 @@ public:
 	/*Torli a parameterben megadott indexu tagot a sorbol*/
 	void erase(const int& e)
 	{
+		if (order.size() <= e) return;
 		order.erase(order.begin() + e);
 	}
 

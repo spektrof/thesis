@@ -5,13 +5,15 @@
    Az egyeb segedtipusokat, fuggvenyeket tartalmazo nevter.
    Azokat tartalmazza, amiket nem art ha tobb helyrol el tudjuk erni.
 */
-#include <SDL.h>
-#include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform2.hpp>
+#ifndef ONLYFORTEST
+	#include <SDL.h>
+	#include "glm/glm.hpp"
+	#include <glm/gtc/matrix_transform.hpp>
+	#include <glm/gtx/transform2.hpp>
+	#include "../Engine/approximator.h"
+#endif
 
 #include <vector>
-#include "../Engine/approximator.h"
 
 namespace Utility
 {

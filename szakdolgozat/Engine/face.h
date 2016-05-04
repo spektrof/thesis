@@ -43,7 +43,7 @@ namespace approx{
 		//ez a fuggveny gondoskodik rola hogy ez a problema ne keruljon elo es az azonos oldal
 		//azonos sikkal valo vagasa mas lapon is ugyanazt az eredmenyt adja
 		Vector3<T> cut_point_stable(int pind1, int pind2, T sign1, T sign2) const {
-			if (indicies(pind1) > indicies(pind2)) {
+			if(sign1 > 0){
 				std::swap(pind1, pind2);
 				std::swap(sign1, sign2);
 			}
@@ -71,8 +71,8 @@ namespace approx{
 			calc_normal(ccw);
 		}
 		//konstrukror mely szamolja es beilleszti a normalist, de mozgatast hasznal a megadott pont indexekre
-		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals)
-			: vecs(vertices), normals(_normals), inds(ids) { calc_normal(); }
+		Face(std::vector< Vector3<T> >* vertices, std::vector<int>&& ids, std::vector< Vector3<T> >* _normals, bool ccw = true)
+			: vecs(vertices), normals(_normals), inds(ids) { calc_normal(ccw); }
 		//megadott normalvektort felhasznalo konstruktor
 		Face(std::vector< Vector3<T> >* vertices, const std::vector<int>& ids, std::vector< Vector3<T> >* normals, int n_id)
 			: vecs(vertices), normals(normals), inds(ids), normal_id(n_id) {}
@@ -207,6 +207,7 @@ namespace approx{
 		//a vagas feltetelezi, hogy a lap konvex
 		//a muveletigeny linearis a csucspontok szamaban
 		CutResult cut_by(const Plane<T>& p) const {
+			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p);
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -255,6 +256,7 @@ namespace approx{
 		// pelda tipus: std::map<Vector3<T>,int>,std::unordered_map<Vector3<T>,int> a szukseges rendezessel vagy hasitassal
 		//a muveletigeny linearis a pontok szamaban, valamint a vagopontok beszurasanal a megadott Maptype kereso es beszuro koltsege
 		template<class MapType> CutResult cut_by(const Plane<T>& p, MapType& m) const {
+			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p);
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -314,6 +316,7 @@ namespace approx{
 
 			if (target_vecs == vecs && target_normals == normals) return cut_by(p);
 
+			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p,target_vecs,target_normals);
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -369,16 +372,20 @@ namespace approx{
 
 		//ha van a es b indexu pontja, beszurja kozejuk az ind indexut,
 		//ha nincs ilyen, nem tesz semmit
-		//visszatérési értéke a 
+		//visszatérési értéke a beszuras sikeressege
 		bool insert_index(int a, int b, int ind) {
-			int i = 0;
-			int n = size();
-			while (i < n && inds[i] != a) ++i;
-			if (i == n) return false;
-			if (inds[(i + 1) % n] != b) i = (i - 1 + n) % n;
-			if (inds[(i + 1) % n] != b) return false;
-			inds.insert(inds.begin() + i + 1, ind);
-			return true;
+
+			if ((inds.front() == a && inds.back() == b) || (inds.front() == b && inds.back() == a)) {
+				inds.push_back(ind);
+				return true;
+			}
+			for (int i = 1; i < size(); ++i) {
+				if ((inds[i] == a && inds[i - 1] == b) || (inds[i] == b && inds[i - 1] == a)) {
+					inds.insert(inds.begin() + i, ind);
+					return true;
+				}
+			}
+			return false;
 		}
 
 		//megkeresi az adott tarolo beli indexu pont szomszedait a sokszogben, ha megtalalta, a tarolobeli indexeiket adja meg
@@ -395,6 +402,63 @@ namespace approx{
 			}
 		}
 
+		private:
+			//a koplanaris vagas specialis esetet igenyel a numerikus hibak miatt
+			CutResult coplanar_cut(const Plane<T>& p) const {
+				bool zero = false;
+				bool neg = false;
+				bool pos = false;
+				for (int i = 0; i < size() && !zero; ++i) {
+					T clf = p.classify_point(points(i));
+					neg = neg || clf < 0;
+					pos = pos || clf > 0;
+					zero = clf == 0 || (neg && pos);
+				}
+				if (zero) { //pontosan a sikon vagyunk
+					return{ *this, *this, indicies(), 0 };
+				}
+				else if (pos) {
+					return{ *this, Face<T>(vecs,std::vector<int>(),normals,normal_id), std::vector<int>(), 0 };
+				}
+				else {
+					return{ Face<T>(vecs,std::vector<int>(),normals,normal_id), *this, std::vector<int>(), 0 };
+				}
+			}
+
+			CutResult coplanar_cut(const Plane<T>& p, std::vector<Vector3<T>>* target_vecs, std::vector<Vector3<T>>* target_normals) const {
+				bool zero = false;
+				bool neg = false;
+				bool pos = false;
+				std::vector<int> tmpind;
+				target_normals->push_back(normal());
+				for (int i = 0; i < size(); ++i) {
+					tmpind.push_back(target_vecs->size());
+					target_vecs->push_back(points(i));
+					T clf = p.classify_point(points(i));
+					neg = neg || clf < 0;
+					pos = pos || clf > 0;
+					zero = zero || clf == 0 || (neg && pos);
+				}
+				int n_id = target_normals->size() - 1;
+				if (zero) { //pontosan a sikon vagyunk
+					return{ Face<T>(target_vecs,tmpind,target_normals, n_id),
+						Face<T>(target_vecs,tmpind,target_normals, n_id),
+						tmpind,
+						(int)tmpind.size() };
+				}
+				else if (pos) {
+					return{ Face<T>(target_vecs,tmpind,target_normals,n_id),
+						Face<T>(target_vecs,std::vector<int>(),target_normals, n_id),
+						std::vector<int>(),
+						(int)tmpind.size() };
+				}
+				else {
+					return{ Face<T>(target_vecs,std::vector<int>(),target_normals, n_id),
+						Face<T>(target_vecs,tmpind,target_normals,n_id),
+						std::vector<int>(),
+						(int)tmpind.size() };
+				}
+			}
 	};
 
 

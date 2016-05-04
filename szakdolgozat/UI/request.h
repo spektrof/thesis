@@ -52,6 +52,7 @@ enum TypeOfAccept
 	NEGATIVE,
 	POSITIVE,
 	BOTH,
+	INVALID,
 };
 
 /*Megjelenitendo atomok tipusa*/

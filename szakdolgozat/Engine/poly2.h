@@ -83,10 +83,26 @@ namespace approx{
 					 positive; //a vago egyenes pozitiv oldalara eso resz
 		};
 
+		Polygon2<T> to_convex() const {
+			if (size() < 3) return *this;
+			std::vector<Vector2<T>> out{pts[0],pts[1]};
+			bool cc = is_ccw();
+			for (int i = 2; i < size(); ++i) {
+				int j = out.size() - 1;
+				while (j > 0 && ccw(out[j - 1], out[j], pts[i]) != cc) {
+					--j;
+					out.pop_back();
+				}
+				out.push_back(pts[i]);
+			}
+			while (out.size() > 3 && ccw(out[out.size() - 2], out[out.size() - 1], out[0]) != cc) out.pop_back();
+			return Polygon2<T>(std::move(out));
+		}
 		//a megadott vonallal elvagva kapott sokszogek szamitasa
 		//feltetelezzuk, hogy a sokszog konvex, ebbol kovetkezoen az eredmeny is az
 		//muveletigeny linearis a csucspontok szamaban
 		CutResult cut_by(const Line<T> l) const {
+			if (!l.valid()) return{ *this,*this };
 			std::vector<Vector2<T>> pos, neg;
 			T sign1 = l.classify_point(pts[0]); //az aktualisan vizsgalt pont elhelyezkedese a sikhoz kepest
 			const int n = size();
