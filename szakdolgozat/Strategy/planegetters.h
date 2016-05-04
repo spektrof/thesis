@@ -7,7 +7,6 @@ Minden sikvalaszto fuggveny itt talalhato.
 */
 
 #include <random>
-//#define FACEEPSILON 0.000001f	//ezzel pont 1 kockara ha vegeztunk; maci viszont nem oke
 #define FACEEPSILON 0.0001f	//ezzel pont 1 kockara ha vegeztunk
 #define DISTANCEEPSILON  2.0f
 
@@ -31,7 +30,7 @@ class PlaneGetterFunctions
 		LuMatricies(const glm::mat3& l = glm::mat3(1.0f), const glm::mat3& u = glm::mat3(1.0f), const glm::mat3& p = glm::mat3(1.0f)) : L(l), U(u), P(p) {}
 	};
 
-	Utility::PlaneResult PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>&, bool&, bool&);
+	Utility::PlaneResult PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>&, bool&, bool&, const float& = INFINITY);
 
 	LuMatricies GetLuDecomposition(glm::mat3*, bool& copl);
 	glm::vec3 GetSolutionOfLER(const LuMatricies*,  glm::vec3&);
@@ -39,6 +38,7 @@ class PlaneGetterFunctions
 	float GetDistanceValue(const glm::vec3&,const std::vector<approx::Vector3<float>>&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat4x3&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat3&);
+	float GetDeterminantOf3x3Matrix(const glm::mat3&);
 
 public:
 
@@ -157,7 +157,7 @@ public:
 				active = iter;
 				iter.clear();
 				bool coplanarity = false;
-				Utility::PlaneResult tmp_res = PlanarFittingOn3dPoints(points, ok, coplanarity);	// ok = epsilon oké , copl. = elofordulhat -> normalis nan -> kiakadunk
+				Utility::PlaneResult tmp_res = PlanarFittingOn3dPoints(points, ok, coplanarity, DISTANCEEPSILON);	// ok = epsilon oké , copl. = elofordulhat -> normalis nan -> kiakadunk
 																									//Most ha copl true akkor eldobjuk az eredmenyt (defaultal ter vissza), vagyis nem csereljuk le az eddigit
 				if (ok && !coplanarity )
 				{
@@ -169,7 +169,7 @@ public:
 		}
 		return res;
 	}
-	/*4x3 as LER*/
+	
 	Utility::PlaneResult AllPointsFitting()
 	{
 		/*Lekerem az osszes beeso lapot, ha nem volt akkor default sikkal terek vissza*/
@@ -188,7 +188,7 @@ public:
 			}
 		}
 		/*Illesztek rajuk sikot*/
-		bool ok, cop;
+		bool ok = true, cop = false;
 		Utility::PlaneResult res = PlanarFittingOn3dPoints(vertexes,ok,cop);
 
 		return res;
@@ -196,12 +196,17 @@ public:
 
 };
 
-/*LU decompozicio , A = P * L * U	
-en most ilyen alakot kaptam: A = inv(P) * L * U */
+/*LU decompozicio , A = P * L * U */
 template <typename V>
 typename PlaneGetterFunctions<V>::LuMatricies PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A,bool& copl)
 {
 	//szingularis
+	if (GetDeterminantOf3x3Matrix(*A) == 0) {
+		copl = true;
+		std::cout << "Singular\n";
+		return LuMatricies();
+	}
+
 	glm::mat3 P = /*glm::mat3(1.0f)*/GetPivot(*A);
 	*A = (*A) * glm::inverse(P); //ez oke
 
@@ -303,10 +308,13 @@ glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatricies* LU,  glm:
 	return x;
 }
 
+/*Sikillesztes
+(pontok halmaza, bool - hataron beluli eredmenyt kaptunk, bool - koplanarisok voltak e a pontok, hatar)*/
 template <typename V>
-Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>& tmp, bool& ok, bool& coplanarity)
+Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>& tmp, bool& ok, bool& coplanarity, const float& DISTANCE)
 {
-	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());
+	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());	
+	//cpp ref: neither the const nor the non-const versions modify the container
 
 	/*First step: sulypont meghatarozasa */
 	approx::Vector3<float> centr = approx::Vector3<float>(0.0f, 0.0f, 0.0f);
@@ -346,9 +354,9 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	glm::mat3 A = LER_left * glm::transpose(LER_left);
 	glm::vec3 b = LER_right * glm::transpose(LER_left);
 
-	bool copl = false;
-	LuMatricies result = GetLuDecomposition(&A,copl);
-	if (copl)
+	
+	LuMatricies result = GetLuDecomposition(&A, coplanarity);
+	if (coplanarity)
 	{
 		std::cout << "Coplanarity - LU\n";
 		return Utility::PlaneResult();
@@ -367,7 +375,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	/*Sixth step: Get our normal*/
 	glm::vec3 normal = glm::normalize(glm::vec3(x.x, x.y, x.z));
 
-	ok = GetDistanceValue(normal,points) < DISTANCEEPSILON ;
+	ok = GetDistanceValue(normal,points) <  DISTANCE;
 	if (!ok) return Utility::PlaneResult();
 
 	return Utility::PlaneResult(approx::convert<float>(normal), centr + approx::convert<float>(normal * FACEEPSILON));
@@ -403,7 +411,6 @@ glm::mat3 PlaneGetterFunctions<V>::GetPivot(glm::mat3& A)
 		}
 		if (i != row)
 		{
-			//std::cout<<"CSERE: "<< i << " " << row<<"\n";
 			for (int j=0;j<3;++j)
 			{
 				float tmp = pivot[i][j];
@@ -465,4 +472,17 @@ int PlaneGetterFunctions<V>::GetColumnNormMinOf3x3Matrix(const glm::mat3& m)
 		}
 	}
 	return res;
+}
+
+template <typename V>
+float PlaneGetterFunctions<V>::GetDeterminantOf3x3Matrix(const glm::mat3& matrix_3x3)
+{
+	float sum_one = 0, sum_two = 0;
+	for (int i = 0; i < 3; ++i)
+	{
+		sum_one += matrix_3x3[0][(0 + i) % 3] * matrix_3x3[1][(1 + i) % 3] * matrix_3x3[2][(2 + i) % 3];
+		sum_two += matrix_3x3[2][(0 + i) % 3] * matrix_3x3[1][(1 + i) % 3] * matrix_3x3[0][(2 + i) % 3];
+	}
+		
+	 return sum_one - sum_two;
 }

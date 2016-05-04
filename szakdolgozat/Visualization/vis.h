@@ -68,6 +68,11 @@ protected:
 	/*
 		KERDESEK:
 			DISTANCE FENN
+			SZingularis LU
+			Kul. distanceok sikillesztesnel
+			z,t gombok
+			2D-s
+			elhagyas: halott atom lesz - containerben marad, csak se nem el se nem relevans (HA relevans volt akkor az maradjon? - sztem nem, kiugro gula szeru test esete
 		-------------------
 		BUG:
 
@@ -138,7 +143,6 @@ protected:
 	void NextAtom();
 	void PrevAtom();
 	
-	void CutChecker();
 	void AcceptChecker();
 	//-----------------------------------------
 	// Atom tulajdonsagok

@@ -240,7 +240,7 @@ void Visualization::AcceptCutting()
 		case INVALID:
 			app.container().last_cut_result().undo();
 			if (logger) std::cout << "Megtartom: NONE\n";
-			ui.InfoShow("A keletkezett ket resz kozul egyik sem megfelelo\n");
+			ui.InfoShow("All new atom are inappropriate!\nThe cutted atom is dropped.");
 			break;
 	}
 
@@ -252,17 +252,22 @@ void Visualization::AcceptCutting()
 
 	LastUseChanging();
 
-	if (request.choice == UNTOUCHED)	//mar nincs rendezes akar kiszedheto ez a feltetel ( n es ideju )
+	if (request.choice == UNTOUCHED)
 	{	
 		prior.RefreshLastUseValues();
 	}
 
 	if (request.type == INVALID)
 	{
-		if (liveAtoms.size() == 0)	//csak ha torlunk is -> ki is kell torolni lastusechangingben
+		GetPriorResult();
+		if (liveAtoms.size() == 0)	
 		{
-			ui.NoAtomLeft("No atom left!\nYou probably finished your task.");
+			ui.NoAtomLeft("No atom left!\n");
+			return;
 		}
+		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+		if (partialTarget) PartialTargetDrawRefresh();
+
 		return;
 	}
 
@@ -283,6 +288,7 @@ void Visualization::AcceptCutting()
 	}
 
 	RefreshPlaneData( (PlaneCalculator->*PlaneFunction)());
+	if (partialTarget) PartialTargetDrawRefresh();
 }
 
 /* Vagasi eredmeny kerese */
@@ -316,7 +322,7 @@ void Visualization::GetResult()
 		LOG("\tCUT: sík - ( " <<p.normal().x << " , " << p.normal().y << " , " << p.normal().z << " ) "
 			<< "\n\t\t pont - ( " << p.example_point().x << " , " << p.example_point().y << " , " << p.example_point().z << " )\n");
 
-		CutChecker();
+		AcceptCutting();
 
 		return;
 	}
@@ -344,6 +350,8 @@ void Visualization::GetUndo()
 
 	liveAtoms.erase(NumberOfAtoms);
 	Release2DIds();
+
+	if (partialTarget) PartialTargetDrawRefresh();
 
 	LOG("\tUNDO\n");
 }
@@ -386,7 +394,8 @@ void Visualization::GetRestart()
 
 	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-	
+	if (partialTarget) PartialTargetDrawRefresh();
+
 	Release2DIds();
 
 	LOG("\tRESTART\n");
@@ -875,21 +884,6 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	}
 }
 
-/*Automatizalt elfogado*/
-void Visualization::CutChecker()
-{
-	/*//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
-	bool IntersectionWithNegative = app.container().last_cut_result().negative()->fourier() > FOURIEREPSILON;
-	bool IntersectionWithPositive = app.container().last_cut_result().positive()->fourier() > FOURIEREPSILON;
-
-	//a bool ertekek alapjan az elfogadas
-	if (IntersectionWithNegative && IntersectionWithPositive)	request.type = BOTH;
-	else if (IntersectionWithNegative) request.type = NEGATIVE;
-	else request.type = POSITIVE;*/
-
-	AcceptCutting();
-}
-
 /*Prioritasos sor tartalmat lekero eljaras*/
 void Visualization::GetPriorResult()
 {
@@ -957,6 +951,9 @@ void Visualization::LastUseChanging()
 		case INVALID:
 			liveAtoms.erase(NumberOfAtoms);
 			liveAtoms.erase(ActiveAtom);
+			relevantAtoms.erase(ActiveAtom);
+
+			prior.erase(ActiveAtom);
 			lastUse.erase(lastUse.begin() + ActiveAtom);
 		break;
 	}
