@@ -4,7 +4,8 @@
 #include <GL/GLU.h>
 
 #define RELEVANCYEPSILON 0.5f
-#define FOURIEREPSILON 0.005f
+#define MINFOURIEREPSILON 0.005f
+#define MAXFOURIEREPSILON 0.03f
 #define INTERSECTIONEPSILON  0.001f
 #define MINVOLUME  0.005f
 
@@ -62,7 +63,7 @@ bool Visualization::EngineInit()
 		LOG("HIBA A FAJL BETOLTESENEL!\n");
 		return false;
 	}
-
+	
 	NumberOfAtoms = 1;
 	ActiveAtom = 0;
 	ActiveIndex = 0;
@@ -149,6 +150,9 @@ void Visualization::Render()
 		case NEWDISPLAY:
 			SetNewDisplayMode();
 			break;
+		case ACTYPECHANGED:
+			OnlyActiveRefresh();
+			break;
 		case RESTART:
 			if (c.Is2DView()) c.SwitchCameraView(_3dIds.eye);
 			GetRestart();
@@ -164,10 +168,9 @@ void Visualization::Render()
 			break;
 		case MORESTEPS:
 			for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
-			app.container().garbage_collection();
+		//	app.container().garbage_collection();
 			break;
 		case EXPORT:
-			app.container().final_transform();
 			app.save_atoms(request.filename);
 			app.save_approximated_body(request.filename.substr(0, request.filename.length()-4) + "_appbody.obj");
 			break;
@@ -217,29 +220,63 @@ void Visualization::Render()
 void Visualization::AcceptCutting()
 {
 	//minimum terfogat es szerinti ellenorzes
-	AcceptChecker();
+	if (!AcceptChecker())
+	{	//manualis modban a keres nem kielegito -> keres eldobasa
+		GetUndo();
+		ui.RequestWrongCuttingErrorResolve("Your request is wrong!\nYou cant keep that part because its too small or inappropriate.\nThe cut is dropped.");
+		return;
+	}
 	//az adott resz(ek) elfogadasa
 	switch (request.type)
 	{ 
 		case BOTH:
-			if (!app.container().last_cut_result().choose_both()) { ui.InfoShow("ERROR BOTH\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_both()) 
+			{ 		//valasztas kozbeni hiba
+				GetUndo();
+				if (request.eventtype == MORESTEPS)
+				{
+					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+					return;
+				}
+				ui.RequestWrongCuttingErrorResolve("ERROR BOTH\nThe cut is dropped!"); return; 
+			}
 			if (logger) std::cout << "Megtartom: BOTH\n";
 		
 			NumberOfAtoms++;
 			break;
 		case POSITIVE:
-			if (!app.container().last_cut_result().choose_positive()) { ui.InfoShow("ERROR POSITIVE\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_positive()) 
+			{ 
+				GetUndo();
+				if (request.eventtype == MORESTEPS)
+				{
+					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+					return;
+				}
+				ui.RequestWrongCuttingErrorResolve("ERROR POSITIVE\nThe cut is dropped!"); return; 
+			}
 			if (logger) std::cout << "Megtartom: POSITIVE\n";
 
 			break;
 		case NEGATIVE:
-			if (!app.container().last_cut_result().choose_negative()) { ui.InfoShow("ERROR NEGATIVE\nThe cut is dopped!"); return; }
+			if (!app.container().last_cut_result().choose_negative()) 
+			{
+				GetUndo();
+				if (request.eventtype == MORESTEPS) 
+				{ 
+					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+					return;
+				}
+					
+				ui.RequestWrongCuttingErrorResolve("ERROR NEGATIVE\nThe cut is dropped!"); return; 
+			}
 			if (logger) std::cout << "Megtartom: NEGATIVE\n";
 
 			break;
 		case INVALID:
 			app.container().last_cut_result().undo();
 			if (logger) std::cout << "Megtartom: NONE\n";
+			if (request.eventtype == MORESTEPS) break;
 			ui.InfoShow("All new atom are inappropriate!\nThe cutted atom is dropped.");
 			break;
 	}
@@ -258,7 +295,7 @@ void Visualization::AcceptCutting()
 	}
 
 	if (request.type == INVALID)
-	{
+	{	//megvaltozott a prior sor
 		GetPriorResult();
 		if (liveAtoms.size() == 0)	
 		{
@@ -301,7 +338,6 @@ void Visualization::GetResult()
 			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 			if (request.eventtype == MORESTEPS) return;
 			ui.RequestWrongCuttingErrorResolve("Invalid cut!\nThe intersection is empty.");
-
 			return; 
 	}
 
@@ -323,7 +359,6 @@ void Visualization::GetResult()
 			<< "\n\t\t pont - ( " << p.example_point().x << " , " << p.example_point().y << " , " << p.example_point().z << " )\n");
 
 		AcceptCutting();
-
 		return;
 	}
 
@@ -349,7 +384,11 @@ void Visualization::GetUndo()
 	ObjectCreator::Create3DObject(data.points, data.indicies, _3dIds.VaoId, _3dIds.VboId, _3dIds.IndexId);
 
 	liveAtoms.erase(NumberOfAtoms);
+	onlyActive.erase(NumberOfAtoms);
+
 	Release2DIds();
+	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
 
 	if (partialTarget) PartialTargetDrawRefresh();
 
@@ -413,11 +452,6 @@ void Visualization::SetNewPlane()
 /* Strategia valtozas - atomrendezes*/
 void Visualization::SetNewStrategy()
 {
-	/*Folyamat:
-		Összehasonlító módosítása
-		prioritásos sor törlése, feltöltése -> beszúró rendezés lesz
-		Eredmény lekérés
-		Vágósík számolás*/
 	switch (request.choice)
 		{
 			case VOLUME:
@@ -475,9 +509,6 @@ void Visualization::SetNewStrategy()
 /* Vagosik valasztas modositasa*/
 void Visualization::SetNewCuttingMode()
 {
-	/*Folyamat:
-		Vágósík meghatározó fv. cseréje
-		Új vágósík lekérés */
 	switch (request.cut_mode)
 	{
 	case MANUAL:
@@ -546,7 +577,7 @@ void Visualization::NextAtom()
 	LOG("\tATOMVALTAS: +\n\n");
 }
 
-/*A sorban az aktuális előtti atom lekerese*/
+/*A sorban az aktualis elotti atom lekerese*/
 void Visualization::PrevAtom()
 { 
 	ActiveIndex = (ActiveIndex - 1 + (int)liveAtoms.size()) % (int)liveAtoms.size();
@@ -848,16 +879,16 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 		0);					
 }
 
-/*Fourier együttható szerinti csoportba kerülés
-	liveAtoms = élő atomok : nem 0 és nem 1 fourier együttható, epsilon: FOURIEREPSILON
-	relevansAtom = releváns atomok: RELEVANCYEPSILON  (0.5) -nél nagyobb fourier egy.ú atomok*/
+/*Fourier egyutthato szerinti csoportba kerules
+	liveAtoms = elo atomok : nem 0 és nem 1 fourier egyutthato, epsilon: MINFOURIEREPSILON,MAXFOURIEREPSILON
+	relevansAtom = relevans atomok: RELEVANCYEPSILON  (0.5) -nel nagyobb fourier egyutthatoju atomok*/
 void Visualization::CalculateDisplayVectorsByFourier()
 {	
 	//Elso atomra fourier egyutthato szamolas - lehet negative vagy positive resz is, de both esetben mindig negative
 	float fourier = app.container().atoms(ActiveAtom).fourier();
 	if (logger) { std::cout << "Fourier of First Atom: " << fourier << "\n"; }
 
-	if ( fourier > 0 && std::abs(fourier) > FOURIEREPSILON && std::abs(fourier-1.0f) > FOURIEREPSILON && fourier < 1)
+	if ( fourier > 0 && std::abs(fourier) > MINFOURIEREPSILON && std::abs(fourier-1.0f) > MAXFOURIEREPSILON && fourier < 1)
 	{
 		prior.insert(ActiveAtom, &app.container().atoms(ActiveAtom));
 		liveAtoms.insert(ActiveAtom);
@@ -873,7 +904,7 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	fourier = app.container().atoms(NumberOfAtoms-1).fourier();
 	if (logger) { std::cout << "Fourier of Second Atom: " << fourier << "\n"; }
 
-	if (fourier > 0 && std::abs(fourier) > FOURIEREPSILON && std::abs(fourier - 1.0f) > FOURIEREPSILON  && fourier < 1)
+	if (fourier > 0 && std::abs(fourier) > MINFOURIEREPSILON && std::abs(fourier - 1.0f) > MAXFOURIEREPSILON  && fourier < 1)
 	{
 		prior.insert(NumberOfAtoms - 1, &app.container().atoms(NumberOfAtoms - 1));
 		liveAtoms.insert(NumberOfAtoms - 1);
@@ -897,6 +928,12 @@ void Visualization::GetPriorResult()
 	if (ActiveAtom!=-1) onlyActive.insert(ActiveAtom);
 
 	PlaneCalculator->SetActive(ActiveAtom);
+	
+	Release2DIds();
+	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
+	
+	if (partialTarget) PartialTargetDrawRefresh();
 
 	if (logger) {
 		std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << a.id << " " << a.value << "\n"; });
@@ -908,19 +945,18 @@ void Visualization::GetPriorResult()
 /*Megallapitja hogy az aktualis atomrol van-e szo mindegy milyen modban is vagyunk!*/
 bool Visualization::IsItActive(const int& which)
 {
-	return	(request.type == NEGATIVE && (ActiveAtom) == which)
-		|| (request.type == POSITIVE && NumberOfAtoms == which)
-		|| (request.type == BOTH && (NumberOfAtoms == which || (ActiveAtom) == which));
+	return	onlyActive.count(which) != 0;	//legfeljebb 2 elemu az onlyactive
 }
 
 /*Last use vektor aktualizalasa	*/
 void Visualization::LastUseChanging()
 {
-	for (size_t i = 0; i < lastUse.size();++i) lastUse[i]++;
+	for (size_t i = 0; i < lastUse.size();++i) 
+	{
+		if (lastUse[i] == -1) continue;
+		lastUse[i]++; 
+	}
 
-	//valtoztatas az elfogadas tipusatol fugg
-	//Megj.: azert kell a liveatoms es relevans vectorokat valtoztatni mert 
-	//ha manualis modban vagtunk akkor belekerul a masik fele is az eredmenynek amit latnunk kellett
 	switch (request.type)
 	{
 		case BOTH:
@@ -933,7 +969,7 @@ void Visualization::LastUseChanging()
 			lastUse.push_back(0);
 			break;
 		case POSITIVE:
-			liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
+			liveAtoms.erase(ActiveAtom);
 			relevantAtoms.erase(ActiveAtom);
 
 			liveAtoms.erase( NumberOfAtoms );
@@ -941,7 +977,7 @@ void Visualization::LastUseChanging()
 			lastUse[ActiveAtom] = 0;
 			break;
 		case NEGATIVE:
-			liveAtoms.erase(ActiveAtom); // elofeltele a vagasnak
+			liveAtoms.erase(ActiveAtom);
 			relevantAtoms.erase(ActiveAtom);
 
 			liveAtoms.erase(NumberOfAtoms);
@@ -953,11 +989,10 @@ void Visualization::LastUseChanging()
 			liveAtoms.erase(ActiveAtom);
 			relevantAtoms.erase(ActiveAtom);
 
-			prior.erase(ActiveAtom);
-			lastUse.erase(lastUse.begin() + ActiveAtom);
+			prior.erase(ActiveIndex);
+			lastUse[ActiveAtom] = -1;
 		break;
 	}
-	
 }
 
 /*	MANUAL modban a vagasi eredmeny mergelese a tobbi szabad atommal */
@@ -1139,7 +1174,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		{
 			PartialTargetDrawRefresh();
 		}
-		else if (IsTargetDrawEnabled)
+		else 
 		{
 			approx::BodyList targetdata = app.target_drawinfo();
 			targetIds.count = (int)targetdata.indicies.size();
@@ -1291,11 +1326,13 @@ void Visualization::Release2DIds()
 	Active2DIndex = 0;
 }
 
+/*Visszaadja a celtest es az osszes atom terfogatainak osszegenek a kulonbseget a celtest terfogatahoz viszonyitva*/
 float Visualization::GetDistance()
 {
 	return targetDistance;
 }
 
+/*Kiszamolja a celtest koruli osszes atom terfogatat, majd a celtest terfogatahoz viszonyítja*/
 float Visualization::CalculateDistance()
 {
 	float sum = 0.0f;
@@ -1318,7 +1355,8 @@ float Visualization::CalculateDistance()
 	return sum / app.target().body().volume();
 }
 
-void Visualization::AcceptChecker()
+/*Vagas eredmeny elfogadasanak vizsgalata, akkor helyes, ha nem tul pici az atom es nem kicsi a Fourier-egyutthatoja*/
+bool Visualization::AcceptChecker()
 {
 	if (logger)
 	{
@@ -1327,16 +1365,44 @@ void Visualization::AcceptChecker()
 	}
 
 	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
-	bool NegativeCheck = app.container().last_cut_result().negative()->fourier() > FOURIEREPSILON && app.container().last_cut_result().negative()->volume() > MINVOLUME;
-	bool PositiveCheck = app.container().last_cut_result().positive()->fourier() > FOURIEREPSILON && app.container().last_cut_result().positive()->volume() > MINVOLUME;
+	bool NegativeCheck = app.container().last_cut_result().negative()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().negative()->volume() > MINVOLUME;
+	bool PositiveCheck = app.container().last_cut_result().positive()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().positive()->volume() > MINVOLUME;
+
+	if (request.cut_mode == MANUAL)	//manualis valasztashoz kis korrekcio/ellenorzes
+	{
+		switch (request.type)
+		{
+			case BOTH:
+			{
+				if (NegativeCheck && PositiveCheck) return true; //korrekt volt
+				return false;
+				break;
+			}
+			case NEGATIVE:
+			{
+				if (NegativeCheck) return true; //korrekt volt
+				return false;
+				break;
+			}
+			case POSITIVE:
+			{
+				if (PositiveCheck) return true; //korrekt volt
+				return false;
+				break;
+			}
+		}
+	}
 
 	//a bool ertekek alapjan az elfogadas
 	if (NegativeCheck && PositiveCheck)	request.type = BOTH;
 	else if (NegativeCheck) request.type = NEGATIVE;
 	else if (PositiveCheck) request.type = POSITIVE;
 	else request.type = INVALID;
+
+	return true;
 }
 
+/*Reszleges celtest rajzolas frissitese*/
 void Visualization::PartialTargetDrawRefresh()
 {
 	if (ActiveAtom < 0) return;
@@ -1346,4 +1412,23 @@ void Visualization::PartialTargetDrawRefresh()
 	targetIds.count = (int)targetdata.indicies.size();
 	CleanIdBufferForReuse(targetIds);
 	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies, targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
+}
+
+/*Csak aktiv atomokat tartalmazo halmaz frissitese*/
+void Visualization::OnlyActiveRefresh()
+{
+	onlyActive.clear();
+	switch (request.type)
+	{
+	case NEGATIVE:
+		onlyActive.insert(ActiveAtom);
+		break;
+	case POSITIVE:
+		onlyActive.insert(NumberOfAtoms);
+		break;
+	case BOTH:
+		onlyActive.insert(ActiveAtom);
+		onlyActive.insert(NumberOfAtoms);
+		break;
+	}
 }

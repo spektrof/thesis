@@ -13,7 +13,7 @@ int main(int argc, char* args[])
 	//SDL incializálás
 	if ( SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
-		std::cout << "[SDL indítás] Hiba: " << SDL_GetError() << "\n";
+		LOG("[SDL indítás] Hiba: " << SDL_GetError() << "\n");
 		return 1;
 	}
 
@@ -38,7 +38,7 @@ int main(int argc, char* args[])
 
 	if (win == 0)
 	{
-		std::cout << "[Ablak létrehozása] Hiba: " << SDL_GetError() << "\n";
+		LOG("[Ablak létrehozása] Hiba: " << SDL_GetError() << "\n");
 		return 1;
 	}
 	/////////////////////////////////
@@ -47,7 +47,7 @@ int main(int argc, char* args[])
 
 	if (context == 0)
 	{
-		std::cout << "[OGL context létrehozása]Hiba az SDL inicializálása közben: " << SDL_GetError() << std::endl;
+		LOG("[OGL context létrehozása]Hiba az SDL inicializálása közben: " << SDL_GetError() << std::endl);
 		return 1;
 	}
 
@@ -58,7 +58,7 @@ int main(int argc, char* args[])
 	GLenum error = glewInit();
 	if (error != GLEW_OK)
 	{
-		std::cout << "[GLEW] Hiba az inicializálás során!" << std::endl;
+		LOG("[GLEW] Hiba az inicializálás során!" << std::endl);
 		return 1;
 	}
 	////////////////
@@ -71,7 +71,7 @@ int main(int argc, char* args[])
 		SDL_GL_DeleteContext(context);
 		SDL_DestroyWindow(win);
 		
-		std::cout << "[OGL context create] False\n";
+		LOG("[OGL context create] False\n");
 	}
 
 	std::stringstream window_title;
@@ -87,7 +87,7 @@ int main(int argc, char* args[])
 	if (!app.Init())
 	{
 			SDL_DestroyWindow(win);
-			std::cout << "[app.Init] False!\n";
+			LOG("[app.Init] False!\n");
 			return 1;
 	}
 

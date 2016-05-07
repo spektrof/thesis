@@ -17,6 +17,7 @@ enum ToDo{
 	NEWSTRATEGY,
 	NEWCUTTINGMODE,
 	NEWDISPLAY,
+	ACTYPECHANGED,
 	RESTART,
 	NEXTATOM,
 	PREVATOM,
@@ -67,7 +68,8 @@ enum Display
 struct Coord {
 	float x, y, z;
 	Coord(float a, float b, float c) : x(a), y(b), z(c) {}
-	operator approx::Vector3<float>() const { return approx::Vector3<float>(x, y, z);  }
+	template<typename T>
+	operator approx::Vector3<T>() const { return approx::Vector3<T>(x, y, z);  }
 };
 
 struct Request {

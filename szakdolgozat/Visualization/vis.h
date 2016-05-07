@@ -66,28 +66,9 @@ public:
 protected:
 	/*	TODO list*/
 	/*
-		KERDESEK:
-			DISTANCE FENN
-			SZingularis LU
-			Kul. distanceok sikillesztesnel
-			z,t gombok
-			2D-s
-			elhagyas: halott atom lesz - containerben marad, csak se nem el se nem relevans (HA relevans volt akkor az maradjon? - sztem nem, kiugro gula szeru test esete
-		-------------------
-		BUG:
+	NumberOfAtoms : halottak is - nincs lehetõség törlésre! --> doksiba
 
-		Kedd: 
-		Szerda:
-		Csütörtök
-		Péntek:
-		Szombat:
-		Vasárnap:
-	/*
-
-		BUG:
-	
-		Apró bugok frissítés gyanánt:
-		Apró kis TODOk:
+		SHADER: olvassuk el a szöveget!!
 
 	*//*	Blender : doksi*/
 	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
@@ -126,6 +107,7 @@ protected:
 	std::set<int> liveAtoms;
 	std::set<int> relevantAtoms;
 	std::set<int> onlyActive;
+	void OnlyActiveRefresh();
 
 	void CalculateDisplayVectorsByFourier();
 
@@ -143,7 +125,7 @@ protected:
 	void NextAtom();
 	void PrevAtom();
 	
-	void AcceptChecker();
+	bool AcceptChecker();
 	//-----------------------------------------
 	// Atom tulajdonsagok
 	bool IsItActive(const int&);

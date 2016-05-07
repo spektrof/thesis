@@ -22,19 +22,19 @@ namespace approx{
 		//koltseges szamitasok gyorsitasara cacheleshez
 		struct Memo {
 
-			bool has_volume;
-			T volume;
+			bool has_volume3;
+			T volume3;
 			bool has_diameter;
 			Vector3<T> diameter;
 			bool has_centroid;
 			Vector3<T> centroid;
 
-			Memo() : has_volume(false), has_diameter(false),has_centroid(false) {}
+			Memo() : has_volume3(false), has_diameter(false),has_centroid(false) {}
 			Memo(const Memo&) = default;
 			Memo& operator = (const Memo&) = default;
 
 			void clear() {
-				has_volume = false;
+				has_volume3 = false;
 				has_diameter = false;
 				has_centroid = false;
 			}
@@ -61,13 +61,12 @@ namespace approx{
 		}
 
 		//terfogatszamitas, kintrol cachelve erheto el
-		T calculate_volume() const {
+		T calculate_volume_times_three() const {
 			T sum = 0;
 			for (const Face<T>& f : *this) {
 				sum += f.to_2d().area() * f.to_plane().signed_distance();
 				//sum += f.to_2d().area() * dot(f.points(0), f.normal());
 			}
-			sum /= 3;
 			return sum;
 		}
 
@@ -96,6 +95,13 @@ namespace approx{
 		std::vector<Face<T>>* _faces;
 		std::vector<int> inds;
 
+		T volume_times_three() const {
+			if (!cache.has_volume3) {
+				cache.volume3 = calculate_volume_times_three();
+				cache.has_volume3 = true;
+			}
+			return cache.volume3;
+		}
 
 	public:
 		Body(std::vector<Face<T>>* f, const std::vector<int>& i) : _faces(f), inds(i) {}
@@ -157,11 +163,7 @@ namespace approx{
 
 		// a test terfogata
 		T volume() const {
-			if (!cache.has_volume) {
-				cache.volume = calculate_volume();
-				cache.has_volume = true;
-			}
-			return cache.volume;
+			return volume_times_three() / static_cast<T>(3);
 		}
 
 		//a test sulypontja 
@@ -228,7 +230,8 @@ namespace approx{
 				//vegigiteralok a test lapjain es metszem oket a sikkal
 				typename Face<T>::CutResult cut = face.cut_by(plane, &tmp_vertices, &tmp_normals);
 				//grafot epitek az egyes 2 dimenzios pontokbol
-				if (cut.pt_inds.size() > 1 && cut.points_added) { //van a lapnak lenyomata a sikon, normalis eset 2 pont de nem romlik el egyenes szogeknel sem
+				if (cut.pt_inds.size() < cut.positive.size() && cut.pt_inds.size() < cut.negative.size()) {
+                                        //van a lapnak lenyomata a sikon, normalis eset 2 pont de nem romlik el egyenes szogeknel sem
 					//levetitem a pontokat a sikra
 					Vector2<T> pt1(dot(base.first, tmp_vertices[cut.pt_inds.front()]), dot(base.second, tmp_vertices[cut.pt_inds.front()])),
 						pt2(dot(base.first, tmp_vertices[cut.pt_inds.back()]), dot(base.second, tmp_vertices[cut.pt_inds.back()]));

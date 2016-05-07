@@ -1,7 +1,4 @@
-﻿  CameraAndLight.cpp
-  Generating code
-  0 of 5298 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+﻿  Generating code
+  All 5296 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
   szakdolgozat.vcxproj -> D:\ELTE\Felevek\6\szakdolgozat\szakdolgozat\x64\Release\szakdolgozat.exe

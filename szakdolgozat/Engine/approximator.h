@@ -14,9 +14,8 @@
 
 #ifndef APPROX_NO_CONVERSION
 #include "conversion.h"
-#endif 
-
 #include "diffvec.h"
+#endif 
 
 #include "../Utils/objio.h"
 

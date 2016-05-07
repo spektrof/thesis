@@ -26,6 +26,7 @@ namespace approx{
 		std::vector<int> inds; //a hatarpontok indexei
 		int normal_id; //a normalvektor indexe
 
+		static constexpr float normaleps() { return 0.9999f; }
 		void calc_normal(bool ccw) { //amennyiben nem kapott normalvektort inicializalasnal, a megadott pontokbol kiszamolja
 			Vector3<T> n = cross(points(2) - points(1), points(0) - points(1));
 			n.normalize();
@@ -207,7 +208,9 @@ namespace approx{
 		//a vagas feltetelezi, hogy a lap konvex
 		//a muveletigeny linearis a csucspontok szamaban
 		CutResult cut_by(const Plane<T>& p) const {
-			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p);
+			if (std::abs(dot(p.normal(),normal()))>=normaleps() ) return coplanar_cut(p);
+
+
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -256,7 +259,8 @@ namespace approx{
 		// pelda tipus: std::map<Vector3<T>,int>,std::unordered_map<Vector3<T>,int> a szukseges rendezessel vagy hasitassal
 		//a muveletigeny linearis a pontok szamaban, valamint a vagopontok beszurasanal a megadott Maptype kereso es beszuro koltsege
 		template<class MapType> CutResult cut_by(const Plane<T>& p, MapType& m) const {
-			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p);
+
+			if (std::abs(dot(p.normal(), normal())) >= normaleps() ) return coplanar_cut(p);
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -316,7 +320,8 @@ namespace approx{
 
 			if (target_vecs == vecs && target_normals == normals) return cut_by(p);
 
-			if (p.normal() == normal() || p.normal() == -normal()) return coplanar_cut(p,target_vecs,target_normals);
+			if (std::abs(dot(p.normal(), normal())) >= normaleps()) return coplanar_cut(p,target_vecs,target_normals);
+
 			T sign1 = p.classify_point(points(0)), sign2;
 			int n = size();
 			std::vector<int> pos, neg, cut;
@@ -372,7 +377,7 @@ namespace approx{
 
 		//ha van a es b indexu pontja, beszurja kozejuk az ind indexut,
 		//ha nincs ilyen, nem tesz semmit
-		//visszatérési értéke a beszuras sikeressege
+		//visszatérési erteke a beszuras sikeressege
 		bool insert_index(int a, int b, int ind) {
 
 			if ((inds.front() == a && inds.back() == b) || (inds.front() == b && inds.back() == a)) {

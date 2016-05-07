@@ -98,6 +98,13 @@ namespace approx{
 			return { -2,-1 };
 		}
 
+		bool bad_atom(const ConvexAtom<T>& a) {
+			return a.bad_normal_ind() > -1 || a.volume() <= 0 || a.fourier() > 1.1f || a.fourier() < -0.01f;
+		}
+
+		bool invalidity_test() {
+			return bad_atom(*(cut_res.positive)) || bad_atom(*(cut_res.negative));
+		}
 		void undo() {
 			cut_res.positive.reset();
 			cut_res.negative.reset();
@@ -111,7 +118,7 @@ namespace approx{
 		}
 
 		bool choose_both() {
-			if (cut_res.neg_cut_face < 0) {
+			if (cut_res.neg_cut_face < 0 || invalidity_test()) {
 				undo();
 				return false;
 			}
@@ -139,7 +146,7 @@ namespace approx{
 											faces[connections[e.first].other_face].normal_index()));
 					connections.push_back(Connection(posind, e.second.pos_face_ind));
 					//rendezem a kapcoslatokat
-					connections[e.second.neg_face_ind] = Connection( connections[e.first].other_atom, (int)faces.size()-2 );
+					connections[e.second.neg_face_ind] = Connection( connections[e.first].other_atom, (int)faces.size() - 2 );
 					connections[e.second.pos_face_ind] = Connection( connections[e.first].other_atom, (int)faces.size() - 1 );
 					//lecserelem a masik atomban a lapot
 					_atoms[connections[e.first].other_atom].replace_face_with(
@@ -168,7 +175,7 @@ namespace approx{
 		}
 
 		bool choose_negative() {
-			if (cut_res.neg_cut_face < 0 || !(*cut_res.negative)) {
+			if (cut_res.neg_cut_face < 0 || !(*cut_res.negative) || invalidity_test()) {
 				undo();
 				return false;
 			}
@@ -212,7 +219,7 @@ namespace approx{
 			}
 			for (int ind : cut_res.positive->indicies()) { //mivel kitoroltem a pozitivat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
-					connections[connections[ind].other_face] = extreme.other_atom;
+					connections[connections[ind].other_face].other_atom = extreme.other_atom;
 			}
 
 
@@ -223,7 +230,7 @@ namespace approx{
 		}
 
 		bool choose_positive() {
-			if (cut_res.pos_cut_face < 0 || !(*cut_res.positive)) {
+			if (cut_res.pos_cut_face < 0 || !(*cut_res.positive) || invalidity_test()) {
 				undo();
 				return false;
 			}
@@ -265,9 +272,9 @@ namespace approx{
 				}
 				connections[e.first].other_atom = -3;
 			}
-			for (int ind : cut_res.negative->indicies()) { //mivel kitoroltem a pozitivat ezert ott is uressegre fognak mutatni
+			for (int ind : cut_res.negative->indicies()) { //mivel kitoroltem a negativat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
-					connections[connections[ind].other_face] = extreme.other_atom;
+					connections[connections[ind].other_face].other_atom = extreme.other_atom;
 			}
 
 

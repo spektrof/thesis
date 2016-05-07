@@ -5,7 +5,13 @@ UserInterface::UserInterface(QWidget *parent)
 {
 	_mainLayout = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
 	_label = new QLabel("Welcome", this);
-	_info = new QLabel("Hey, Im imformation about this ui", this);
+	_info = new QLabel( "Hey user,\n\nThis is a mesh approximator program.\n\nYou can try out different kind of strategies and see how "
+						"melt down \nyour starter cube. :)\n\nThere are some features which make your decisions more easier.\n\nFunction buttons:\n"
+						"\twasdqe - Moving\n\tt - hide / show targetbody\n\tz - Only those face of target which are inside the atom\n"
+						"\tp - Switch to 2D wher you can see the projection of the segments\n\to - Switch between segments in 2D mode\n"
+						"\tNumPad +/- - Iterate on sides of the segment in 2D\n\tLeft/Up/Right/Down - Light moving on a surface of sphere\n"
+						"and there are other features on the UI. :)\n\nHave fun! :D"
+						"\n\nThe implementation of engine methods are based on publication.\nThe program is created by Peter Lukacs and Mate Toth. " + QString::fromLatin1("\u00A9"), this);
 
 	_choice = new QLabel("Atom", this);
 	_cut = new QLabel("Plane", this);
@@ -250,6 +256,7 @@ void UserInterface::restartEvent()
 
 void UserInterface::typeaccept_handler()
 {
+	request.eventtype = ACTYPECHANGED;
 	request.type = TypeOfAccept(_acceptTypes->currentData().toInt());
 }
 
@@ -401,7 +408,7 @@ Request UserInterface::GetRequest()
 	Request result(request);
 
 	ResetRequest();
-	if (result.eventtype == ACCEPT)
+	if (result.eventtype == ACCEPT || result.eventtype == UNDO)
 	{
 		request.type = NEGATIVE;
 		_acceptTypes->setCurrentIndex(0);
