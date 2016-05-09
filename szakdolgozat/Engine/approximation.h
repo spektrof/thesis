@@ -219,7 +219,7 @@ namespace approx{
 			}
 			for (int ind : cut_res.positive->indicies()) { //mivel kitoroltem a pozitivat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
-					connections[connections[ind].other_face].other_atom = extreme.other_atom;
+					connections[connections[ind].other_face] = extreme;
 			}
 
 
@@ -274,7 +274,7 @@ namespace approx{
 			}
 			for (int ind : cut_res.negative->indicies()) { //mivel kitoroltem a negativat ezert ott is uressegre fognak mutatni
 				if (connections[ind].other_face>=0)
-					connections[connections[ind].other_face].other_atom = extreme.other_atom;
+					connections[connections[ind].other_face] = extreme;
 			}
 
 

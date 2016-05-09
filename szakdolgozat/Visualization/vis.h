@@ -151,7 +151,9 @@ protected:
 	
 	//Camera & light
 	Camera c;
-	Light l;
+	Light l = Light(1, 100, 10, 30, 60);	//good light for us
+	Light rl = Light(-1, 100, 20, 28, 88);	//real light
+	Light * al;	//aktualis
 
 	//------------------------------------------
 	// Rajzolas
@@ -167,7 +169,9 @@ protected:
 	//--------------------------------------------
 	//ID-k
 	GLuint program2D_ID;
-	GLuint program3D_ID;
+	GLuint* program3D_ID;	//amelyiket használjuk
+	GLuint program3Dwhl_ID;	//Valos feny nelkuli
+	GLuint program3Dl_ID;	//Valos iranyfeny
 
 	IdsAndProp _3dIds, planeIds, targetIds;
 
@@ -188,15 +192,16 @@ protected:
 	std::vector<std::vector<IdsAndProp>> _2D_Line2Ids_P;
 
 	// ID-k shader valtozokhoz
-	GLuint m_loc_mvp;
-	GLuint m_loc_mvp2;
+	GLuint m_loc_mvp, m_loc_mvp2;
 	GLuint world;
+	GLuint view;
+	GLuint proj;
 
-	GLuint eyePos;
-	GLuint Lights;
-	GLuint Opacity;
-	GLuint DifCol;
-	GLuint SpecCol;
+	GLuint eyePos,eyePosl;
+	GLuint Lights, Lightsl;
+	GLuint Opacity, Opacityl;
+	GLuint DifCol, DifColl;
+	GLuint SpecCol, SpecColl;
 
 	GLuint color2D;
 	GLuint alpha2D;
@@ -222,5 +227,7 @@ protected:
 	void Release2DIds();
 	void Add2DShaders();
 	void Add3DShaders();
+	void Add3DlShaders();
 	void AddShaderUniformLocations();
+	void SetUniforms(const glm::mat4& matWorld);
 };

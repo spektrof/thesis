@@ -16,7 +16,7 @@ GLuint loadShader(GLenum _shaderType, const char* _fileName)
 	// ha nem sikerult hibauzenet es -1 visszaadasa
 	if (loadedShader == 0)
 	{
-		fprintf(stderr, "Hiba a shader(%s) inicializálásakor (glCreateShader)!", _fileName);
+		LOG("Hiba a shader(" << _fileName << ") inicializálásakor (glCreateShader)!\n");
 		return 0;
 	}
 
@@ -28,7 +28,7 @@ GLuint loadShader(GLenum _shaderType, const char* _fileName)
 
 	if (!shaderStream.is_open())
 	{
-		fprintf(stderr, "Hiba a %s shader fájl betöltésekor!", _fileName);
+		LOG("Hiba a " << _fileName << " shader fájl betöltésekor!\n");
 		return 0;
 	}
 
@@ -62,7 +62,7 @@ GLuint loadShader(GLenum _shaderType, const char* _fileName)
 		std::vector<char> VertexShaderErrorMessage(infoLogLength);
 		glGetShaderInfoLog(loadedShader, infoLogLength, NULL, &VertexShaderErrorMessage[0]);
 
-		fprintf(stdout, "%s\n", &VertexShaderErrorMessage[0]);
+		LOG(&VertexShaderErrorMessage[0] <<"\n");
 	}
 
 	return loadedShader;

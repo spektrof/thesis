@@ -104,6 +104,8 @@
     <ClInclude Include="Engine\face.h" />
     <ClInclude Include="Engine\geoios.h" />
     <ClInclude Include="Engine\indexiterator.h" />
+    <ClInclude Include="Engine\objio.h" />
+    <ClInclude Include="Engine\objrepair.h" />
     <ClInclude Include="Engine\planes.h" />
     <ClInclude Include="Engine\poly2.h" />
     <ClInclude Include="Engine\polygraph.h" />
@@ -117,27 +119,28 @@
     <ClInclude Include="Utils\CameraAndLight.h" />
     <ClInclude Include="Utils\GLUtils.hpp" />
     <ClInclude Include="Utils\ObjectCreator.h" />
-    <ClInclude Include="Utils\objio.h" />
-    <ClInclude Include="Utils\objrepair.h" />
     <ClInclude Include="Utils\Utility.h" />
     <ClInclude Include="Visualization\vis.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\frag_2d.frag" />
-    <None Include="Shaders\geometry_shader.geom" />
     <None Include="Shaders\frag_3d.frag" />
+    <None Include="Shaders\geometry_shader.geom" />
+    <None Include="Shaders\geometry_shaderl.geom" />
+    <None Include="Shaders\frag_l3d.frag" />
     <None Include="Shaders\vert_3d.vert" />
+    <None Include="Shaders\vert_l3d.vert" />
     <None Include="Shaders\vert_2d.vert" />
     <None Include="ui.pro" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="UI\userinterface.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">c:\Qt\5.5.1\qtbase\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing queenwindow.h...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing userinterface.hpp...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\..\GeneratedFiles\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"c:\Qt\5.5.1\qtbase\bin\moc.exe"  "%(FullPath)" -o ".\..\GeneratedFiles\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB "-I.\..\GeneratedFiles" "-I." "-I c:\Qt\5.5.1\qtbase\include" "-I.\..\GeneratedFiles\." "-I c:\Qt\5.5.1\qtbase\include\QtCore" "-I c:\Qt\5.5.1\qtbase\include\QtGui" "-I c:\Qt\5.5.1\qtbase\include\QtWidgets"</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">c:\Qt\5.5.1\qtbase\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing queenwindow.h...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing userinterface.hpp...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\..\GeneratedFiles\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"c:\Qt\5.5.1\qtbase\bin\moc.exe"  "%(FullPath)" -o ".\..\GeneratedFiles\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DQT_DLL -DQT_NO_DEBUG -DNDEBUG -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB "-I.\..\GeneratedFiles" "-I." "-I c:\Qt\5.5.1\qtbase\include" "-I.\..\GeneratedFiles\." "-I c:\Qt\5.5.1\qtbase\include\QtCore" "-I c:\Qt\5.5.1\qtbase\include\QtGui" "-I c:\Qt\5.5.1\qtbase\include\QtWidgets"</Command>
     </CustomBuild>

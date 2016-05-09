@@ -79,9 +79,10 @@ void Camera::MouseMove(SDL_MouseMotionEvent& mouse)
 
 // ---------------------------------------------------------
 
-Light::Light(const int& c, const float& r, const int& o, const int& t)
+Light::Light(const int& l, const int& c, const float& r, const int& o, const int& t)
 	: cunit(c),radius(r)
 {
+	lunit = l;
 	omega = ((o) % cunit) * (float)((float)1 / (float)cunit);
 	theta = ((t) % cunit) * (float)((float)1 / (float)cunit);
 
@@ -90,13 +91,13 @@ Light::Light(const int& c, const float& r, const int& o, const int& t)
 
 void Light::AddTo(float* unit)
 {
-	*unit = float( (int)std::round((*unit) * cunit + 1) % cunit ) / (float)cunit;	//visszaszamoljuk az egyseget a noveles elott
+	*unit = float( (int)std::round((*unit) * cunit + lunit) % cunit ) / (float)cunit;	//visszaszamoljuk az egyseget a noveles elott
 
 	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }
 void Light::SubFrom(float* unit)
 {
-	*unit = float((int)std::round((*unit) * cunit - 1 + cunit) % cunit) / (float)cunit; //visszaszamoljuk az egyseget a noveles elott
-
+	*unit = float((int)std::round((*unit) * cunit - lunit + cunit) % cunit) / (float)cunit; //visszaszamoljuk az egyseget a noveles elott
+	
 	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }

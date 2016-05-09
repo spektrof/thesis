@@ -1,3 +1,7 @@
+/*Keszitette: Lukacs Peter
+	A sikrajzoli forgatasi matrixokra par teszteset.
+	Kimeneten latjuk a kivant vektort, az elforgatas szoget, tengelyet, a forgatasi matrixot es az ellenorzest
+*/
 #include <iostream>
 
 #define ONLYFORTEST 1
@@ -49,14 +53,16 @@ void GetTest(const glm::vec3& v,const char* txt);
 	glm::vec3 OtherAxis = glm::vec3(0,1,0);
 	glm::vec3 Null = glm::vec3(0,0,0); //hibas bemenet
 	glm::vec3 Random = glm::normalize(glm::vec3(rd()%10,rd()%10,rd()%10));
+	glm::vec3 Random2 = glm::normalize(glm::vec3(rd()%10,rd()%10,rd()%10));
 	 
 	GetTest(Same,"A default normalissal megegyezo: ");
 	GetTest(Opposite, "Ellentetes iranyba nezo vektor: ");
 	GetTest(OtherAxis, "Masik tengely fele mutato vektor: ");
-	GetTest(Null,"Nullvektor(hibas bemenet): ");
+	GetTest(Null,"Nullvektor(hibas bemenet - dokumentaciot serti!): ");
 	GetTest(Random, "Veletlen: ");
+	GetTest(Random2, "Veletlen: ");
 	
-	
+	system("pause");
 	return 0;
  }
  

@@ -10,7 +10,12 @@
 
 int main(int argc, char* args[])
 {
-	//SDL incializálás
+	QDir dir("logger");
+	if (!dir.exists()) {
+		dir.mkdir(".");
+	}
+
+	//SDL incializalas
 	if ( SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
 		LOG("[SDL indítás] Hiba: " << SDL_GetError() << "\n");

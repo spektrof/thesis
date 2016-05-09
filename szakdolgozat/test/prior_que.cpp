@@ -1,3 +1,8 @@
+/*Keszitette: Lukacs Peter
+  A prioritasos sor tesztelese:
+	beszuras, torles, sebessegteszt (1000 elem hirtelen feltoltesere / rendezesere)
+	eredmeny lekerese is tagfuggvenyek hivasaval tortenik
+*/
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -96,6 +101,8 @@ public:
 			return atom->GetPerimeter();
 	}
 };
+template <typename V,template<typename> class T>
+void Write(const PriorityQue<V,T >& prior,const bool& = false);
 
 int main()
 {
@@ -115,30 +122,13 @@ int main()
 	prior.insert(2,members[2]);
 	prior.insert(3,members[3]);
 	
-	std::vector<Utility::PriorResult> result = prior.GetOrder();
-	std::vector<int> indexes = prior.GetPriorIndexes();
+	Write(prior,true);
 	
-	std::cout<<"\tGetOrder:\n";
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
-	
-	std::cout<<"\tGetPriorIndexes:\n";
-	std::for_each(indexes.begin(), indexes.end(), [](const int& a) { std::cout << "\t\t"<< a << "\n"; });
-	std::cout << "\n";
 	//--------------------------------------------------
 	std::cout<<"Ures sor eseten: (clear)\n";
 	prior.clear();
 	
-	result = prior.GetOrder();
-	indexes = prior.GetPriorIndexes();
-	
-		std::cout<<"\tGetOrder:\n";
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
-	
-	std::cout<<"\tGetPriorIndexes:\n";
-	std::for_each(indexes.begin(), indexes.end(), [](const int& a) { std::cout << "\t\t" << a << "\n"; });
-	std::cout << "\n";
+	Write(prior,true);
 	//--------------------------------------------------
 	std::cout<<"Masik rendezo fv. valasztas a dokumentacioban leirt modon: \n";
 	prior.SetComparer(&SikidomRendezok<Sikidom>::Perimeter);
@@ -149,62 +139,40 @@ int main()
 	prior.insert(3,members[3]);
 	prior.insert(4,members[4]);
 	
-	result = prior.GetOrder();
-	indexes = prior.GetPriorIndexes();
-	
-	std::cout<<"\tGetOrder:\n";
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
-	
-	std::cout<<"\tGetPriorIndexes:\n";
-	std::for_each(indexes.begin(), indexes.end(), [](const int& a) { std::cout << "\t\t" << a << "\n"; });
-	std::cout << "\n";
+	Write(prior,true);
 	//--------------------------------------------------
 	std::cout<<"NULL atom beszurasa\n";
 	prior.insert(11,NULL);
 	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
+	Write(prior);
 	//-------------------------------------------------
 	std::cout<<"Egy elem torlese:\n";
 	std::cout<<"\tLetezo eleme (2.):\n";
 	prior.erase(2);
+	Write(prior);
 	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
-
 	std::cout<<"\tNem letezo eleme (10.):\n";
 	prior.erase(10);
+	Write(prior);
 	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
+	std::cout<<"\tNem letezo eleme (-10.):\n";
+	prior.erase(-10);
+	Write(prior);
 	
 	std::cout<<"\tNem letezo eleme hataron(4.):\n";
 	prior.erase(4);
-	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
+	Write(prior);
 	
 	std::cout<<"\tLetezo eleme hataron(3.):\n";
 	prior.erase(3);
-	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
+	Write(prior);
 	
 	std::cout<<"\tLetezo eleme hataron(0.):\n";
 	prior.erase(0);
+	Write(prior);
 	
-	result = prior.GetOrder();
-	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
-	std::cout << "\n";
 	//-------------------------------------------------
 	std::cout<<"Volumen teszt: feloltes + csere a doksiban leirt modon\n";
-	std::cout<<"Futas kozbeni gyorsasagot maximalizalnank! ??????????????????? valtas nelkul\n";
 	const int NUMBEROFMEMBERS = 1000;
 	std::random_device rd;
 	
@@ -226,6 +194,7 @@ int main()
 				break;}
 		}
 	}
+	/////////////////////////////////
 	auto start = get_time::now();
 	std::cout<<"PriorityQue:\n";
 	for (int i=0;i<NUMBEROFMEMBERS;++i)
@@ -233,7 +202,7 @@ int main()
 		prior.insert(i,members[i]);
 	}
 	std::cout<<"Elso 10 tag:\n";
-	result = prior.GetOrder();
+	std::vector<Utility::PriorResult> result = prior.GetOrder();
 	for (int i=0;i<10;++i)
 	{
 		std::cout<< "\t" << result[i].id << " " << result[i].value<< " " << members[result[i].id]->Sides()  <<"\n";
@@ -291,11 +260,26 @@ int main()
 		std::cout<< "\t" << vtest_qsort[i].id << " " << vtest_qsort[i].value<< " " << members[vtest_qsort[i].id]->Sides() <<"\n";
 	}
 	
-	 diff2 = get_time::now() - start;
+	diff2 = get_time::now() - start;
 	std::cout<<"Elapsed time is :  "<< std::chrono::duration_cast<ns>(diff2).count()<<" ns\n";
 	
-	/*if (diff1<diff2) std::cout<<"PRIORITYQUE GYORSABB\n";
-	else if (diff1>diff2) std::cout<<"SIMAVECTOR + std::sort GYORSABB\n";
-	else std::cout<<"EGYENLO\n";*/
+	system("pause");
 	return 0;
+}
+
+template <typename V,template<typename> class T>
+void Write(const PriorityQue<V,T>& prior,const bool& second)
+{
+	std::vector<Utility::PriorResult> result = prior.GetOrder();
+	std::vector<int> indexes = prior.GetPriorIndexes();
+	
+	std::cout<<"\tGetOrder:\n";
+	std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << "\t\t" << a.id << " " << a.value << "\n"; });
+	std::cout << "\n";
+	
+	if (!second) return;
+	
+	std::cout<<"\tGetPriorIndexes:\n";
+	std::for_each(indexes.begin(), indexes.end(), [](const int& a) { std::cout << "\t\t"<< a << "\n"; });
+	std::cout << "\n";
 }

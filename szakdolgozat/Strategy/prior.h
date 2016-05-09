@@ -46,7 +46,7 @@ public:
 	/*Torli a parameterben megadott indexu tagot a sorbol*/
 	void erase(const int& e)
 	{
-		if (order.size() <= e) return;
+		if (order.size() < 0 || order.size() <= e) return;
 		order.erase(order.begin() + e);
 	}
 

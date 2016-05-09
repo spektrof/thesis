@@ -8,8 +8,8 @@ in vec3 gs_norm;
 out vec4 _color;
 
 //színtér tul.
-uniform vec3 LightDirection;	//Fenyirany
-uniform vec3 EyePosition;	//Kamera poz, szempoz
+uniform vec3 LightDirection;	//Fenyirany: fenyforrasba mutato
+uniform vec3 EyePosition;	//Kamera poz, szempozba mutato vektor
 
 uniform float opacity = 1.0f;
 
@@ -22,21 +22,20 @@ vec3 MaterialAmbientColor  = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
 
 void main()
 {
-	// Eye vector (towards the camera)
     vec3 E = normalize( EyePosition );
-	// Normal of the computed fragment, in camera space
+
 	vec3 n = normalize( gs_norm );
-	 // Direction of the light (from the fragment to the light)
+	
 	vec3 l = normalize( LightDirection );
 
 	//------------------------------------------
 
-	float cosTheta = clamp( dot(n,-l), 0, 1);
+	float cosTheta = clamp( dot(n,l), 0, 1);	//origobol vett fenyirany -> ezert lesz minden fragment szine kozel ugyanaz
 	vec3 dis_vec = normalize( LightDirection - gs_pos );
 	float distance = sqrt( dot(dis_vec, dis_vec) );
 
-	vec3 R = reflect(l,n);
-	float cosAlpha = clamp( dot(E,R), 0, 1);
+	vec3 R = reflect(-l,n);
+	float cosAlpha = clamp( dot(E,R), 0, 1);	//ezert fog a kamera hatasara is mozogni
 
 	//------------------------------------------
 	//fragment végso színe

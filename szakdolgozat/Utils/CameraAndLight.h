@@ -57,7 +57,7 @@ private:
 class Light
 {
 public:
-	Light(const int& c = 100, const float& r = 10.0f, const int& = 34, const int& = 9);
+	Light(const int& = -1, const int& c = 100, const float& r = 20.0f, const int& = 28, const int& = 88);
 	~Light() {  }
 
 	glm::vec3 GetLightDir() const { return FenyIrany; }
@@ -73,5 +73,6 @@ protected:
 
 private:
 	int cunit;	//circle unit
+	int lunit;	//light unit
 	float radius;
 };

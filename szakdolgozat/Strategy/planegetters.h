@@ -203,7 +203,6 @@ typename PlaneGetterFunctions<V>::LuMatrices PlaneGetterFunctions<V>::GetLuDecom
 	//szingularis-e
 	if (GetDeterminantOf3x3Matrix(*A) == 0) {
 		copl = true;
-		std::cout << "Singular\n";
 		return LuMatrices();
 	}
 
@@ -313,7 +312,9 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	LuMatrices result = GetLuDecomposition(&A, coplanarity);
 	if (coplanarity)
 	{
+#ifdef ONLYFORTEST
 		std::cout << "Coplanarity - LU\n";
+#endif
 		return Utility::PlaneResult();
 	}
 	
@@ -322,7 +323,9 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 	glm::vec3 check = x * A;
 
 	if (true == glm::any(glm::isnan(x))) {
+#ifdef ONLYFORTEST
 		std::cout << "Coplanarity\n";
+#endif
 		coplanarity = true;
 		return Utility::PlaneResult();
 	}

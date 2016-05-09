@@ -131,33 +131,42 @@
     <ClInclude Include="Engine\vectors.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\objio.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\objrepair.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Visualization\vis.h">
       <Filter>Visualization</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\objio.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\objrepair.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\geometry_shader.geom">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="Shaders\frag_2d.frag">
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\vert_2d.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="ui.pro" />
+    <None Include="Shaders\frag_l3d.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vert_l3d.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\geometry_shaderl.geom">
+      <Filter>Shaders</Filter>
+    </None>
     <None Include="Shaders\frag_3d.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\geometry_shader.geom">
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\vert_3d.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="ui.pro" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="UI\userinterface.hpp">

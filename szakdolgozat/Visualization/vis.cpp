@@ -12,13 +12,17 @@
 Visualization::Visualization(void)
 {
 	program2D_ID = 0;
-	program3D_ID = 0;
+	program3Dwhl_ID = 0;
+	program3Dl_ID = 0;
+	program3D_ID = &program3Dl_ID;
+	al = &rl;
 
 	CuttingPlaneFreq = 12;
 
 	logger = false;
 
 	filename = "Targets/gummybear.obj";
+
 	prior.SetLastUse(&lastUse);
 
 	_2DTri = &_2D_TriIds_N;
@@ -29,6 +33,7 @@ Visualization::Visualization(void)
 Visualization::~Visualization(void)
 {
 	Clean();
+	LOG("--------------------EXIT---------------\n");
 }
 
 /* Inicializalas: Engine init + OpenGL */
@@ -47,6 +52,7 @@ bool Visualization::Init()
 
 	Add2DShaders();
 	Add3DShaders();
+	Add3DlShaders();
 	AddShaderUniformLocations();
 
 	m_matProj = glm::perspective(45.0f, 800 / 600.0f, 0.01f, 1000.0f);
@@ -167,11 +173,11 @@ void Visualization::Render()
 			RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 			break;
 		case MORESTEPS:
-			for (int i = 0; i < request.CountsOfCutting; ++i) { GetResult(); }
-		//	app.container().garbage_collection();
+			for (int i = 0; i < request.CountsOfCutting && ActiveAtom != -1 ; ++i) { GetResult(); }
+			app.container().garbage_collection();
 			break;
 		case EXPORT:
-			app.save_atoms(request.filename);
+			app.save_atoms(request.filename, RELEVANCYEPSILON);
 			app.save_approximated_body(request.filename.substr(0, request.filename.length()-4) + "_appbody.obj");
 			break;
 		case IMPORT:
@@ -190,11 +196,8 @@ void Visualization::Render()
 	}
 	else // _3D
 	{
-		glUseProgram(program3D_ID);
+		glUseProgram(*program3D_ID);
 
-		glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye()));
-		glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
-	
 		DrawCuttingPlane(Utility::GetTranslate(centr,_planenormal,distance),Utility::GetRotateFromNorm(_planenormal));
 						
 	    if (IsTargetDrawEnabled) DrawTargetBody();
@@ -646,22 +649,44 @@ void Visualization::Add2DShaders()
 	glDeleteShader(fs_ID);
 }
 
-/*3D-s shaderek bekotese : vertex + geometry + fragment*/
+/*3D-s shaderek bekotese : vertex + geometry + fragment    - valos feny nelkuli */
 void Visualization::Add3DShaders()
 {
 	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/vert_3d.vert");
 	GLuint gs_ID = loadShader(GL_GEOMETRY_SHADER, "Shaders/geometry_shader.geom");
 	GLuint fs_ID = loadShader(GL_FRAGMENT_SHADER, "Shaders/frag_3d.frag");
 
-	program3D_ID = glCreateProgram();
+	program3Dwhl_ID = glCreateProgram();
 
-	glAttachShader(program3D_ID, vs_ID);
-	glAttachShader(program3D_ID, gs_ID);
-	glAttachShader(program3D_ID, fs_ID);
+	glAttachShader(program3Dwhl_ID, vs_ID);
+	glAttachShader(program3Dwhl_ID, gs_ID);
+	glAttachShader(program3Dwhl_ID, fs_ID);
 
-	glBindAttribLocation(program3D_ID, 0, "vs_in_pos");
+	glBindAttribLocation(program3Dwhl_ID, 0, "vs_in_pos");
 
-	glLinkProgram(program3D_ID);
+	glLinkProgram(program3Dwhl_ID);
+
+	glDeleteShader(vs_ID);
+	glDeleteShader(gs_ID);
+	glDeleteShader(fs_ID);
+}
+
+/*3D-s shaderek bekotese : vertex + geometry + fragment    - valos feny */
+void Visualization::Add3DlShaders()
+{
+	GLuint vs_ID = loadShader(GL_VERTEX_SHADER, "Shaders/vert_l3d.vert");
+	GLuint gs_ID = loadShader(GL_GEOMETRY_SHADER, "Shaders/geometry_shaderl.geom");
+	GLuint fs_ID = loadShader(GL_FRAGMENT_SHADER, "Shaders/frag_l3d.frag");
+
+	program3Dl_ID = glCreateProgram();
+
+	glAttachShader(program3Dl_ID, vs_ID);
+	glAttachShader(program3Dl_ID, gs_ID);
+	glAttachShader(program3Dl_ID, fs_ID);
+
+	glBindAttribLocation(program3Dl_ID, 0, "vs_in_pos");
+
+	glLinkProgram(program3Dl_ID);
 
 	glDeleteShader(vs_ID);
 	glDeleteShader(gs_ID);
@@ -671,13 +696,21 @@ void Visualization::Add3DShaders()
 /*Uniform változók bekotése a shaderekhez*/
 void Visualization::AddShaderUniformLocations()
 {
-	m_loc_mvp = glGetUniformLocation(program3D_ID, "MVP");
-	eyePos = glGetUniformLocation(program3D_ID, "EyePosition");
-	world = glGetUniformLocation(program3D_ID, "World");
-	Lights = glGetUniformLocation(program3D_ID, "LightDirection");
-	Opacity = glGetUniformLocation(program3D_ID, "opacity");
-	DifCol = glGetUniformLocation(program3D_ID, "MaterialDiffuseColor");
-	SpecCol = glGetUniformLocation(program3D_ID, "MaterialSpecularColor");
+	m_loc_mvp = glGetUniformLocation(program3Dwhl_ID, "MVP");
+	eyePos = glGetUniformLocation(program3Dwhl_ID, "EyePosition");
+	Lights = glGetUniformLocation(program3Dwhl_ID, "LightDirection");
+	Opacity = glGetUniformLocation(program3Dwhl_ID, "opacity");
+	DifCol = glGetUniformLocation(program3Dwhl_ID, "MaterialDiffuseColor");
+	SpecCol = glGetUniformLocation(program3Dwhl_ID, "MaterialSpecularColor");
+
+	eyePosl = glGetUniformLocation(program3Dl_ID, "EyePosition");
+	Lightsl = glGetUniformLocation(program3Dl_ID, "LightDirection");
+	Opacityl = glGetUniformLocation(program3Dl_ID, "opacity");
+	DifColl = glGetUniformLocation(program3Dl_ID, "MaterialDiffuseColor");
+	SpecColl = glGetUniformLocation(program3Dl_ID, "MaterialSpecularColor");
+	world = glGetUniformLocation(program3Dl_ID, "World");
+	view = glGetUniformLocation(program3Dl_ID, "View");
+	proj = glGetUniformLocation(program3Dl_ID, "Proj");
 
 	m_loc_mvp2 = glGetUniformLocation(program2D_ID, "MVP");
 	color2D = glGetUniformLocation(program2D_ID, "COLOR");
@@ -693,9 +726,7 @@ void Visualization::Draw3D(const int& which, glm::mat4& scal, glm::mat4& trans, 
 
 	//transzformacios matrixok feltoltese a shaderbe
 	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
+	SetUniforms(matWorld);
 
 	//az atom tulajdonsagainak beallitasa
 	if (IsItActive(which)) { SetActiveAtomProperties(); }
@@ -795,8 +826,7 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 		glBindVertexArray(it->VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
-
+	
 		glDrawArrays(GL_LINE_STRIP,
 			0,
 			it->count);
@@ -813,7 +843,6 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 		glBindVertexArray(it->VaoId);
 
 		glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 		glDrawArrays(GL_LINE_STRIP,
 			0,
@@ -830,7 +859,6 @@ void Visualization::Draw2D(glm::mat4& scal, glm::mat4& trans, glm::mat4& rot)
 	glBindVertexArray(tmp.VaoId);
 
 	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
 
 	glDrawArrays(GL_TRIANGLE_FAN,
 		0,
@@ -844,12 +872,10 @@ void Visualization::DrawTargetBody()
 
 	glBindVertexArray(targetIds.VaoId);
 
-	glm::mat4 matWorld = glm::mat4(1.0f);
-	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
-
 	SetTargetAtomProperties();
+
+	glm::mat4 matWorld = glm::mat4(1.0f);
+	SetUniforms(matWorld);
 
 	glDrawElements(GL_TRIANGLES,
 		targetIds.count,
@@ -864,14 +890,11 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 	glPolygonMode(GL_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT, GL_LINE);	
 
-	glm::mat4 matWorld = trans * rot * scal;
-	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-
 	glBindVertexArray(planeIds.VaoId);
 
 	SetPlaneProperties();
-	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
-	glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
+	glm::mat4 matWorld = trans * rot * scal;
+	SetUniforms(matWorld);
 
 	glDrawElements(GL_TRIANGLES,		
 		planeIds.count,
@@ -984,11 +1007,10 @@ void Visualization::LastUseChanging()
 
 			lastUse[ActiveAtom] = 0;
 		break;
-		case INVALID:
+		case INVALID:		//relevansbol undo elott torlunk
 			liveAtoms.erase(NumberOfAtoms);
 			liveAtoms.erase(ActiveAtom);
-			relevantAtoms.erase(ActiveAtom);
-
+		
 			prior.erase(ActiveIndex);
 			lastUse[ActiveAtom] = -1;
 		break;
@@ -1108,6 +1130,17 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		if (!c.Is2DView()) _3dIds.eye = c.GetEye();
 		c.SwitchCameraView(c.Is2DView() ? _3dIds.eye : (_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1)) );
 		break;
+	case SDLK_g:	//3D programID switch
+		if (program3D_ID == &program3Dwhl_ID)
+		{
+			al = &rl;
+			program3D_ID = &program3Dl_ID;
+			break;
+		}
+		
+		al = &l;
+		program3D_ID =  &program3Dwhl_ID;
+		break;
 	case SDLK_w:	//camera
 		c.Add(c.GetZoomUnit());
 		break;
@@ -1127,16 +1160,16 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		c.Sub(c.GetHorUnit());
 		break;
 	case SDLK_DOWN:	//feny
-		l.AddTo(l.GetTheta());
+		al->AddTo(al->GetTheta());
 		break;
 	case SDLK_UP:
-		l.SubFrom(l.GetTheta());
+		al->SubFrom(al->GetTheta());
 		break;
 	case SDLK_LEFT:
-		l.AddTo(l.GetOmega());
+		al->AddTo(al->GetOmega());
 		break;
 	case SDLK_RIGHT:
-		l.SubFrom(l.GetOmega());
+		al->SubFrom(al->GetOmega());
 		break;
 	case SDLK_l:	//logger
 		logger = !logger;
@@ -1208,26 +1241,26 @@ void Visualization::MouseWheel(SDL_MouseWheelEvent& wheel)
 
 void Visualization::SetActiveAtomProperties()
 {
-	glUniform1f(Opacity, 0.6f);
-	glUniform3f(DifCol, 1.0f, 0.0f, 0.0f);
-	glUniform3f(SpecCol, 0.6f, 0.5f, 0.2f);
+	glUniform1f(program3D_ID == &program3Dl_ID ? Opacityl : Opacity, 0.6f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? DifColl : DifCol, 1.0f, 0.0f, 0.0f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? SpecColl : SpecCol, 0.6f, 0.5f, 0.2f);
 }
 void Visualization::SetAtomProperties()
 {
-	glUniform1f(Opacity, 0.3f);
-	glUniform3f(DifCol, 0.0f, 0.0f, 1.0f);
-	glUniform3f(SpecCol, 0.2f, 0.5f, 0.6f);
+	glUniform1f(program3D_ID == &program3Dl_ID ? Opacityl : Opacity ,0.3f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? DifColl : DifCol, 0.0f, 0.0f, 1.0f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? SpecColl : SpecCol ,0.2f, 0.5f, 0.6f);
 }
 void Visualization::SetTargetAtomProperties()
 {
-	glUniform1f(Opacity, 1.0f);
-	glUniform3f(DifCol, 0.0f, 1.0f, 0.0f);
-	glUniform3f(SpecCol, 0.5f, 0.6f, 0.1f);
+	glUniform1f(program3D_ID == &program3Dl_ID ? Opacityl : Opacity, 1.0f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? DifColl : DifCol, 0.0f, 1.0f, 0.0f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? SpecColl : SpecCol, 0.5f, 0.6f, 0.1f);
 }
 void Visualization::SetPlaneProperties()
 {
-	glUniform3f(DifCol, 0.0f, 0.5f, 0.5f);
-	glUniform3f(SpecCol, 0.0f, 0.2f, 0.2f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? DifColl : DifCol, 0.0f, 0.5f, 0.5f);
+	glUniform3f(program3D_ID == &program3Dl_ID ? SpecColl : SpecCol, 0.0f, 0.2f, 0.2f);
 }
 
 /*Frissites:*/
@@ -1246,7 +1279,8 @@ void Visualization::Clean()
 	Release2DIds();
 
 	glDeleteProgram(program2D_ID);
-	glDeleteProgram(program3D_ID);
+	glDeleteProgram(program3Dwhl_ID);
+	glDeleteProgram(program3Dl_ID);
 
 	delete PlaneCalculator;
 }
@@ -1431,4 +1465,23 @@ void Visualization::OnlyActiveRefresh()
 		onlyActive.insert(NumberOfAtoms);
 		break;
 	}
+}
+
+void Visualization::SetUniforms(const glm::mat4& matWorld)
+{
+	if (program3D_ID == &program3Dl_ID)
+	{
+		glUniform3fv(eyePosl, 1, glm::value_ptr(c.GetEye()));
+		glUniform3fv(Lightsl, 1, glm::value_ptr(rl.GetLightDir()));
+		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
+		glUniformMatrix4fv(view, 1, GL_FALSE, &(m_matView[0][0]));
+		glUniformMatrix4fv(proj, 1, GL_FALSE, &(m_matProj[0][0]));
+		return;
+	}
+
+	glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye()));
+	glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
+
+	glm::mat4 mvp = m_matProj * m_matView * matWorld;
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 }
