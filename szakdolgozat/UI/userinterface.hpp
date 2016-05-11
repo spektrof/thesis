@@ -12,6 +12,7 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QInputDialog>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QVBoxLayout>
@@ -46,7 +47,7 @@ protected:
 	void CreateFourierGroup();
 	void CreateBottom();
 
-	private slots:
+private slots:
 	void prevAtomEvent();
 	void nextAtomEvent();
 	void nextPlaneEvent();
@@ -68,7 +69,7 @@ protected:
 private:
 	std::unique_ptr<QVBoxLayout> _mainLayout;
 
-	QLabel* _label, * _info;
+	QLabel* _label, *_link, * _info;
 	QGroupBox *_strategy, *norms, *coords;
 
 	QLabel *_choice, *_cut;

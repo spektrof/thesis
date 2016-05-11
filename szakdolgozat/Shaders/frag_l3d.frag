@@ -8,13 +8,13 @@ in vec3 gs_norm;
 out vec4 _color;
 
 //színtér tul.
-uniform vec3 LightDirection;	//Fenyirany (origobol a fenybe mutato)
-uniform vec3 EyePosition;	//Kamera poz, szempoz
+uniform vec3 LightDirection;	//LightDir (origobol a fenybe mutato vektor)
+uniform vec3 EyePosition;	//Kamera poz, szempozba mutato vektor
 
 uniform float opacity = 1.0f;
 
 //fénytulajdonságok
-vec4 LightColor = vec4(0.5f,0.87f,0.1f,1);
+vec4 LightColor = vec4(0.5f,0.87f,0.1f,1);	//sargas szin
 float LightPower = 6.0f;
 uniform vec3 MaterialDiffuseColor = vec3(1.0f, 0.0f, 0.0f);	
 uniform vec3 MaterialSpecularColor = vec3(0.6f, 0.5f, 0.2f);
@@ -22,7 +22,7 @@ vec3 MaterialAmbientColor  = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
 
 void main()
 {
-	// Kamerapoz fele mutato vektor
+	// Pontbol a kamerapoz fele mutato vektor
     vec3 E = normalize( EyePosition - gs_pos);
 	// Normalis, amit a geometry shaderben szamoltunk
 	vec3 n = normalize( gs_norm );
@@ -39,7 +39,7 @@ void main()
 	float cosAlpha = clamp( dot(E,R), 0, 1);
 
 	//------------------------------------------
-	//fragment végso színe
+	//fragment vegso szine
 	_color =
 			// Ambient : simulates indirect lighting
 			 vec4(MaterialAmbientColor,1) +

@@ -35,8 +35,8 @@ namespace approx{
 		//a megadott tavolsag fuggvegy szerinti epszilon sugarban levo pontok egyenlonek tekintese
 		RepairVector(T epsilon, const std::function<T(const Vector3<T>&, const Vector3<T>&)>& func) : dist_fun(func), eps(epsilon){}
 
-		typedef ConstIndexIterator<T> ConstIterator;
-		typedef IndexIterator<T> Iterator;
+		typedef ConstIndexIterator<Vector3<T>> ConstIterator;
+		typedef IndexIterator<Vector3<T>> Iterator;
 
 
 		//az adott indexrol eldonti valojaban hanyadik elemre mutat
@@ -71,7 +71,7 @@ namespace approx{
 
 		//taroloba helyezes ellenorzessel
 		void push_back(const Vector3<T>& v){
-			int i = 0,n=size();
+			int i = 0,n=vecs.size();
 			while (i < n && eps < dist_fun(v, vecs[i])){ ++i; }
 			ind_map.push_back(i);
 			if (i == n) vecs.push_back(v);
@@ -110,8 +110,8 @@ namespace approx{
 		std::map<Vector3<T>, int, Less> vmap;
 
 	public:
-		typedef ConstIndexIterator<T> ConstIterator;
-		typedef IndexIterator<T> Iterator;
+		typedef ConstIndexIterator<Vector3<T>> ConstIterator;
+		typedef IndexIterator<Vector3<T>> Iterator;
 
 		ConstIterator begin() const { return ConstIterator(&vecs, &inds, 0); }
 		ConstIterator end()   const { return ConstIterator(&vecs, &inds, size()); }

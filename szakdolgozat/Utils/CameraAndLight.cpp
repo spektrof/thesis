@@ -11,6 +11,7 @@ Camera::Camera(const glm::vec3& e, const glm::vec3& u, const float& o, const flo
 	ViewPoint = _3D;
 }
 
+/*3D-s es 2D-s kameranezet kotorri valtas*/
 void Camera::SwitchCameraView(const glm::vec3& v)
 {
 	ViewPoint = ViewPoint ? _3D : _2D;
@@ -23,6 +24,8 @@ void Camera::SwitchCameraView(const glm::vec3& v)
 		SetCamera3DValues(v);
 	}
 }
+
+/*2D-s kameraertekek beallitasa*/
 void Camera::SetCamera2DValues(const glm::vec3& v)
 {
 	zunit = glm::vec3(0, -1, 0);
@@ -31,6 +34,8 @@ void Camera::SetCamera2DValues(const glm::vec3& v)
 	up = glm::vec3(1, 0, 0);
 	SetCamera(v);
 }
+
+/*3D-s kameraertekek beallitasa*/
 void Camera::SetCamera3DValues(const glm::vec3& v)
 {
 	zunit = Utility::DescartesToPolar(omega, theta, radius);
@@ -42,11 +47,14 @@ void Camera::SetCamera3DValues(const glm::vec3& v)
 	hunit = glm::normalize(glm::cross(up, zunit));
 }
 
+/*csak 2D-ben ket adattag beallitasa*/
 void Camera::SetCamera(const glm::vec3& v)
 {
 	eye = v;
 	at = glm::vec3(v.x, 0, v.z);
 }
+
+/*Noveles, mozgashoz*/
 void Camera::Add(const glm::vec3& unit)
 {
 	if (Is2DView() && eye.y + unit.y < 10) return;
@@ -54,6 +62,8 @@ void Camera::Add(const glm::vec3& unit)
 	eye += unit;
 	at += unit;
 }
+
+/*Csokkentes, mozgashoz*/
 void Camera::Sub(const glm::vec3& unit)
 {
 	eye -= unit;
@@ -86,18 +96,18 @@ Light::Light(const int& l, const int& c, const float& r, const int& o, const int
 	omega = ((o) % cunit) * (float)((float)1 / (float)cunit);
 	theta = ((t) % cunit) * (float)((float)1 / (float)cunit);
 
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
+	LightDir = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);	//2Pi - 2Pi mert mindket iranyba korbe akarjuk tudni mozgatni a fenyt
 }
 
 void Light::AddTo(float* unit)
 {
 	*unit = float( (int)std::round((*unit) * cunit + lunit) % cunit ) / (float)cunit;	//visszaszamoljuk az egyseget a noveles elott
 
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
+	LightDir = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }
 void Light::SubFrom(float* unit)
 {
-	*unit = float((int)std::round((*unit) * cunit - lunit + cunit) % cunit) / (float)cunit; //visszaszamoljuk az egyseget a noveles elott
+	*unit = float((int)std::round((*unit) * cunit - lunit + cunit) % cunit) / (float)cunit; //visszaszamoljuk az egyseget a csokkentes elott
 	
-	FenyIrany = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
+	LightDir = Utility::DescartesToPolar(-omega * 2 * (float)M_PI, theta * 2 * (float)M_PI, radius);
 }

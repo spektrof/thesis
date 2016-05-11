@@ -26,7 +26,7 @@ public:
 	float GetView() const { return (float)ViewPoint; }
 	bool Is2DView() const { return ViewPoint == _2D; }
 
-	void SwitchCameraView(const glm::vec3& = glm::vec3(1,2,1));
+	void SwitchCameraView(const glm::vec3& = glm::vec3(40, 30, 50));
 	void Add(const glm::vec3&);
 	void Sub( const glm::vec3&);
 
@@ -45,7 +45,7 @@ protected:
 private:
 	float omega, theta;				//forgatashoz, a gomb ket szoge
 	glm::vec3 zunit,vunit,hunit;	//kameraegységek
-	float radius;						//mozgasi egyseg
+	float radius;					//gomb sugara
 
 	enum ViewPos {
 		_3D, 
@@ -60,7 +60,7 @@ public:
 	Light(const int& = -1, const int& c = 100, const float& r = 20.0f, const int& = 28, const int& = 88);
 	~Light() {  }
 
-	glm::vec3 GetLightDir() const { return FenyIrany; }
+	glm::vec3 GetLightDir() const { return LightDir; }
 	float* GetOmega() { return &omega; }
 	float* GetTheta() { return &theta; }
 
@@ -68,7 +68,7 @@ public:
 	void SubFrom(float* unit);
 
 protected:
-	glm::vec3 FenyIrany;
+	glm::vec3 LightDir;	//Origobol a feny pontjaba mutato vektor
 	float omega, theta;
 
 private:

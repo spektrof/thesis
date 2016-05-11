@@ -5,7 +5,6 @@
 	A megjelenitest felugyelo osztaly. (OpenGL)
 	Ezen kivul feldolgozza a UI -rol jovo kereseket. (Qt)
 */
-
 #include <GL/glew.h>
 
 #include <vector>
@@ -17,7 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform2.hpp>
-
 #include <glm/gtc/type_ptr.hpp> //valueptr
 
 //----------------
@@ -26,11 +24,8 @@
 #include "../Strategy/prior.h"
 #include "../Strategy/priorityfunctions.h"
 #include "../Strategy/planegetters.h"
-#include "../logger/logger.h"
-
-//----------------
+#include "../Logger/logger.h"
 #include "../UI/userinterface.hpp"
-//--------------------
 
 class Visualization
 {
@@ -64,20 +59,6 @@ public:
 	};
 	
 protected:
-	/*	TODO list*/
-	/*
-	NumberOfAtoms : halottak is - nincs lehetõség törlésre! --> doksiba
-
-		SHADER: olvassuk el a szöveget!!
-
-	*//*	Blender : doksi*/
-	/*			+ WorldIT : normal így tarja meg magát -> mivel ezt számolom nem kell
-				+ World : esetleg mikor fényt számolok akkor számít
-				+ fény is mozog ha kamerával mozgunk!
-				http://www.kickjs.org/example/shader_editor/shader_editor.html#
-				http://on-demand.gputechconf.com/gtc/2014/presentations/S4385-order-independent-transparency-opengl.pdf
-	*/
-	//-----------------------------------------
 	// ENGINE
 	bool EngineInit();
 	 
@@ -151,8 +132,8 @@ protected:
 	
 	//Camera & light
 	Camera c;
-	Light l = Light(1, 100, 10, 30, 60);	//good light for us
-	Light rl = Light(-1, 100, 20, 28, 88);	//real light
+	Light l = Light(1, 100, 10, 30, 60);	//ami jo nekunk
+	Light rl = Light(-1, 100, 20, 28, 88);	//valos feny
 	Light * al;	//aktualis
 
 	//------------------------------------------
@@ -190,7 +171,7 @@ protected:
 	std::vector<IdsAndProp> _2D_TriIds_P;
 	std::vector<std::vector<IdsAndProp>> _2D_Line1Ids_P;
 	std::vector<std::vector<IdsAndProp>> _2D_Line2Ids_P;
-
+	
 	// ID-k shader valtozokhoz
 	GLuint m_loc_mvp, m_loc_mvp2;
 	GLuint world;

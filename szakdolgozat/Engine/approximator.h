@@ -147,7 +147,7 @@ namespace approx {
 			}
 			else {
 				filter first(app->begin(), app->end(), minf);
-				filter last(app->begin(), app->end(), minf);
+				filter last(app->end(), app->end(), minf);
 				ObjectWriter<T>::save_obj(targetfile, first, last, tb->inverse_scale(), tb->inverse_transform());
 			}
 		}

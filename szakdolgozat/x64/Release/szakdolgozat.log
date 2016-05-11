@@ -1,11 +1,15 @@
-﻿  vis.cpp
+﻿  moc_userinterface.cpp
+  userinterface.cpp
+  CameraAndLight.cpp
+  Utility.cpp
+  vis.cpp
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(427): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(425): note: while compiling class template member function 'approx::Approximation<T>::CutResult approx::Approximation<T>::cut(size_t,const approx::Plane<T> &)'
           with
           [
               T=float
           ]
-  Visualization\vis.cpp(348): note: see reference to function template instantiation 'approx::Approximation<T>::CutResult approx::Approximation<T>::cut(size_t,const approx::Plane<T> &)' being compiled
+  Visualization\vis.cpp(340): note: see reference to function template instantiation 'approx::Approximation<T>::CutResult approx::Approximation<T>::cut(size_t,const approx::Plane<T> &)' being compiled
           with
           [
               T=float
@@ -15,13 +19,13 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(
           [
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\visualization\vis.h(84): note: see reference to class template instantiation 'approx::Approximator<float>' being compiled
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\visualization\vis.h(65): note: see reference to class template instantiation 'approx::Approximator<float>' being compiled
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\utils\../Engine/approximator.h(186): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\utils\../Engine/approximator.h(183): note: while compiling class template member function 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const'
-  Visualization\vis.cpp(372): note: see reference to function template instantiation 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const' being compiled
+  Visualization\vis.cpp(364): note: see reference to function template instantiation 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const' being compiled
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\utils\../Engine/approximator.h(191): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(236): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(229): note: while compiling class template member function 'void approx::ObjectWriter<T>::save_obj(const std::string &,const approx::Body<T> &,T,const approx::Vector3<T> &)'
+d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(246): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(239): note: while compiling class template member function 'void approx::ObjectWriter<T>::save_obj(const std::string &,const approx::Body<T> &,T,const approx::Vector3<T> &)'
           with
           [
               T=float
@@ -37,8 +41,8 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(236): wa
               T=float
           ]
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\utils\../Engine/approximator.h(156): note: while compiling class template member function 'void approx::Approximator<float>::save_approximated_body(const std::string &) const'
-  Visualization\vis.cpp(181): note: see reference to function template instantiation 'void approx::Approximator<float>::save_approximated_body(const std::string &) const' being compiled
-d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(241): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  Visualization\vis.cpp(182): note: see reference to function template instantiation 'void approx::Approximator<float>::save_approximated_body(const std::string &) const' being compiled
+d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(251): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\body.h(146): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\body.h(146): note: while compiling class template member function 'int approx::Body<T>::size(void) const'
           with
@@ -74,8 +78,8 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\convexatom.h(209
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\convexatom.h(210): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\convexatom.h(283): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\convexatom.h(284): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(544): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(525): note: while compiling class template member function 'approx::Body<T> approx::Approximation<T>::approximated_body(approx::InsideHandling,T)'
+d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(542): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(523): note: while compiling class template member function 'approx::Body<T> approx::Approximation<T>::approximated_body(approx::InsideHandling,T)'
           with
           [
               T=float
@@ -210,7 +214,7 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\poly2.h(60): war
               T=float
           ]
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\conversion.h(148): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-  Visualization\vis.cpp(1445): note: see reference to function template instantiation 'approx::BodyList approx::compact_drawinfo<float>(const std::vector<approx::Face<float>,std::allocator<_Ty>> &)' being compiled
+  Visualization\vis.cpp(891): note: see reference to function template instantiation 'approx::BodyList approx::compact_drawinfo<float>(const std::vector<approx::Face<float>,std::allocator<_Ty>> &)' being compiled
           with
           [
               _Ty=approx::Face<float>
@@ -222,7 +226,7 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\conversion.h(123
               T=float
           ]
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\utils\../Engine/approximator.h(183): note: while compiling class template member function 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const'
-  Visualization\vis.cpp(372): note: see reference to function template instantiation 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const' being compiled
+  Visualization\vis.cpp(364): note: see reference to function template instantiation 'approx::BodyList approx::Approximator<float>::cut_drawinfo(void) const' being compiled
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\face.h(265): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\convexatom.h(201): note: see reference to function template instantiation 'approx::Face<float>::CutResult approx::Face<float>::cut_by<std::map<approx::Vector3<float>,int,approx::ConvexAtom<T>::Less,std::allocator<std::pair<const _Kty,_Ty>>>>(const approx::Plane<T> &,MapType &) const' being compiled
           with
@@ -248,17 +252,17 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(129)
           [
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(129): note: see reference to function template instantiation 'int approx::NullRepair<T>::size(void) const' being compiled
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(139): note: see reference to function template instantiation 'int approx::NullRepair<T>::size(void) const' being compiled
           with
           [
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(167): note: see reference to class template instantiation 'approx::NullRepair<T>' being compiled
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(177): note: see reference to class template instantiation 'approx::NullRepair<T>' being compiled
           with
           [
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(164): note: while compiling class template member function 'bool approx::ObjectLoader<T>::load_obj(const std::string &,approx::TargetBody<T> &,T,bool)'
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(174): note: while compiling class template member function 'bool approx::ObjectLoader<T>::load_obj(const std::string &,approx::TargetBody<T> &,T,bool)'
           with
           [
               T=float
@@ -289,7 +293,23 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(123)
           [
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(123): note: see reference to function template instantiation 'void approx::NullRepair<T>::push_back(const approx::Vector3<T> &)' being compiled
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(133): note: see reference to function template instantiation 'void approx::NullRepair<T>::push_back(const approx::Vector3<T> &)' being compiled
+          with
+          [
+              T=float
+          ]
+d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(74): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(73): note: while compiling class template member function 'void approx::RepairVector<T>::push_back(const approx::Vector3<T> &)'
+          with
+          [
+              T=float
+          ]
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(84): note: see reference to function template instantiation 'void approx::RepairVector<T>::push_back(const approx::Vector3<T> &)' being compiled
+          with
+          [
+              T=float
+          ]
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(176): note: see reference to class template instantiation 'approx::RepairVector<T>' being compiled
           with
           [
               T=float
@@ -301,29 +321,13 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\targetbody.h(31)
               _Ty=int,
               T=float
           ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(141): note: see reference to function template instantiation 'std::vector<int,std::allocator<_Ty>> approx::TargetBody<T>::range(size_t)' being compiled
+  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(151): note: see reference to function template instantiation 'std::vector<int,std::allocator<_Ty>> approx::TargetBody<T>::range(size_t)' being compiled
           with
           [
               _Ty=int,
               T=float
           ]
   Visualization\vis.cpp(84): note: see reference to class template instantiation 'approx::TargetBody<T>' being compiled
-          with
-          [
-              T=float
-          ]
-d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(64): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(63): note: while compiling class template member function 'int approx::RepairVector<T>::size(void) const'
-          with
-          [
-              T=float
-          ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objrepair.h(74): note: see reference to function template instantiation 'int approx::RepairVector<T>::size(void) const' being compiled
-          with
-          [
-              T=float
-          ]
-  d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\objio.h(166): note: see reference to class template instantiation 'approx::RepairVector<T>' being compiled
           with
           [
               T=float
@@ -341,9 +345,10 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\face.h(85): warn
               _Kty=approx::Vector3<float>,
               _Ty=int
           ]
+  main.cpp
   Generating code
-  4 of 5296 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    1 functions had inline decision re-evaluated but remain unchanged
+  12 of 5306 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
+    8 functions were new in current compilation
+    62 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   szakdolgozat.vcxproj -> D:\ELTE\Felevek\6\szakdolgozat\szakdolgozat\x64\Release\szakdolgozat.exe

@@ -4,7 +4,6 @@
 layout(location = 0) in vec3 vs_in_pos;
 
 //pipeline ban tovabb adando ertekek
-//semmi
 
 //shader kulso parameterei
 uniform mat4 MVP;

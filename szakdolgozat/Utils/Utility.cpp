@@ -1,16 +1,19 @@
 #include "Utility.h"
 
+/*Descartes-koord. bol gombi koord. kat gyart*/
 glm::vec3 Utility::DescartesToPolar(const float& omega,const float& theta,const float& r)
 {
 	return glm::vec3(r * cosf(omega)*sinf(theta),r * cosf(theta),r * sinf(omega)*sinf(theta));
 }
 
+/*Eltolas matrixot adja meg a sulypont, normalis, sulyponttol vett tavolsagbol*/
 glm::mat4 Utility::GetTranslate(const approx::Vector3<float>& centroid, const glm::vec3& normal, const float& distance)
 {
 	return glm::translate<float>(	centroid.x - (normal.x * distance),
 									centroid.y - (normal.y * distance),
 									centroid.z - (normal.z * distance));
 }
+
 /*Visszaadja a forgatasi matrixot
   Bemenete: normalizalt vektor!*/
 glm::mat4 Utility::GetRotateFromNorm(const glm::vec3& vec)
@@ -39,6 +42,7 @@ glm::mat4 Utility::GetRotateFromNorm(const glm::vec3& vec)
 	return glm::rotate<float>(angle * 180.0f / (float)M_PI, axis.x, axis.y, axis.z);
 }
 
+/*Szomszedsagi matrix keszitese linearis idoben*/
 std::vector< std::vector<int>> Utility::GetAdjacencyMatrix(const std::vector<approx::Face<float>>* faces)
 {
 	if (faces->size() == 0) return std::vector< std::vector<int>>();

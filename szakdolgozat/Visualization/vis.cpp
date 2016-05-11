@@ -3,11 +3,11 @@
 
 #include <GL/GLU.h>
 
-#define RELEVANCYEPSILON 0.5f
-#define MINFOURIEREPSILON 0.005f
-#define MAXFOURIEREPSILON 0.03f
-#define INTERSECTIONEPSILON  0.001f
-#define MINVOLUME  0.005f
+#define RELEVANCYEPSILON 0.5f	//Relevans atomok also hatara
+#define MINFOURIEREPSILON 0.005f	//Elo atomok also hatara
+#define MAXFOURIEREPSILON 0.03f		//Elo atomok maximum hatara
+#define INTERSECTIONEPSILON  0.003f	//Metszetellenorzes
+#define MINVOLUME  0.005f	//Minimum terfogat also hatara
 
 Visualization::Visualization(void)
 {
@@ -114,7 +114,8 @@ bool Visualization::EngineInit()
 		CleanIdBufferForReuse(targetIds);
 		targetIds.count = 0;
 		ui.NoAtomLeft("Your input is too small!\nChoose an other obj.",true);
-		return false;
+		LOG("The input was too small.\n");
+		return true;
 	}
 
 	targetDistance = CalculateDistance();
@@ -236,11 +237,8 @@ void Visualization::AcceptCutting()
 			if (!app.container().last_cut_result().choose_both()) 
 			{ 		//valasztas kozbeni hiba
 				GetUndo();
-				if (request.eventtype == MORESTEPS)
-				{
-					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-					return;
-				}
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (request.eventtype == MORESTEPS)	return;	
 				ui.RequestWrongCuttingErrorResolve("ERROR BOTH\nThe cut is dropped!"); return; 
 			}
 			if (logger) std::cout << "Megtartom: BOTH\n";
@@ -251,11 +249,8 @@ void Visualization::AcceptCutting()
 			if (!app.container().last_cut_result().choose_positive()) 
 			{ 
 				GetUndo();
-				if (request.eventtype == MORESTEPS)
-				{
-					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-					return;
-				}
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (request.eventtype == MORESTEPS)	return;
 				ui.RequestWrongCuttingErrorResolve("ERROR POSITIVE\nThe cut is dropped!"); return; 
 			}
 			if (logger) std::cout << "Megtartom: POSITIVE\n";
@@ -265,11 +260,8 @@ void Visualization::AcceptCutting()
 			if (!app.container().last_cut_result().choose_negative()) 
 			{
 				GetUndo();
-				if (request.eventtype == MORESTEPS) 
-				{ 
-					RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-					return;
-				}
+				RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
+				if (request.eventtype == MORESTEPS)	return;
 					
 				ui.RequestWrongCuttingErrorResolve("ERROR NEGATIVE\nThe cut is dropped!"); return; 
 			}
@@ -306,7 +298,7 @@ void Visualization::AcceptCutting()
 			return;
 		}
 		RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-		if (partialTarget) PartialTargetDrawRefresh();
+		if (IsTargetDrawEnabled && partialTarget) PartialTargetDrawRefresh();
 
 		return;
 	}
@@ -328,7 +320,7 @@ void Visualization::AcceptCutting()
 	}
 
 	RefreshPlaneData( (PlaneCalculator->*PlaneFunction)());
-	if (partialTarget) PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget) PartialTargetDrawRefresh();
 }
 
 /* Vagasi eredmeny kerese */
@@ -390,10 +382,9 @@ void Visualization::GetUndo()
 	onlyActive.erase(NumberOfAtoms);
 
 	Release2DIds();
-	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
-	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
+	if (c.Is2DView()) c.SwitchCameraView(_3dIds.eye);
 
-	if (partialTarget) PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget) PartialTargetDrawRefresh();
 
 	LOG("\tUNDO\n");
 }
@@ -436,7 +427,7 @@ void Visualization::GetRestart()
 
 	PlaneFunction = PlaneGetter(&PlaneGetterFunctions<approx::Approximation<float>>::Manual);
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
-	if (partialTarget) PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget) PartialTargetDrawRefresh();
 
 	Release2DIds();
 
@@ -507,6 +498,10 @@ void Visualization::SetNewStrategy()
 				LOG("Choice : OPTIMALVOLUME\n");
 				break;
 		}
+
+	Release2DIds();
+	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
+	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
 }
 
 /* Vagosik valasztas modositasa*/
@@ -571,7 +566,7 @@ void Visualization::NextAtom()
 	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
 	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
 
-	if (partialTarget)	PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget)	PartialTargetDrawRefresh();
 
 	//vagaosik frissitese
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
@@ -597,7 +592,7 @@ void Visualization::PrevAtom()
 	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
 	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
 
-	if (partialTarget)	PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget)	PartialTargetDrawRefresh();
 
 	RefreshPlaneData((PlaneCalculator->*PlaneFunction)());
 
@@ -615,18 +610,24 @@ void Visualization::ImportNewTarget()
 	std::string tmp = filename;
 	filename = newfile;
 
+	if (c.Is2DView()) c.SwitchCameraView(_3dIds.eye);
+
 	//az uj fajl betoltese
 	if (EngineInit())
 	{
 			LOG("New file loaded successfully , new file is: " + newfile + "\n");
+			if (liveAtoms.size() == 0)	return;
 			ui.SuccessImport();
-			if (c.Is2DView()) c.SwitchCameraView();
 	}
 	else
 	{	//sikertelen fajlbetoltes
+			ui.InfoShow("The import was wrong!\nThe last obj loaded back.");
 			filename = tmp;
+
+			if (!app.valid()) { EngineInit(); }
 			LOG("New file loaded unsuccessfully\n");
 	}
+
 
 }
 
@@ -745,7 +746,6 @@ void Visualization::Draw3D(const int& which, glm::mat4& scal, glm::mat4& trans, 
 //2D-s informaciok feldolgozasa
 void Visualization::Get2DDrawInfo(const std::vector<approx::PolyFace2D>& data, std::vector<IdsAndProp>& Tri, std::vector<std::vector<IdsAndProp>>& Line1, std::vector<std::vector<IdsAndProp>>& Line2)
 {
-
 	Line1.resize(data.size());
 	Line2.resize(data.size());
 
@@ -883,6 +883,17 @@ void Visualization::DrawTargetBody()
 		0);
 }
 
+/*Reszleges celtest rajzolas frissitese*/
+void Visualization::PartialTargetDrawRefresh()
+{
+	if (ActiveAtom < 0) return;
+
+	approx::BodyList targetdata = approx::compact_drawinfo(app.container().atoms(ActiveAtom).faces_inside());
+	targetIds.count = (int)targetdata.indicies.size();
+	CleanIdBufferForReuse(targetIds);
+	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies, targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
+}
+
 /*Vagosik rajzolasa*/
 void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4& scal)
 {
@@ -900,6 +911,53 @@ void Visualization::DrawCuttingPlane(glm::mat4& trans, glm::mat4& rot, glm::mat4
 		planeIds.count,
 		GL_UNSIGNED_INT,	
 		0);					
+}
+
+/*Vagas eredmeny elfogadasanak vizsgalata, akkor helyes, ha nem tul pici az atom es nem kicsi a Fourier-egyutthatoja*/
+bool Visualization::AcceptChecker()
+{
+	if (logger)
+	{
+		std::cout << "Fourier: " << app.container().last_cut_result().negative()->fourier() << " Volume: " << app.container().last_cut_result().negative()->volume() << "\n";
+		std::cout << "Fourier: " << app.container().last_cut_result().positive()->fourier() << " Volume: " << app.container().last_cut_result().positive()->volume() << "\n";
+	}
+
+	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
+	bool NegativeCheck = app.container().last_cut_result().negative()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().negative()->volume() > MINVOLUME;
+	bool PositiveCheck = app.container().last_cut_result().positive()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().positive()->volume() > MINVOLUME;
+
+	if (request.cut_mode == MANUAL)	//manualis valasztashoz kis korrekcio/ellenorzes
+	{
+		switch (request.type)
+		{
+		case BOTH:
+		{
+			if (NegativeCheck && PositiveCheck) return true; //korrekt volt
+			return false;
+			break;
+		}
+		case NEGATIVE:
+		{
+			if (NegativeCheck) return true; //korrekt volt
+			return false;
+			break;
+		}
+		case POSITIVE:
+		{
+			if (PositiveCheck) return true; //korrekt volt
+			return false;
+			break;
+		}
+		}
+	}
+
+	//a bool ertekek alapjan az elfogadas
+	if (NegativeCheck && PositiveCheck)	request.type = BOTH;
+	else if (NegativeCheck) request.type = NEGATIVE;
+	else if (PositiveCheck) request.type = POSITIVE;
+	else request.type = INVALID;
+
+	return true;
 }
 
 /*Fourier egyutthato szerinti csoportba kerules
@@ -938,6 +996,7 @@ void Visualization::CalculateDisplayVectorsByFourier()
 	}
 }
 
+
 /*Prioritasos sor tartalmat lekero eljaras*/
 void Visualization::GetPriorResult()
 {
@@ -952,11 +1011,7 @@ void Visualization::GetPriorResult()
 
 	PlaneCalculator->SetActive(ActiveAtom);
 	
-	Release2DIds();
-	Get2DDrawInfo(approx::drawinfo2d(app.container().atoms(ActiveAtom)), _2D_TriIds_N, _2D_Line1Ids_N, _2D_Line2Ids_N);
-	if (c.Is2DView()) c.SetCamera((*_2DTri)[0].eye);
-	
-	if (partialTarget) PartialTargetDrawRefresh();
+	if (IsTargetDrawEnabled && partialTarget) PartialTargetDrawRefresh();
 
 	if (logger) {
 		std::for_each(result.begin(), result.end(), [](const Utility::PriorResult& a) { std::cout << a.id << " " << a.value << "\n"; });
@@ -969,6 +1024,25 @@ void Visualization::GetPriorResult()
 bool Visualization::IsItActive(const int& which)
 {
 	return	onlyActive.count(which) != 0;	//legfeljebb 2 elemu az onlyactive
+}
+
+/*Csak aktiv atomokat tartalmazo halmaz frissitese*/
+void Visualization::OnlyActiveRefresh()
+{
+	onlyActive.clear();
+	switch (request.type)
+	{
+	case NEGATIVE:
+		onlyActive.insert(ActiveAtom);
+		break;
+	case POSITIVE:
+		onlyActive.insert(NumberOfAtoms);
+		break;
+	case BOTH:
+		onlyActive.insert(ActiveAtom);
+		onlyActive.insert(NumberOfAtoms);
+		break;
+	}
 }
 
 /*Last use vektor aktualizalasa	*/
@@ -1137,7 +1211,6 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 			program3D_ID = &program3Dl_ID;
 			break;
 		}
-		
 		al = &l;
 		program3D_ID =  &program3Dwhl_ID;
 		break;
@@ -1172,6 +1245,9 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		al->SubFrom(al->GetOmega());
 		break;
 	case SDLK_l:	//logger
+#ifdef NDEBUG 
+		break;
+#endif
 		logger = !logger;
 		if (logger)
 		{
@@ -1180,7 +1256,7 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 			std::cout << "\n";
 		}
 		break;
-	case SDLK_KP_PLUS:	//2D-s lapváltó
+	case SDLK_KP_PLUS:	//2D-s lapvalto
 		if (!c.Is2DView() || !_2DTri->size()) break;
 		Active2DIndex = (Active2DIndex + 1) % (*_2DTri).size();
 		c.SetCamera((*_2DTri)[Active2DIndex].eye);
@@ -1190,16 +1266,17 @@ void Visualization::KeyboardDown(SDL_KeyboardEvent& key)
 		Active2DIndex = (Active2DIndex - 1 + (int)(*_2DTri).size()) % (int)(*_2DTri).size();
 		c.SetCamera((*_2DTri)[Active2DIndex].eye);
 		break;
-	case SDLK_o:	//2D-s pos - neg váltó
-		if (!c.Is2DView() || (!_2D_TriIds_P.size() && !_2D_TriIds_N.size()) ) break;
+	case SDLK_o:	//2D-s pos - neg valto
+		if (!c.Is2DView()) break;
 		Active2DIndex = 0;
 		_2DLine1 = _2DLine1 == &_2D_Line1Ids_N ? &_2D_Line1Ids_P : &_2D_Line1Ids_N;
 		_2DLine2 = _2DLine2 == &_2D_Line2Ids_N ? &_2D_Line2Ids_P : &_2D_Line2Ids_N;
 		_2DTri = _2DTri == &_2D_TriIds_N ? &_2D_TriIds_P : &_2D_TriIds_N;
-		c.SetCamera((*_2DTri)[Active2DIndex].eye);
+		c.SetCamera(_2DTri->size() ? (*_2DTri)[Active2DIndex].eye : glm::vec3(1, 2, 1));
 		break;
 	case SDLK_t:
 		IsTargetDrawEnabled = !IsTargetDrawEnabled;
+		if (partialTarget)	PartialTargetDrawRefresh();
 		break;
 	case SDLK_z:
 		partialTarget = !partialTarget;
@@ -1239,6 +1316,7 @@ void Visualization::MouseWheel(SDL_MouseWheelEvent& wheel)
 	wheel.y > 0 ? (c.Add(c.GetZoomUnit())) : (c.Sub(c.GetZoomUnit()));
 }
 
+/*Atomtulajdonsagok & uniformok*/
 void Visualization::SetActiveAtomProperties()
 {
 	glUniform1f(program3D_ID == &program3Dl_ID ? Opacityl : Opacity, 0.6f);
@@ -1261,6 +1339,24 @@ void Visualization::SetPlaneProperties()
 {
 	glUniform3f(program3D_ID == &program3Dl_ID ? DifColl : DifCol, 0.0f, 0.5f, 0.5f);
 	glUniform3f(program3D_ID == &program3Dl_ID ? SpecColl : SpecCol, 0.0f, 0.2f, 0.2f);
+}
+void Visualization::SetUniforms(const glm::mat4& matWorld)
+{
+	if (program3D_ID == &program3Dl_ID)
+	{
+		glUniform3fv(eyePosl, 1, glm::value_ptr(c.GetEye()));
+		glUniform3fv(Lightsl, 1, glm::value_ptr(rl.GetLightDir()));
+		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
+		glUniformMatrix4fv(view, 1, GL_FALSE, &(m_matView[0][0]));
+		glUniformMatrix4fv(proj, 1, GL_FALSE, &(m_matProj[0][0]));
+		return;
+	}
+
+	glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye()));
+	glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
+
+	glm::mat4 mvp = m_matProj * m_matView * matWorld;
+	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 }
 
 /*Frissites:*/
@@ -1288,7 +1384,7 @@ void Visualization::Clean()
 void Visualization::Resize(int _w, int _h)
 {
 	glViewport(0, 0, _w, _h);
-	// nyilasszog, ablakmeret nezeti arany, kozeli és tavoli vagosik
+	// nyilasszog, ablakmeret nezeti arany, kozeli es tavoli vagosik
 	m_matProj = glm::perspective(45.0f, _w / (float)_h, 0.01f, 1000.0f);
 }
 
@@ -1360,13 +1456,11 @@ void Visualization::Release2DIds()
 	Active2DIndex = 0;
 }
 
-/*Visszaadja a celtest es az osszes atom terfogatainak osszegenek a kulonbseget a celtest terfogatahoz viszonyitva*/
 float Visualization::GetDistance()
 {
 	return targetDistance;
 }
 
-/*Kiszamolja a celtest koruli osszes atom terfogatat, majd a celtest terfogatahoz viszonyítja*/
 float Visualization::CalculateDistance()
 {
 	float sum = 0.0f;
@@ -1387,101 +1481,4 @@ float Visualization::CalculateDistance()
 	}
 
 	return sum / app.target().body().volume();
-}
-
-/*Vagas eredmeny elfogadasanak vizsgalata, akkor helyes, ha nem tul pici az atom es nem kicsi a Fourier-egyutthatoja*/
-bool Visualization::AcceptChecker()
-{
-	if (logger)
-	{
-		std::cout << "Fourier: " << app.container().last_cut_result().negative()->fourier() << " Volume: " << app.container().last_cut_result().negative()->volume() << "\n";
-		std::cout << "Fourier: " << app.container().last_cut_result().positive()->fourier() << " Volume: " << app.container().last_cut_result().positive()->volume() << "\n";
-	}
-
-	//ket valtozo arra hogy eleg nagy-e a Fourier-egyutthato, ha feltetelezzuk, hogy 0-1 koze esik akkor eleg ez!
-	bool NegativeCheck = app.container().last_cut_result().negative()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().negative()->volume() > MINVOLUME;
-	bool PositiveCheck = app.container().last_cut_result().positive()->fourier() > MINFOURIEREPSILON && app.container().last_cut_result().positive()->volume() > MINVOLUME;
-
-	if (request.cut_mode == MANUAL)	//manualis valasztashoz kis korrekcio/ellenorzes
-	{
-		switch (request.type)
-		{
-			case BOTH:
-			{
-				if (NegativeCheck && PositiveCheck) return true; //korrekt volt
-				return false;
-				break;
-			}
-			case NEGATIVE:
-			{
-				if (NegativeCheck) return true; //korrekt volt
-				return false;
-				break;
-			}
-			case POSITIVE:
-			{
-				if (PositiveCheck) return true; //korrekt volt
-				return false;
-				break;
-			}
-		}
-	}
-
-	//a bool ertekek alapjan az elfogadas
-	if (NegativeCheck && PositiveCheck)	request.type = BOTH;
-	else if (NegativeCheck) request.type = NEGATIVE;
-	else if (PositiveCheck) request.type = POSITIVE;
-	else request.type = INVALID;
-
-	return true;
-}
-
-/*Reszleges celtest rajzolas frissitese*/
-void Visualization::PartialTargetDrawRefresh()
-{
-	if (ActiveAtom < 0) return;
-
-	IsTargetDrawEnabled = true;
-	approx::BodyList targetdata = approx::compact_drawinfo(app.container().atoms(ActiveAtom).faces_inside());
-	targetIds.count = (int)targetdata.indicies.size();
-	CleanIdBufferForReuse(targetIds);
-	ObjectCreator::Create3DObject(targetdata.points, targetdata.indicies, targetIds.VaoId, targetIds.VboId, targetIds.IndexId);
-}
-
-/*Csak aktiv atomokat tartalmazo halmaz frissitese*/
-void Visualization::OnlyActiveRefresh()
-{
-	onlyActive.clear();
-	switch (request.type)
-	{
-	case NEGATIVE:
-		onlyActive.insert(ActiveAtom);
-		break;
-	case POSITIVE:
-		onlyActive.insert(NumberOfAtoms);
-		break;
-	case BOTH:
-		onlyActive.insert(ActiveAtom);
-		onlyActive.insert(NumberOfAtoms);
-		break;
-	}
-}
-
-void Visualization::SetUniforms(const glm::mat4& matWorld)
-{
-	if (program3D_ID == &program3Dl_ID)
-	{
-		glUniform3fv(eyePosl, 1, glm::value_ptr(c.GetEye()));
-		glUniform3fv(Lightsl, 1, glm::value_ptr(rl.GetLightDir()));
-		glUniformMatrix4fv(world, 1, GL_FALSE, &(matWorld[0][0]));
-		glUniformMatrix4fv(view, 1, GL_FALSE, &(m_matView[0][0]));
-		glUniformMatrix4fv(proj, 1, GL_FALSE, &(m_matProj[0][0]));
-		return;
-	}
-
-	glUniform3fv(eyePos, 1, glm::value_ptr(c.GetEye()));
-	glUniform3fv(Lights, 1, glm::value_ptr(l.GetLightDir()));
-
-	glm::mat4 mvp = m_matProj * m_matView * matWorld;
-	glUniformMatrix4fv(m_loc_mvp, 1, GL_FALSE, &(mvp[0][0]));
 }

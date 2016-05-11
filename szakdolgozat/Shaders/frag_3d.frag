@@ -8,7 +8,7 @@ in vec3 gs_norm;
 out vec4 _color;
 
 //színtér tul.
-uniform vec3 LightDirection;	//Fenyirany: fenyforrasba mutato
+uniform vec3 LightDirection;	//LightDir (origobol a fenybe mutato vektor)
 uniform vec3 EyePosition;	//Kamera poz, szempozba mutato vektor
 
 uniform float opacity = 1.0f;

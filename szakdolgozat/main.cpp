@@ -1,19 +1,19 @@
+/*Keszitette: Lukacs Peter
+
+  Megjelenito felulet elokeszitese, majd a program hasznalata.
+*/
+
 #include <GL/glew.h> //GLEW = OpenGL Extinsion Wrangler Library
 
-#include <SDL.h>	//SDL
-#include <SDL_opengl.h>
-
-#include <iostream>
-#include <sstream>
+#include<iostream>
+#include<sstream>
 
 #include "Visualization/vis.h"
 
 int main(int argc, char* args[])
 {
-	QDir dir("logger");
-	if (!dir.exists()) {
-		dir.mkdir(".");
-	}
+	QDir dir("Logger");
+	if (!dir.exists()) 	dir.mkdir(".");
 
 	//SDL incializalas
 	if ( SDL_Init(SDL_INIT_VIDEO) == -1)
@@ -35,10 +35,8 @@ int main(int argc, char* args[])
 	//ablak letrehozasa
 	SDL_Window *win = 0;
 	win = SDL_CreateWindow("MeshApprox!",
-		100,									
-		50,									
-		800,									
-		600,									
+		100, 50,			//x,y						
+		800, 600,			//width, height						
 		SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
 	if (win == 0)
@@ -75,7 +73,6 @@ int main(int argc, char* args[])
 	{
 		SDL_GL_DeleteContext(context);
 		SDL_DestroyWindow(win);
-		
 		LOG("[OGL context create] False\n");
 	}
 

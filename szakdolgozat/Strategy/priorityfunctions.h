@@ -20,13 +20,13 @@ public:
 			last_use = lu;
 		}
 
-	/*Atmero hosszat meghatoroz fv.*/
+	/*Atmero hosszat meghatorozo fv.*/
 	float GetDiamaterLength(const T* atom,const int& _id) const
 	{
 		return atom->diameter().length();
 	}
 
-	/*Terfogatot meghatoroz fv.*/
+	/*Terfogatot meghatorozo fv.*/
 	float GetVolume(const T* atom, const int& _id) const
 	{
 		return atom->volume();
@@ -38,26 +38,26 @@ public:
 		return (float)(*last_use)[_id];
 	}
 		
-	/*Visszaadja az optimalis parametert a fourier egyutthatobol*/
+	/*Visszaadja az optimalis Fourier-egyutthatot*/
 	float GetOptimal(const T* atom, const int& _id) const
 	{
 		return GetOptimalFromFourier(atom->fourier());
 	}
 
-	/*Visszaadja az optimalis parameter es atmero kapcsolatabol megharozott erteket*/
+	/*Visszaadja az optimalis parameter es atmero szorzatat*/
 	float GetOptimalAndDiameter(const T* atom, const int& _id) const
 	{
 		return GetOptimalFromFourier(atom->fourier()) * atom->diameter().length();
 	}
 
-	/*Visszaadja az optimalis parameter es terfogat kapcsolatabol megharozott erteket*/
+	/*Visszaadja az optimalis parameter es terfogat szorzatat*/
 	float GetOptimalAndVolume(const T* atom, const int& _id) const
 	{
 		return GetOptimalFromFourier(atom->fourier()) * atom->volume();
 	}
 
 protected:
-	/*Optimalis parameter szamitas fourier egyutthatobol*/
+	/*Optimalis Fourier-egyutthato szamitas*/
 	float GetOptimalFromFourier( float fourier, const float& a = 0.0f, const float& b = 0.0f) const
 	{
 		if (fourier > 0.5) fourier = 1 - fourier;

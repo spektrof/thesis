@@ -439,7 +439,6 @@ namespace approx{
 			return last_cut != -1;
 		}
 
-		//TODO: az approximacios dolgokat meg a szomszedsagi viszonyokat meg kell irni
 		//a nemkello lapok, pontok es normalisok kitorlese a tartolokbool 
 		void garbage_collection(){
 			if (pending()) return;
@@ -521,7 +520,6 @@ namespace approx{
 		}
 
 		//szamitott test
-		//TODO: a belso lapos bohockodast meg kell csinalni
 		Body<T> approximated_body(InsideHandling mode = InsideHandling::LeaveOut, T fouriermin=0.5f) {
 			garbage_collection();
 			std::vector<int> ind{};
@@ -551,9 +549,8 @@ namespace approx{
 		}
 
 
-		//eltolt es atmeretezett targetbodynal ha el akarjuk menteni fajlba az eredmenyt,
+		//eltolt es atmeretezett targetbodynal ha kulso hasznalatra exportalnank a tarolot,
 		//ezt hivjuk meg eloszor
-		//TODO
 		void final_transform() {
 			Vector3<T> t = target->inverse_transform();
 			T scl = target->inverse_scale();

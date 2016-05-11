@@ -5,13 +5,16 @@ UserInterface::UserInterface(QWidget *parent)
 {
 	_mainLayout = std::unique_ptr<QVBoxLayout>(new QVBoxLayout());
 	_label = new QLabel("Welcome", this);
+	_link = new QLabel("<a href = \"http://www.wseas.us/e-library/conferences/2015/Rome/EVCO/EVCO-08.pdf\">Publication</a>", this);
+
 	_info = new QLabel( "Hey user,\n\nThis is a mesh approximator program.\n\nYou can try out different kind of strategies and see how "
 						"melt down \nyour starter cube. :)\n\nThere are some features which make your decisions more easier.\n\nFunction buttons:\n"
-						"\twasdqe - Moving\n\tt - hide / show targetbody\n\tz - Only those face of target which are inside the atom\n"
-						"\tp - Switch to 2D wher you can see the projection of the segments\n\to - Switch between segments in 2D mode\n"
+						"\twasdqe - Moving\n\tt - hide / show targetbody\n\tz - Only those faces of target which are inside the atom\n"
+						"\tp - Switch to 2D where you can see the projection of the segments\n\to - Switch between segments in 2D mode\n"
 						"\tNumPad +/- - Iterate on sides of the segment in 2D\n\tLeft/Up/Right/Down - Light moving on a surface of sphere\n"
 						"and there are other features on the UI. :)\n\nHave fun! :D"
-						"\n\nThe implementation of engine methods are based on publication.\nThe program is created by Peter Lukacs and Mate Toth. " + QString::fromLatin1("\u00A9"), this);
+						"\n\nThe implementation of engine methods are based on publication.\n"
+						"The program is created by Peter Lukacs and Mate Toth. All Rights Reserved.", this);
 
 	_choice = new QLabel("Atom", this);
 	_cut = new QLabel("Plane", this);
@@ -76,6 +79,7 @@ UserInterface::~UserInterface()
 {
 	delete _label;
 	delete _info;
+	delete _link;
 
 	delete _choice;
 	delete _cut;
@@ -147,19 +151,18 @@ void UserInterface::Init()
 	_mainLayout->addLayout(bottom.release());
 
 	//_----------------------------------------- connects
-
 	connect(_prev, SIGNAL(clicked()), this, SLOT(prevAtomEvent()));
 	connect(_nextChoice, SIGNAL(clicked()), this, SLOT(nextAtomEvent()));
 	connect(_nextPlane, SIGNAL(clicked()), this, SLOT(nextPlaneEvent()));
 	connect(_choiceStrategy, SIGNAL(currentIndexChanged(int)), this, SLOT(newprior_event()));
 	connect(_plane, SIGNAL(currentIndexChanged(int)), this, SLOT(newcutmode_event()));	//nem küld eventet
 
-	connect(_xf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));	//küld eventet, a textedited nem küld
+	connect(_xf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
 	connect(_yf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
 	connect(_zf, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
-	connect(_xn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
-	connect(_yn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
-	connect(_zn, SIGNAL(editingFinished()), this, SLOT(newplane_event()));
+	connect(_xn, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_yn, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
+	connect(_zn, SIGNAL(textChanged(const QString)), this, SLOT(newplane_event()));
 
 	connect(_cutting, SIGNAL(clicked()), this, SLOT(cuttingEvent()));
 	connect(_undo, SIGNAL(clicked()), this, SLOT(undoEvent()));
@@ -174,8 +177,6 @@ void UserInterface::Init()
 	connect(_import, SIGNAL(clicked()), this, SLOT(importEvent()));
 	connect(_moreInfo, SIGNAL(clicked()), this, SLOT(infoEvent()));
 	connect(_back, SIGNAL(clicked()), this, SLOT(backToMenu()));
-
-
 	//-------------------------------------------
 
 	setLayout(_mainLayout.release());
@@ -268,8 +269,7 @@ void UserInterface::newplane_event()
 		if (_yn->isModified()) _yn->undo();
 		if (_zn->isModified()) _zn->undo();
 
-		InfoShow("Invalid normal ! (dont use (0,0,0))\n");	//ujra lefut tole a newplaneevent fv.
-
+		InfoShow("Invalid normal ! (dont use (0,0,0))\n");
 		return;
 	}
 
@@ -305,7 +305,6 @@ void UserInterface::newcutmode_event()
 void UserInterface::newdisplay()
 {
 	request.eventtype = NEWDISPLAY;
-
 	request.disp = Display(_fourierGroups->currentData().toInt());
 }
 
@@ -353,6 +352,7 @@ void UserInterface::importEvent()
 void UserInterface::infoEvent()
 {
 	_info->setVisible(true);
+	_link->setVisible(true);
 	_back->setVisible(true);
 
 	_label->setVisible(false);
@@ -378,6 +378,7 @@ void UserInterface::infoEvent()
 void UserInterface::backToMenu()
 {
 	_info->setVisible(false);
+	_link->setVisible(false);
 	_back->setVisible(false);
 
 	_label->setVisible(true);
@@ -416,7 +417,6 @@ Request UserInterface::GetRequest()
 	}
 	else if (result.eventtype == RESTART)
 	{
-		//_choiceStrategy->setCurrentIndex(0);
 		_plane->setCurrentIndex(0);
 		_acceptTypes->setCurrentIndex(0);
 		_fourierGroups->setCurrentIndex(0);
@@ -434,7 +434,6 @@ void UserInterface::ResetRequest()
 void UserInterface::SetLabelProperties()
 {
 	_label->setFont(QFont("Courier New", 16, QFont::Bold));
-	//	label->setAlignment(Qt::AlignHCenter);
 	_label->setMaximumHeight(25);
 
 	_choice->setFont(QFont("Courier New", 10, QFont::Bold));
@@ -529,17 +528,17 @@ void UserInterface::SetDropDownProperties()
 }
 void UserInterface::SetInputLineProperties()
 {
-	_xf->setFixedWidth(25);
+	_xf->setFixedWidth(50);
 	_x->setFixedWidth(15);
-	_yf->setFixedWidth(25);
+	_yf->setFixedWidth(50);
 	_y->setFixedWidth(15);
-	_zf->setFixedWidth(25);
+	_zf->setFixedWidth(50);
 	_z->setFixedWidth(15);
-	_xn->setFixedWidth(25);
-	_yn->setFixedWidth(25);
-	_zn->setFixedWidth(25);
+	_xn->setFixedWidth(50);
+	_yn->setFixedWidth(50);
+	_zn->setFixedWidth(50);
 
-	_n->setFixedWidth(25);
+	_n->setFixedWidth(35);
 
 	_xf->setStyleSheet("background-color: #bcee68;");
 	_yf->setStyleSheet("background-color: #bcee68;");
@@ -557,6 +556,15 @@ void UserInterface::SetInputLineProperties()
 	_zf->setAlignment(Qt::AlignCenter);
 	_n->setAlignment(Qt::AlignCenter);
 
+	QRegExp exp("[+-]?[0-9][0-9]?[0-9]?[0-9]?\\.[0-9][0-9][0-9][0-9]");
+	QRegExp moreExp("[1-9][0-9][0-9][0-9]");
+	_xn->setValidator(new QRegExpValidator(exp, this));
+	_yn->setValidator(new QRegExpValidator(exp, this));
+	_zn->setValidator(new QRegExpValidator(exp, this));
+	_xf->setValidator(new QRegExpValidator(exp, this));
+	_yf->setValidator(new QRegExpValidator(exp, this));
+	_zf->setValidator(new QRegExpValidator(exp, this));
+	_n->setValidator(new QRegExpValidator(moreExp, this));
 
 	request.plane_coord = Coord(_xf->text().toFloat(), _yf->text().toFloat(), _zf->text().toFloat());
 	request.plane_norm = Coord(_xn->text().toFloat(), _yn->text().toFloat(), _zn->text().toFloat());
@@ -567,10 +575,15 @@ void UserInterface::CreateHead()
 	head->addWidget(_label, 0, Qt::AlignHCenter);
 	head->addWidget(_info, 0, Qt::AlignHCenter);
 
+	_link->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+	_link->setOpenExternalLinks(true);
+	head->addWidget(_link, 0, Qt::AlignLeft);
+
 	head->setSpacing(0);
 	head->setMargin(0);
 
 	_info->setVisible(false);
+	_link->setVisible(false);
 }
 
 void UserInterface::CreateButtonsGroup()
@@ -603,7 +616,6 @@ void UserInterface::CreateStrategiesGroup()
 
 	strategiesGroup->addLayout(choiceGroup.release());
 	strategiesGroup->addLayout(cutGroup.release());
-
 }
 
 void UserInterface::CreateMoreStepsGroup()

@@ -2,13 +2,13 @@
 
 /*	Keszitette: Lukacs Peter
 
-A strategia altal meghatorozott sik szamitasa a vagashoz.
-Minden sikvalaszto fuggveny itt talalhato.
+	A strategia altal meghatorozott sik szamitasa a vagashoz.
+	Minden sikvalaszto fuggveny itt talalhato.
 */
 
 #include <random>
-#define FACEEPSILON 0.0001f
-#define DISTANCEEPSILON  2.0f
+#define FACEEPSILON 0.0001f		//num. hiba elkerulesere, normalis menti eltolas merteke
+#define DISTANCEEPSILON  2.0f	//kvadratikus hiba maximuma
 
 template <typename V>
 class PlaneGetterFunctions
@@ -19,6 +19,7 @@ class PlaneGetterFunctions
 	Utility::PlaneResult requestPlane;
 
 	std::random_device rd;	//random generator
+
 #ifdef ONLYFORTEST
 	public:
 #endif
@@ -33,8 +34,8 @@ class PlaneGetterFunctions
 	Utility::PlaneResult PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>&, bool&, bool&, const float& = INFINITY);
 
 	LuMatrices GetLuDecomposition(glm::mat3*, bool& copl);
-	glm::vec3 GetSolutionOfLER(const LuMatrices*,  glm::vec3&);
 	glm::mat3 GetPivot(glm::mat3& A);
+	glm::vec3 GetSolutionOfLER(const LuMatrices*, glm::vec3&);
 	float GetDistanceValue(const glm::vec3&,const std::vector<approx::Vector3<float>>&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat4x3&);
 	int GetColumnNormMinOf3x3Matrix(const glm::mat3&);
@@ -42,8 +43,8 @@ class PlaneGetterFunctions
 
 public:
 
-	PlaneGetterFunctions(std::vector< std::vector<int>> adj, V* d = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult())
-		: data(d), adj_mtx(adj), Active(a), requestPlane(req) {}
+	PlaneGetterFunctions(std::vector< std::vector<int>> adj = std::vector<std::vector<int>>(), V* d = NULL, const int& a = 0, const Utility::PlaneResult req = Utility::PlaneResult())
+		: adj_mtx(adj), data(d), Active(a), requestPlane(req) {}
 	~PlaneGetterFunctions() {}
 
 	void SetActive(const int& b)
@@ -69,6 +70,7 @@ public:
 		return requestPlane;
 	}
 
+	/*(-5,-5,-5) - (5,5,5) közötti egesz erteku veletlen normalisu, sulyponton atmeno sik*/
 	Utility::PlaneResult RandomNormalCentroid()
 	{
 		Utility::PlaneResult res(approx::Vector3<float>((rd() % 11) - 5.0f, (rd() % 11) - 5.0f, (rd() % 11) - 5.0f), data->atoms(Active).centroid());
@@ -76,20 +78,20 @@ public:
 		return res;
 	}
 
+	/*Atmerore meroleges, sulyponton atmeno sik*/
 	Utility::PlaneResult DiameterCentroid()
 	{
 		approx::Vector3<float> norm = data->atoms(Active).diameter();
 		norm.normalize();
 
 		Utility::PlaneResult res(norm, data->atoms(Active).centroid());
-
 		return res;
 	}
 
+	/*Veletlen lap alatti sik*/
 	Utility::PlaneResult RandomUnderFace()
 	{
-		std::vector<approx::Face<float>> faces = data->atoms(Active).safe_cutting_faces_inside(FACEEPSILON);
-
+		std::vector<approx::Face<float>> faces = data->atoms(Active).safe_cutting_faces_inside(2 * FACEEPSILON);
 		if (faces.size() == 0) return Utility::PlaneResult();
 
 		int randomFace = rd() % faces.size();
@@ -99,14 +101,15 @@ public:
 		Utility::PlaneResult res(plane.normal(), plane.example_point() - norm *FACEEPSILON);
 		return res;
 	}
-
+	
+	/*Veletlen feluletre illesztett sik*/
 	Utility::PlaneResult RandomSurface()
 	{
 		/*Lekerem az beeseo lapok indexeit, ha azok nem voltak akkor egy default sikkal terek vissza*/
 		std::vector<int> tmp = data->atoms(Active).face_indicies_inside();
 		if (tmp.size() == 0) return Utility::PlaneResult();
 
-		/*Ha volt beeso lap akkor csinalok egy maximum indexu lap hosszusagu vektort keszitek, majd feloltoltem ott 1-sekkel amelyik sik benne van*/
+		/*Ha volt beeso lap akkor csinalok egy maximum indexu lap hosszusagu vektort, majd feloltoltem ott 1-sekkel amelyik lap benne van*/
 		std::vector<approx::Face<float>> faces = data->target_body().face_container();
 
 		std::vector<int> ids;
@@ -140,7 +143,7 @@ public:
 			for (int i = 0; i < 3; ++i)	//feltetelezzuk, hogy haromszogelve van minden oldal
 			{
 				const int adj = adj_mtx[index][i];
-				if (!used[adj] && adj < ids.size() && ids[adj])	// used: HA 0 -> igaz (nem volt még)
+				if (!used[adj] && adj < ids.size() && ids[adj])	// used: HA 0 -> igaz (nem volt meg)
 				{
 					iter.insert(adj);
 					used[adj] = 1;
@@ -170,6 +173,7 @@ public:
 		return res;
 	}
 	
+	/*Minden pontra illesztett sik*/
 	Utility::PlaneResult AllPointsFitting()
 	{
 		/*Lekerem az osszes beeso lapot, ha nem volt akkor default sikkal terek vissza*/
@@ -193,82 +197,14 @@ public:
 
 		return res;
 	}
-
 };
-
-/*LU decompozicio , A = P * L * U */
-template <typename V>
-typename PlaneGetterFunctions<V>::LuMatrices PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A,bool& copl)
-{
-	//szingularis-e
-	if (GetDeterminantOf3x3Matrix(*A) == 0) {
-		copl = true;
-		return LuMatrices();
-	}
-
-	glm::mat3 P = GetPivot(*A);
-	*A = (*A) * glm::inverse(P); 
-
-	glm::mat3 L = glm::mat3(1.0f);
-	glm::mat3 U = *A;
-	/* Note: glm::mat3 szorzás : A * B az valójában B * A */
-	for (int i = 0; i < 3;++i)
-	{		
-		glm::mat3 Lk = glm::mat3(1.0f);
-		glm::mat3 LIk = glm::mat3(1.0f);
-
-		for (int j = i + 1; j < 3; ++j)
-		{
-			Lk[j][i] = -U[j][i] / U[i][i];
-			LIk[j][i] = U[j][i] / U[i][i];
-		}
-
-		L = LIk * L;
-		U *= Lk;
-	}
-
-	return LuMatrices(L, U, P);
-}
-
-/* A = LU után & b vektor segítségével megoldja a LERT*/
-template <typename V>
-glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatrices* LU,  glm::vec3& b)
-{
-	b = b * glm::inverse(LU->P);	// A * x = P * L * U * x = n -> L * U * x = inv(P) * x
-
-	glm::vec3 x, y;
-
-	/* L * y = b */
-	for (int i = 0; i < 3; ++i)
-	{
-		float tmp = 0;
-		for (int j = 0; j < i;++j)
-		{
-			tmp += y[j] * LU->L[i][j];
-		}
-		y[i] = (b[i] - tmp) / LU->L[i][i];
-	}
-
-	/* U * x = y */
-	for (int i = 2; i >= 0; --i)
-	{
-		float tmp = 0;
-		for (int j = 2; j > i;--j)
-		{
-			tmp += x[j] * LU->U[i][j];
-		}
-		x[i] = (y[i] - tmp) / LU->U[i][i];
-	}
-
-	return x;
-}
 
 /*Sikillesztes
 (pontok halmaza, bool - hataron beluli eredmenyt kaptunk, bool - koplanarisok voltak e a pontok, hatar)*/
 template <typename V>
 Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std::set<approx::Vector3<float>, approx::DifferentVector3<float>>& tmp, bool& ok, bool& coplanarity, const float& DISTANCE)
 {
-	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());	
+	std::vector<approx::Vector3<float>> points = std::vector<approx::Vector3<float>>(tmp.begin(), tmp.end());
 	//cpp ref: neither the const nor the non-const versions modify the container
 
 	/*First step: sulypont meghatarozasa */
@@ -317,7 +253,7 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 #endif
 		return Utility::PlaneResult();
 	}
-	
+
 	/*Fifth step: Get our x = (A , B , C)*/
 	glm::vec3 x = GetSolutionOfLER(&result, b);
 	glm::vec3 check = x * A;
@@ -329,17 +265,83 @@ Utility::PlaneResult PlaneGetterFunctions<V>::PlanarFittingOn3dPoints(const std:
 		coplanarity = true;
 		return Utility::PlaneResult();
 	}
-
 	/*Sixth step: Get our normal*/
 	glm::vec3 normal = glm::normalize(glm::vec3(x.x, x.y, x.z));
 
-	ok = GetDistanceValue(normal,points) <  DISTANCE;
+	ok = GetDistanceValue(normal, points) <  DISTANCE;
 	if (!ok) return Utility::PlaneResult();
 
-	return Utility::PlaneResult(approx::convert<float>(normal), centr + approx::convert<float>(normal * FACEEPSILON));
+	return Utility::PlaneResult(approx::convert<float>(normal), centr - approx::convert<float>(normal * FACEEPSILON));
 }
 
-/*A pontoknak a sik normalisaval vett skaliri szorzatok osszege*/
+/*LU decompozicio , A = P * L * U */
+template <typename V>
+typename PlaneGetterFunctions<V>::LuMatrices PlaneGetterFunctions<V>::GetLuDecomposition(glm::mat3* A,bool& copl)
+{
+	//szingularis-e
+	if (GetDeterminantOf3x3Matrix(*A) == 0) {
+		copl = true;
+		return LuMatrices();
+	}
+
+	glm::mat3 P = GetPivot(*A);
+	*A = (*A) * glm::inverse(P); // A = P * L * U -> inv(P) * A = L * U
+
+	glm::mat3 L = glm::mat3(1.0f);
+	glm::mat3 U = *A;
+	/* Note: glm::mat3 szorzás : A * B az valójában B * A */
+	for (int i = 0; i < 3;++i)
+	{		
+		glm::mat3 Lk = glm::mat3(1.0f);
+		glm::mat3 LIk = glm::mat3(1.0f);
+
+		for (int j = i + 1; j < 3; ++j)
+		{
+			Lk[j][i] = -U[j][i] / U[i][i];
+			LIk[j][i] = U[j][i] / U[i][i];
+		}
+
+		L = LIk * L;
+		U *= Lk;
+	}
+
+	return LuMatrices(L, U, P);
+}
+
+/* A = LU után & b vektor segítségével megoldja a LERT*/
+template <typename V>
+glm::vec3 PlaneGetterFunctions<V>::GetSolutionOfLER(const LuMatrices* LU,  glm::vec3& b)
+{
+	b = b * glm::inverse(LU->P);	// A * x = P * L * U * x = b -> L * U * x = inv(P) * b
+
+	glm::vec3 x, y;
+
+	/* L * y = b */
+	for (int i = 0; i < 3; ++i)
+	{
+		float tmp = 0;
+		for (int j = 0; j < i;++j)
+		{
+			tmp += y[j] * LU->L[i][j];
+		}
+		y[i] = (b[i] - tmp) / LU->L[i][i];
+	}
+
+	/* U * x = y */
+	for (int i = 2; i >= 0; --i)
+	{
+		float tmp = 0;
+		for (int j = 2; j > i;--j)
+		{
+			tmp += x[j] * LU->U[i][j];
+		}
+		x[i] = (y[i] - tmp) / LU->U[i][i];
+	}
+
+	return x;
+}
+
+/*Kvadratikus hiba: A pontoknak a sik normalisaval vett skalaris szorzat negyzeteinek az osszege*/
 template <typename V>
 float PlaneGetterFunctions<V>::GetDistanceValue(const glm::vec3& v, const std::vector<approx::Vector3<float>>& po)
 {
@@ -361,7 +363,7 @@ glm::mat3 PlaneGetterFunctions<V>::GetPivot(glm::mat3& A)
 	{
 		float max = A[i][i];
 		int row = i;
-		for (int j=i;j<3;++j)
+		for (int j=i;j<3;++j)	//reszleges foelem
 		{
 			if (A[j][i] > max)
 			{
@@ -371,7 +373,7 @@ glm::mat3 PlaneGetterFunctions<V>::GetPivot(glm::mat3& A)
 		}
 		if (i != row)
 		{
-			for (int j=0;j<3;++j)
+			for (int j=0;j<3;++j)	//sorcsere
 			{
 				float tmp = pivot[i][j];
 				pivot[i][j] = pivot[row][j];

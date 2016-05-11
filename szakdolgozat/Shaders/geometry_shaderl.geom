@@ -20,7 +20,7 @@ void main()
 	
 	gs_pos =  gl_in[0].gl_Position.xyz;
 	gl_Position = Proj * View * gl_in[0].gl_Position;
-	gs_norm =  vec4(normal,0).xyz;	
+	gs_norm =  vec4(normal,0).xyz;
 
     EmitVertex();
 

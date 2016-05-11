@@ -9,7 +9,5 @@ out vec4 _color;
 
 void main()
 {
-
-	//fragment végso színe
 	_color =   vec4(COLOR, ALPHA);
 }

@@ -1,3 +1,7 @@
+/* Keszitette: Lukacs Peter
+
+   A shaderek beolvasasaert es forditasaert felelo fv.*/
+
 #pragma once
 
 #include <stdio.h>
