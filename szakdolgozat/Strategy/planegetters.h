@@ -289,7 +289,7 @@ typename PlaneGetterFunctions<V>::LuMatrices PlaneGetterFunctions<V>::GetLuDecom
 
 	glm::mat3 L = glm::mat3(1.0f);
 	glm::mat3 U = *A;
-	/* Note: glm::mat3 szorzás : A * B az valójában B * A */
+	/* Note: glm::mat3 szorzas : A * B az valojaban B * A */
 	for (int i = 0; i < 3;++i)
 	{		
 		glm::mat3 Lk = glm::mat3(1.0f);

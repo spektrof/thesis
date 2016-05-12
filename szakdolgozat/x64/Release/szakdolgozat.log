@@ -1,8 +1,4 @@
-﻿  moc_userinterface.cpp
-  userinterface.cpp
-  CameraAndLight.cpp
-  Utility.cpp
-  vis.cpp
+﻿  vis.cpp
 d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(427): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\approximation.h(425): note: while compiling class template member function 'approx::Approximation<T>::CutResult approx::Approximation<T>::cut(size_t,const approx::Plane<T> &)'
           with
@@ -347,8 +343,8 @@ d:\elte\felevek\6\szakdolgozat\szakdolgozat\szakdolgozat\engine\face.h(85): warn
           ]
   main.cpp
   Generating code
-  12 of 5306 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
-    8 functions were new in current compilation
-    62 functions had inline decision re-evaluated but remain unchanged
+  0 of 5306 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   szakdolgozat.vcxproj -> D:\ELTE\Felevek\6\szakdolgozat\szakdolgozat\x64\Release\szakdolgozat.exe

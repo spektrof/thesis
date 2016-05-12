@@ -272,7 +272,7 @@ void Visualization::AcceptCutting()
 			app.container().last_cut_result().undo();
 			if (logger) std::cout << "Megtartom: NONE\n";
 			if (request.eventtype == MORESTEPS) break;
-			ui.InfoShow("All new atom are inappropriate!\nThe cutted atom is dropped.");
+			ui.InfoShow("All new atom are inappropriate!\nThe cut atom is dropped.");
 			break;
 	}
 
